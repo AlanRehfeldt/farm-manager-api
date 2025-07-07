@@ -1,0 +1,264 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+model User {
+  id         String  @id @default(uuid())
+  name       String
+  email      String  @unique
+  password   String
+  role       Role    @default(USER)
+  employeeId String?
+
+  employee Employee? @relation(fields: [employeeId], references: [id])
+
+  @@map("users")
+}
+
+enum EmployeeType {
+  FARM_MANAGER
+  AGRONOMIST
+  VETERINARIAN
+  MACHINE_OPERATOR
+  FIELD_WORKER
+  LIVESTOCK_HANDLER
+  IRRIGATION_TECHNICIAN
+  ADMINISTRATIVE_ASSISTANT
+  DRIVER
+  SECURITY_GUARD
+  TEMPORARY_WORKER
+  OTHER
+}
+
+model Employee {
+  id           String       @id @default(uuid())
+  name         String
+  registration String       @unique
+  type         EmployeeType
+
+  users              User[]
+  salaryTransactions SalaryTransaction[]
+
+  @@map("employees")
+}
+
+model Supplier {
+  id          String @id @default(uuid())
+  name        String
+  cnpj        String @unique
+  address     String
+  phoneNumber String
+
+  purchaseTransactions PurchaseTransaction[]
+
+  @@map("suppliers")
+}
+
+model CostCenter {
+  id          String  @id @default(uuid())
+  name        String
+  description String
+  code        String
+  parentId    String?
+
+  TransactionAllocation TransactionAllocation[]
+
+  costCenter CostCenter?  @relation("Children", fields: [parentId], references: [id])
+  children   CostCenter[] @relation("Children")
+
+  @@map("cost_centers")
+}
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  INCOME
+  EXPENSE
+  EQUITY
+}
+
+model AccountPlan {
+  id   String      @id @default(uuid())
+  name String
+  code String      @unique
+  type AccountType
+
+  allocations TransactionAllocation[]
+
+  @@map("account_plans")
+}
+
+enum PaymentForm {
+  CASH // Dinheiro
+  CREDIT_CARD // Cartão de crédito
+  DEBIT_CARD // Cartão de débito
+  BANK_SLIP // Boleto bancário
+  TRANSFER // Transferência bancária (ex: TED, DOC)
+  PIX // Pagamento via PIX (Brasil)
+  CHECK // Cheque
+  DIGITAL_WALLET // Carteira digital (ex: PicPay, Mercado Pago)
+  LOAN // Empréstimo interno ou externo
+  TRADE // Permuta ou troca de produtos/serviços
+  FINANCING // Financiamento (ex: BNDES, banco agrícola)
+  OTHER // Outro
+}
+
+model Installment {
+  id            String      @id @default(uuid())
+  value         BigInt
+  dueDate       DateTime
+  paymentDate   DateTime?
+  paymentForm   PaymentForm
+  transactionId String
+
+  transaction Transaction @relation(fields: [transactionId], references: [id])
+
+  @@map("installments")
+}
+
+model TransactionAllocation {
+  id                    String @id @default(uuid())
+  transactionId         String
+  costCenterId          String
+  accountPlanId         String
+  allocatedValueInCents BigInt
+
+  transaction Transaction @relation(fields: [transactionId], references: [id])
+  costCenter  CostCenter  @relation(fields: [costCenterId], references: [id])
+  accountPlan AccountPlan @relation(fields: [accountPlanId], references: [id])
+
+  @@map("transaction_allocations")
+}
+
+model Product {
+  id          String  @id @default(uuid())
+  name        String
+  description String?
+  unit        String
+  quantity    BigInt
+
+  purchaseTransactionProducts PurchaseTransactionProduct[]
+  StockMovement               StockMovement[]
+
+  @@map("products")
+}
+
+model PurchaseTransactionProduct {
+  id                    String @id @default(uuid())
+  quantity              BigInt
+  priceInCents          BigInt
+  productId             String
+  purchaseTransactionId String
+
+  product             Product             @relation(fields: [productId], references: [id])
+  PurchaseTransaction PurchaseTransaction @relation(fields: [purchaseTransactionId], references: [id])
+
+  @@map("purchase_transaction_products")
+}
+
+model PurchaseTransaction {
+  id            String @id @default(uuid())
+  nfNumber      String
+  supplierId    String
+  transactionId String @unique
+
+  purchaseTransactionProducts PurchaseTransactionProduct[]
+
+  transaction Transaction @relation(fields: [transactionId], references: [id])
+  supplier    Supplier    @relation(fields: [supplierId], references: [id])
+
+  @@map("purchase_transactions")
+}
+
+model SalaryTransaction {
+  id            String @id @default(uuid())
+  employeeId    String
+  transactionId String @unique
+
+  transaction Transaction @relation(fields: [transactionId], references: [id])
+  employee    Employee    @relation(fields: [employeeId], references: [id])
+
+  @@map("salary_transactions")
+}
+
+enum GenericTransactionSubtype {
+  GENERAL_EXPENSE
+  FIXED_ASSET_EXPENSE
+  LOAN_PAYMENT
+  SERVICE_PAYMENT
+  TAX_PAYMENT
+  SUPPLIER_ADVANCE
+  RENTAL_PAYMENT
+  PROFIT_DISTRIBUTION
+  INSURANCE_EXPENSE
+  LOSS_OR_FINE
+  PROJECT_INVESTMENT
+  BANK_FEE
+  OTHER
+}
+
+model GenericTransactionDetails {
+  id            String                    @id @default(uuid())
+  transactionId String                    @unique
+  subtype       GenericTransactionSubtype
+  note          String?
+
+  transaction Transaction @relation(fields: [transactionId], references: [id])
+
+  @@map("generic_transaction_details")
+}
+
+enum TransactionType {
+  PURCHASE_INPUT
+  SALARY_PAYMENT
+  GENERIC
+}
+
+model Transaction {
+  id   String          @id @default(uuid())
+  type TransactionType
+  date DateTime        @default(now())
+  note String?
+
+  installments           Installment[]
+  transactionAllocations TransactionAllocation[]
+
+  purchaseTransaction PurchaseTransaction?
+  salaryTransaction   SalaryTransaction?
+  genericDetails      GenericTransactionDetails?
+  stockMovements      StockMovement[]
+
+  @@map("transactions")
+}
+
+enum StockMovementType {
+  IN // entrada: compras
+  OUT // saída: via atividade (futuro)
+  ADJUSTMENT // ajustes manuais
+}
+
+model StockMovement {
+  id            String            @id @default(uuid())
+  type          StockMovementType
+  productId     String
+  date          DateTime          @default(now())
+  quantity      BigInt
+  note          String?
+  transactionId String?
+
+  product     Product      @relation(fields: [productId], references: [id])
+  transaction Transaction? @relation(fields: [transactionId], references: [id])
+
+  @@map("stock_movements")
+}
