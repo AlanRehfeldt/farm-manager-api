@@ -16,6 +16,7 @@ const fetchUsersSchema = z.object({
   id: z.uuid().optional(),
   name: z.string().optional(),
   email: z.string().optional(),
+  role: z.enum(['ADMIN', 'USER']).optional(),
   employeeId: z.uuid().optional(),
   page: z.coerce.number().optional().default(1),
   perPage: z.coerce.number().optional().default(10),
@@ -28,7 +29,7 @@ const fetchUsersSchema = z.object({
 export class FetchUserController {
   constructor(private readonly fetchUsersService: FetchUsersService) {}
 
-  @ApiOperation({ summary: 'Retrive users' })
+  @ApiOperation({ summary: 'List users' })
   @ApiOkResponse({
     description: 'Users retrived successfully',
     type: FetchUsersResponseDto,

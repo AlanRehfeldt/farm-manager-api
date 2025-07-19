@@ -3,6 +3,7 @@ import { UserModule } from './modules/user/user.module';
 import { PrismaModule } from './common/prisma/prisma.module';
 import { ConfigModule } from '@nestjs/config';
 import { envSchema } from './env';
+import { EmployeeModule } from './modules/employee/employee.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { envSchema } from './env';
     }),
     PrismaModule,
     UserModule,
+    EmployeeModule,
   ],
   controllers: [],
   providers: [],

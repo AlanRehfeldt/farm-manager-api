@@ -3,6 +3,7 @@ import {
   ApiBadRequestResponse,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiNotFoundResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
@@ -13,6 +14,7 @@ import { BadRequestDto } from 'src/common/errors/bad-request.dto';
 import { ConflictDto } from 'src/common/errors/conflict.dto';
 import { CreateUserResponseDto } from '../dtos/response/create-user.dto';
 import { CreateUserRequestDto } from '../dtos/request/create-user.dto';
+import { NotFoundDto } from 'src/common/errors/not-found.dto';
 
 const createUserSchema = z.object({
   name: z.string().min(5).max(150),
@@ -27,7 +29,7 @@ const createUserSchema = z.object({
 export class CreateUserController {
   constructor(private readonly createUserService: CreateUserService) {}
 
-  @ApiOperation({ summary: 'Create a new user' })
+  @ApiOperation({ summary: 'Create user' })
   @ApiCreatedResponse({
     description: 'User created successfully',
     type: CreateUserResponseDto,
@@ -39,6 +41,10 @@ export class CreateUserController {
   @ApiConflictResponse({
     description: 'Conflict: Email already exists',
     type: ConflictDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Not found: Employee does not exists',
+    type: NotFoundDto,
   })
   @Post()
   @UsePipes(new ZodValidationPipe(createUserSchema))

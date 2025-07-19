@@ -1,9 +1,7 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { UserRepository } from './user.repository';
 import { Prisma, User } from '@prisma/client';
-import { SearchManyQuery } from './@types';
+import { SearchManyQuery, UpdateUserData } from './@types';
 import { Injectable } from '@nestjs/common';
 
 @Injectable()
@@ -16,10 +14,10 @@ export class PrismaUserRepository implements UserRepository {
     });
   }
 
-  async update(data: Prisma.UserUncheckedUpdateInput): Promise<User> {
+  async update(data: UpdateUserData): Promise<User> {
     return await this.prisma.user.update({
       where: {
-        id: data.id as string,
+        id: data.id,
       },
       data,
     });
@@ -55,26 +53,20 @@ export class PrismaUserRepository implements UserRepository {
     const page = query.page;
     const perPage = query.perPage;
 
-    const where: any = {};
-
-    if (query.id) where.id = query.id;
-    if (query.role) where.role = query.role;
-    if (query.employeeId) where.employeeId = query.employeeId;
-    if (query.name) {
-      where.name = {
-        contains: query.name,
-        mode: 'insensitive',
-      };
-    }
-    if (query.email) {
-      where.email = {
-        contains: query.email,
-        mode: 'insensitive',
-      };
-    }
-
     return await this.prisma.user.findMany({
-      where,
+      where: {
+        id: query.id,
+        role: query.role,
+        employeeId: query.employeeId,
+        name: {
+          contains: query.name,
+          mode: 'insensitive',
+        },
+        email: {
+          contains: query.email,
+          mode: 'insensitive',
+        },
+      },
       skip: (page - 1) * perPage,
       take: perPage,
       orderBy: {
@@ -84,26 +76,20 @@ export class PrismaUserRepository implements UserRepository {
   }
 
   async count(query: SearchManyQuery): Promise<number> {
-    const where: any = {};
-
-    if (query.id) where.id = query.id;
-    if (query.role) where.role = query.role;
-    if (query.employeeId) where.employeeId = query.employeeId;
-    if (query.name) {
-      where.name = {
-        contains: query.name,
-        mode: 'insensitive',
-      };
-    }
-    if (query.email) {
-      where.email = {
-        contains: query.email,
-        mode: 'insensitive',
-      };
-    }
-
     return await this.prisma.user.count({
-      where,
+      where: {
+        id: query.id,
+        role: query.role,
+        employeeId: query.employeeId,
+        name: {
+          contains: query.name,
+          mode: 'insensitive',
+        },
+        email: {
+          contains: query.email,
+          mode: 'insensitive',
+        },
+      },
     });
   }
 }

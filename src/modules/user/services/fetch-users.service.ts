@@ -16,8 +16,13 @@ export class FetchUsersService {
     const users = await this.userRepository.searchMany(params);
     const total = await this.userRepository.count(params);
 
+    const usersWithoutPassword = users.map((user) => ({
+      ...user,
+      password: undefined,
+    }));
+
     return {
-      results: users,
+      results: usersWithoutPassword,
       total,
       page: params.page,
       perPage: params.perPage,

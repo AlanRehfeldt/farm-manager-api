@@ -8,14 +8,14 @@ import {
   USER_REPOSITORY,
   UserRepository,
 } from '../repositories/user.repository';
-import { CreateUserData } from '../repositories/@types';
+import { UpdateUserData } from '../repositories/@types';
 import {
   EMPLOYEE_REPOSITORY,
   EmployeeRepository,
 } from 'src/modules/employee/repositories/employee.repository';
 
 @Injectable()
-export class CreateUserService {
+export class UpdateUserService {
   constructor(
     @Inject(USER_REPOSITORY)
     private readonly userRepository: UserRepository,
@@ -23,10 +23,12 @@ export class CreateUserService {
     private readonly employeeRepository: EmployeeRepository,
   ) {}
 
-  async execute({ name, email, password, role, employeeId }: CreateUserData) {
-    const checkIfEmailExists = await this.userRepository.findByEmail(email);
-    if (checkIfEmailExists) {
-      throw new ConflictException('Email already exists');
+  async execute({ id, name, email, role, employeeId }: UpdateUserData) {
+    if (email) {
+      const checkIfEmailExists = await this.userRepository.findByEmail(email);
+      if (checkIfEmailExists) {
+        throw new ConflictException('Email already exists');
+      }
     }
 
     if (employeeId) {
@@ -37,10 +39,10 @@ export class CreateUserService {
       }
     }
 
-    const user = await this.userRepository.create({
+    const user = await this.userRepository.update({
+      id,
       name,
       email,
-      password,
       role,
       employeeId,
     });

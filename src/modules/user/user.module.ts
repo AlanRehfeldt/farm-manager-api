@@ -6,16 +6,28 @@ import { PrismaUserRepository } from './repositories/prisma-user.repository';
 import { PrismaModule } from 'src/common/prisma/prisma.module';
 import { FetchUsersService } from './services/fetch-users.service';
 import { FetchUserController } from './controllers/fetch-user.controller';
+import { EmployeeModule } from '../employee/employee.module';
+import { UpdateUserController } from './controllers/update-user.controller';
+import { UpdateUserService } from './services/update-user.service';
+import { DeleteUserController } from './controllers/delete-user.controller';
+import { DeleteUserService } from './services/delete-user.service';
 
 @Module({
-  imports: [PrismaModule],
-  controllers: [CreateUserController, FetchUserController],
+  imports: [PrismaModule, EmployeeModule],
+  controllers: [
+    CreateUserController,
+    UpdateUserController,
+    DeleteUserController,
+    FetchUserController,
+  ],
   providers: [
     {
       provide: USER_REPOSITORY,
       useClass: PrismaUserRepository,
     },
     CreateUserService,
+    UpdateUserService,
+    DeleteUserService,
     FetchUsersService,
   ],
 })
