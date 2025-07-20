@@ -27,6 +27,18 @@ export class EmployeeDto {
   })
   type: EmployeeType;
 
+  @ApiProperty({
+    example: '2023-01-01T00:00:00.000Z',
+    description: "Employee's creation date",
+  })
+  createdAt: Date;
+
+  @ApiProperty({
+    example: '2023-01-01T00:00:00.000Z',
+    description: "Employee's update date",
+  })
+  updatedAt: Date;
+
   constructor(partial: Partial<EmployeeDto>) {
     Object.assign(this, partial);
   }

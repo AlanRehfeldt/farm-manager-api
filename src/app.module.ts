@@ -4,6 +4,7 @@ import { PrismaModule } from './common/prisma/prisma.module';
 import { ConfigModule } from '@nestjs/config';
 import { envSchema } from './env';
 import { EmployeeModule } from './modules/employee/employee.module';
+import { SupplierModule } from './modules/supplier/supplier.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { EmployeeModule } from './modules/employee/employee.module';
     PrismaModule,
     UserModule,
     EmployeeModule,
+    SupplierModule,
   ],
   controllers: [],
   providers: [],

@@ -33,6 +33,18 @@ export class UserDto {
   })
   employeeId: string;
 
+  @ApiProperty({
+    example: '2023-01-01T00:00:00.000Z',
+    description: "User's creation date",
+  })
+  createdAt: Date;
+
+  @ApiProperty({
+    example: '2023-01-01T00:00:00.000Z',
+    description: "User's update date",
+  })
+  updatedAt: Date;
+
   constructor(partial: Partial<UserDto>) {
     Object.assign(this, partial);
   }
