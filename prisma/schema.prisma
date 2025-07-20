@@ -47,6 +47,8 @@ model Employee {
   name         String
   registration String       @unique
   type         EmployeeType
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
   users              User[]
   salaryTransactions SalaryTransaction[]
@@ -55,11 +57,13 @@ model Employee {
 }
 
 model Supplier {
-  id          String @id @default(uuid())
+  id          String   @id @default(uuid())
   name        String
-  cnpj        String @unique
-  address     String
-  phoneNumber String
+  cnpj        String   @unique
+  address     String?
+  phoneNumber String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   purchaseTransactions PurchaseTransaction[]
 
@@ -67,11 +71,13 @@ model Supplier {
 }
 
 model CostCenter {
-  id          String  @id @default(uuid())
+  id          String   @id @default(uuid())
   name        String
   description String
   code        String
   parentId    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   TransactionAllocation TransactionAllocation[]
 
@@ -90,10 +96,12 @@ enum AccountType {
 }
 
 model AccountPlan {
-  id   String      @id @default(uuid())
-  name String
-  code String      @unique
-  type AccountType
+  id        String      @id @default(uuid())
+  name      String
+  code      String      @unique
+  type      AccountType
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
 
   allocations TransactionAllocation[]
 
@@ -122,6 +130,8 @@ model Installment {
   paymentDate   DateTime?
   paymentForm   PaymentForm
   transactionId String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 
   transaction Transaction @relation(fields: [transactionId], references: [id])
 
@@ -129,11 +139,13 @@ model Installment {
 }
 
 model TransactionAllocation {
-  id                    String @id @default(uuid())
+  id                    String   @id @default(uuid())
   transactionId         String
   costCenterId          String
   accountPlanId         String
   allocatedValueInCents BigInt
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
   transaction Transaction @relation(fields: [transactionId], references: [id])
   costCenter  CostCenter  @relation(fields: [costCenterId], references: [id])
@@ -143,11 +155,13 @@ model TransactionAllocation {
 }
 
 model Product {
-  id          String  @id @default(uuid())
+  id          String   @id @default(uuid())
   name        String
   description String?
   unit        String
   quantity    BigInt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   purchaseTransactionProducts PurchaseTransactionProduct[]
   StockMovement               StockMovement[]
@@ -156,11 +170,13 @@ model Product {
 }
 
 model PurchaseTransactionProduct {
-  id                    String @id @default(uuid())
+  id                    String   @id @default(uuid())
   quantity              BigInt
   priceInCents          BigInt
   productId             String
   purchaseTransactionId String
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
   product             Product             @relation(fields: [productId], references: [id])
   PurchaseTransaction PurchaseTransaction @relation(fields: [purchaseTransactionId], references: [id])
@@ -169,10 +185,12 @@ model PurchaseTransactionProduct {
 }
 
 model PurchaseTransaction {
-  id            String @id @default(uuid())
+  id            String   @id @default(uuid())
   nfNumber      String
   supplierId    String
-  transactionId String @unique
+  transactionId String   @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   purchaseTransactionProducts PurchaseTransactionProduct[]
 
@@ -183,9 +201,11 @@ model PurchaseTransaction {
 }
 
 model SalaryTransaction {
-  id            String @id @default(uuid())
+  id            String   @id @default(uuid())
   employeeId    String
-  transactionId String @unique
+  transactionId String   @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   transaction Transaction @relation(fields: [transactionId], references: [id])
   employee    Employee    @relation(fields: [employeeId], references: [id])
@@ -214,6 +234,8 @@ model GenericTransactionDetails {
   transactionId String                    @unique
   subtype       GenericTransactionSubtype
   note          String?
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime                  @updatedAt
 
   transaction Transaction @relation(fields: [transactionId], references: [id])
 
@@ -227,10 +249,12 @@ enum TransactionType {
 }
 
 model Transaction {
-  id   String          @id @default(uuid())
-  type TransactionType
-  date DateTime        @default(now())
-  note String?
+  id        String          @id @default(uuid())
+  type      TransactionType
+  date      DateTime        @default(now())
+  note      String?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
 
   installments           Installment[]
   transactionAllocations TransactionAllocation[]
@@ -257,6 +281,8 @@ model StockMovement {
   quantity      BigInt
   note          String?
   transactionId String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
 
   product     Product      @relation(fields: [productId], references: [id])
   transaction Transaction? @relation(fields: [transactionId], references: [id])
