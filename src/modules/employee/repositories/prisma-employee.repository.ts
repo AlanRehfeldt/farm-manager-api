@@ -6,7 +6,9 @@ import {
   UpdateEmployeeData,
   SearchManyQuery,
 } from './@types';
+import { Injectable } from '@nestjs/common';
 
+@Injectable()
 export class PrismaEmployeeRepository implements EmployeeRepository {
   constructor(private prisma: PrismaService) {}
 

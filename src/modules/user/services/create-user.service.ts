@@ -13,6 +13,7 @@ import {
   EMPLOYEE_REPOSITORY,
   EmployeeRepository,
 } from 'src/modules/employee/repositories/employee.repository';
+import { hash } from 'bcryptjs';
 
 @Injectable()
 export class CreateUserService {
@@ -32,15 +33,18 @@ export class CreateUserService {
     if (employeeId) {
       const checkIfEmployeeExists =
         await this.employeeRepository.findById(employeeId);
+      console.log('checkIfEmployeeExists', checkIfEmployeeExists);
       if (!checkIfEmployeeExists) {
-        throw new NotFoundException('Employee does not exists');
+        throw new NotFoundException('Employee does not exist');
       }
     }
+
+    const encryptedPassword = await hash(password, 6);
 
     const user = await this.userRepository.create({
       name,
       email,
-      password,
+      password: encryptedPassword,
       role,
       employeeId,
     });

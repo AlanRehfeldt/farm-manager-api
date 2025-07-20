@@ -26,6 +26,8 @@ export class FetchUsersService {
       total,
       page: params.page,
       perPage: params.perPage,
+      orderBy: params.orderBy,
+      orderDirection: params.orderDirection,
     };
   }
 }

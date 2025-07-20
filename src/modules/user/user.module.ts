@@ -5,12 +5,14 @@ import { USER_REPOSITORY } from './repositories/user.repository';
 import { PrismaUserRepository } from './repositories/prisma-user.repository';
 import { PrismaModule } from 'src/common/prisma/prisma.module';
 import { FetchUsersService } from './services/fetch-users.service';
-import { FetchUserController } from './controllers/fetch-user.controller';
+import { FetchUsersController } from './controllers/fetch-users.controller';
 import { EmployeeModule } from '../employee/employee.module';
 import { UpdateUserController } from './controllers/update-user.controller';
 import { UpdateUserService } from './services/update-user.service';
 import { DeleteUserController } from './controllers/delete-user.controller';
 import { DeleteUserService } from './services/delete-user.service';
+import { GetUserController } from './controllers/get-user.controller';
+import { GetUserService } from './services/get-user.service';
 
 @Module({
   imports: [PrismaModule, EmployeeModule],
@@ -18,7 +20,8 @@ import { DeleteUserService } from './services/delete-user.service';
     CreateUserController,
     UpdateUserController,
     DeleteUserController,
-    FetchUserController,
+    GetUserController,
+    FetchUsersController,
   ],
   providers: [
     {
@@ -28,6 +31,7 @@ import { DeleteUserService } from './services/delete-user.service';
     CreateUserService,
     UpdateUserService,
     DeleteUserService,
+    GetUserService,
     FetchUsersService,
   ],
 })

@@ -5,7 +5,6 @@ export interface UpdateUserData {
   id: string;
   name?: string;
   email?: string;
-  role?: Role;
   employeeId?: string;
 }
 export interface SearchManyQuery {

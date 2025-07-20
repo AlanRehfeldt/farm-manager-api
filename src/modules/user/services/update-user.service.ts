@@ -23,7 +23,7 @@ export class UpdateUserService {
     private readonly employeeRepository: EmployeeRepository,
   ) {}
 
-  async execute({ id, name, email, role, employeeId }: UpdateUserData) {
+  async execute({ id, name, email, employeeId }: UpdateUserData) {
     if (email) {
       const checkIfEmailExists = await this.userRepository.findByEmail(email);
       if (checkIfEmailExists) {
@@ -35,7 +35,7 @@ export class UpdateUserService {
       const checkIfEmployeeExists =
         await this.employeeRepository.findById(employeeId);
       if (!checkIfEmployeeExists) {
-        throw new NotFoundException('Employee does not exists');
+        throw new NotFoundException('Employee does not exist');
       }
     }
 
@@ -43,7 +43,6 @@ export class UpdateUserService {
       id,
       name,
       email,
-      role,
       employeeId,
     });
 

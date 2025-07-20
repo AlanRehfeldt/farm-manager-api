@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Put } from '@nestjs/common';
+import { Body, Controller, HttpStatus, Param, Put } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiConflictResponse,
@@ -26,7 +26,6 @@ const updateUserParamSchema = z.object({
 const updateUserSchema = z.object({
   name: z.string().min(5).max(150).optional(),
   email: z.email().min(10).max(100).optional(),
-  role: z.enum(['ADMIN', 'USER']).optional(),
   employeeId: z.uuid().optional(),
 });
 
@@ -55,12 +54,20 @@ export class UpdateUserController {
   @Put(':id')
   async update(
     @Param(new ZodValidationPipe(updateUserParamSchema))
-    id: UpdateUserParamDto,
+    param: UpdateUserParamDto,
     @Body(new ZodValidationPipe(updateUserSchema)) data: UpdateUserBodyDto,
   ) {
     try {
-      const { user } = await this.updateUserService.execute({ ...id, ...data });
-      return { user };
+      const { user } = await this.updateUserService.execute({
+        id: param.id,
+        ...data,
+      });
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'User updated successfully',
+        user,
+      };
     } catch (error) {
       console.error('Error updating user', error);
       throw error;

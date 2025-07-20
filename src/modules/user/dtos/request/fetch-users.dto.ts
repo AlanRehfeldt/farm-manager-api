@@ -1,31 +1,31 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 
-export class FetchUsersRequest {
+export class FetchUsersQueryDto {
   @ApiPropertyOptional()
-  page?: number;
+  id: string;
 
   @ApiPropertyOptional()
-  perPage?: number;
+  name: string;
 
   @ApiPropertyOptional()
-  orderBy?: string;
+  email: string;
 
   @ApiPropertyOptional()
-  orderDirection?: 'asc' | 'desc';
+  role: Role;
 
   @ApiPropertyOptional()
-  id?: string;
+  employeeId: string;
 
   @ApiPropertyOptional()
-  name?: string;
+  page: number;
 
   @ApiPropertyOptional()
-  email?: string;
+  perPage: number;
 
   @ApiPropertyOptional()
-  role?: Role;
+  orderBy: string;
 
   @ApiPropertyOptional()
-  employeeId?: string;
+  orderDirection: 'asc' | 'desc';
 }

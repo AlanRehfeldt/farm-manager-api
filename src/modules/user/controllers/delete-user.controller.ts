@@ -2,6 +2,7 @@ import { Controller, Delete, HttpStatus, Param } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiCreatedResponse,
+  ApiNotFoundResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
@@ -11,6 +12,7 @@ import { BadRequestDto } from 'src/common/errors/bad-request.dto';
 import { DeleteUserService } from '../services/delete-user.service';
 import { DeleteUserParamDto } from '../dtos/request/delete-user.dto';
 import { DeleteUserResponseDto } from '../dtos/response/delete-user.dto';
+import { NotFoundDto } from 'src/common/errors/not-found.dto';
 
 const deleteUserParamSchema = z.object({
   id: z.uuid(),
@@ -30,6 +32,10 @@ export class DeleteUserController {
     description: 'Bad request: Invalid request parameter',
     type: BadRequestDto,
   })
+  @ApiNotFoundResponse({
+    description: 'User does not exist',
+    type: NotFoundDto,
+  })
   @Delete(':id')
   async delete(
     @Param(new ZodValidationPipe(deleteUserParamSchema))
@@ -37,6 +43,7 @@ export class DeleteUserController {
   ) {
     try {
       await this.deleteUserService.execute(param.id);
+
       return {
         statusCode: HttpStatus.OK,
         message: 'User deleted successfully',

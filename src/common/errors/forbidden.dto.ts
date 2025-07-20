@@ -3,6 +3,11 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class ForbiddenDto {
   @ApiProperty({
+    default: HttpStatus.FORBIDDEN,
+  })
+  statusCode: number;
+
+  @ApiProperty({
     default: 'Resorce not allowed',
   })
   message: string;
@@ -11,9 +16,4 @@ export class ForbiddenDto {
     default: 'Forbidden',
   })
   error: string;
-
-  @ApiProperty({
-    default: HttpStatus.FORBIDDEN,
-  })
-  statusCode: number;
 }

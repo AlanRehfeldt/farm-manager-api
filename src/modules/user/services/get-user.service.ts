@@ -5,7 +5,7 @@ import {
 } from '../repositories/user.repository';
 
 @Injectable()
-export class DeleteUserService {
+export class GetUserService {
   constructor(
     @Inject(USER_REPOSITORY)
     private readonly userRepository: UserRepository,
@@ -18,6 +18,11 @@ export class DeleteUserService {
       throw new NotFoundException('User does not exist');
     }
 
-    return await this.userRepository.delete(id);
+    return {
+      user: {
+        ...user,
+        password: undefined,
+      },
+    };
   }
 }

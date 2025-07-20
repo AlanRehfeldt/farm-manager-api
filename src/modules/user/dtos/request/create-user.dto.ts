@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 
-export class CreateUserRequestDto {
+export class CreateUserBodyDto {
   @ApiProperty({
     example: 'John Doe',
     description: "User's name",
@@ -15,7 +15,7 @@ export class CreateUserRequestDto {
   email: string;
 
   @ApiProperty({
-    example: 'user-password',
+    example: '$trongP@ssw0rd1',
     description: "User's password",
   })
   password: string;

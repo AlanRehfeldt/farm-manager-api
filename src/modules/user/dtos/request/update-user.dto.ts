@@ -1,5 +1,4 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
 
 export class UpdateUserParamDto {
   @ApiProperty({
@@ -18,12 +17,6 @@ export class UpdateUserBodyDto {
     description: "User's Email address",
   })
   email: string;
-
-  @ApiPropertyOptional({
-    description: "User's role in system",
-    enum: Role,
-  })
-  role: Role;
 
   @ApiPropertyOptional({
     description: "User's employee unique identifier",

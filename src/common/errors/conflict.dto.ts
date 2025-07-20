@@ -3,6 +3,11 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class ConflictDto {
   @ApiProperty({
+    default: HttpStatus.CONFLICT,
+  })
+  statusCode: number;
+
+  @ApiProperty({
     default: 'Conflictuos data provided',
   })
   message: string;
@@ -11,9 +16,4 @@ export class ConflictDto {
     default: 'Conflict',
   })
   error: string;
-
-  @ApiProperty({
-    default: HttpStatus.CONFLICT,
-  })
-  statusCode: number;
 }

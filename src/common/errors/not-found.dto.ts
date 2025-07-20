@@ -3,6 +3,11 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class NotFoundDto {
   @ApiProperty({
+    default: HttpStatus.NOT_FOUND,
+  })
+  statusCode: number;
+
+  @ApiProperty({
     default: 'Resource not found',
   })
   message: string;
@@ -11,9 +16,4 @@ export class NotFoundDto {
     default: 'Not Found',
   })
   error: string;
-
-  @ApiProperty({
-    default: HttpStatus.NOT_FOUND,
-  })
-  statusCode: number;
 }

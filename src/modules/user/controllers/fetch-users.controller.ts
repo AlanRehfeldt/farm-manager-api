@@ -9,7 +9,7 @@ import z from 'zod';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
 import { FetchUsersService } from '../services/fetch-users.service';
-import { FetchUsersRequestDto } from '../dtos/request/fetch-users';
+import { FetchUsersQueryDto } from '../dtos/request/fetch-users.dto';
 import { FetchUsersResponseDto } from '../dtos/response/fetch-users.dto';
 
 const fetchUsersSchema = z.object({
@@ -26,7 +26,7 @@ const fetchUsersSchema = z.object({
 
 @ApiTags('User')
 @Controller('/users')
-export class FetchUserController {
+export class FetchUsersController {
   constructor(private readonly fetchUsersService: FetchUsersService) {}
 
   @ApiOperation({ summary: 'List users' })
@@ -40,11 +40,19 @@ export class FetchUserController {
   })
   @Get()
   @UsePipes(new ZodValidationPipe(fetchUsersSchema))
-  async fetch(@Query() params: FetchUsersRequestDto) {
+  async fetch(@Query() query: FetchUsersQueryDto) {
     try {
-      const { results, total, page, perPage } =
-        await this.fetchUsersService.execute(params);
-      return { results, total, page, perPage };
+      const { results, total, page, perPage, orderBy, orderDirection } =
+        await this.fetchUsersService.execute(query);
+
+      return {
+        results,
+        total,
+        page,
+        perPage,
+        orderBy,
+        orderDirection,
+      };
     } catch (error) {
       console.error('Error fetching users', error);
       throw error;
