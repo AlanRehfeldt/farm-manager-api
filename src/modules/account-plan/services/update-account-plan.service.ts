@@ -17,7 +17,13 @@ export class UpdateAccountPlanService {
     private readonly accountPlanRepository: AccountPlanRepository,
   ) {}
 
-  async execute({ id, name, code, type }: UpdateAccountPlanData) {
+  async execute({
+    id,
+    name,
+    description,
+    code,
+    parentId,
+  }: UpdateAccountPlanData) {
     const checkIfAccountPlanExists =
       await this.accountPlanRepository.findById(id);
     if (!checkIfAccountPlanExists) {
@@ -32,11 +38,20 @@ export class UpdateAccountPlanService {
       }
     }
 
+    if (parentId) {
+      const checkIfParentIdExists =
+        await this.accountPlanRepository.findById(parentId);
+      if (checkIfParentIdExists) {
+        throw new NotFoundException('ParentId does not exist');
+      }
+    }
+
     const accountPlan = await this.accountPlanRepository.update({
       id,
       name,
+      description,
       code,
-      type,
+      parentId,
     });
 
     return { accountPlan };

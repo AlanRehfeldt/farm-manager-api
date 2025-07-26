@@ -1,5 +1,4 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { AccountType } from '@prisma/client';
 
 export class UpdateAccountPlanParamDto {
   @ApiProperty({
@@ -15,12 +14,17 @@ export class UpdateAccountPlanBodyDto {
   name: string;
 
   @ApiPropertyOptional({
+    description: "Account plan's description",
+  })
+  description: string;
+
+  @ApiPropertyOptional({
     description: "Account plan's code",
   })
   code: string;
 
   @ApiPropertyOptional({
-    description: "Account plan's type",
+    description: "Account plan's parent id",
   })
-  type: AccountType;
+  parentId: string;
 }

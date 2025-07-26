@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { AccountType } from '@prisma/client';
+import { OrderableAccountPlanField } from '../../repositories/@types';
 
 export class FetchAccountPlansQueryDto {
   @ApiPropertyOptional()
@@ -9,10 +9,13 @@ export class FetchAccountPlansQueryDto {
   name: string;
 
   @ApiPropertyOptional()
+  description: string;
+
+  @ApiPropertyOptional()
   code: string;
 
   @ApiPropertyOptional()
-  type: AccountType;
+  parentId: string;
 
   @ApiPropertyOptional()
   page: number;
@@ -21,7 +24,7 @@ export class FetchAccountPlansQueryDto {
   perPage: number;
 
   @ApiPropertyOptional()
-  orderBy: string;
+  orderBy: OrderableAccountPlanField;
 
   @ApiPropertyOptional()
   orderDirection: 'asc' | 'desc';

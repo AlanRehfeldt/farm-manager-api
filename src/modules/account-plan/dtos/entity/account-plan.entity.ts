@@ -1,5 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { AccountType } from '@prisma/client';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class AccountPlanDto {
   @ApiProperty({
@@ -15,16 +14,22 @@ export class AccountPlanDto {
   name: string;
 
   @ApiProperty({
-    example: 'XPTO0000-0',
+    example: 'Bank XPTO account number 0000-0',
+    description: "Account plan's description",
+  })
+  description: string;
+
+  @ApiProperty({
+    example: '01.02.001',
     description: "Account plan's code",
   })
   code: string;
 
-  @ApiProperty({
-    example: AccountType.EXPENSE,
-    description: "Account plan's type",
+  @ApiPropertyOptional({
+    example: 'uuid',
+    description: "Account plan's parent's unique identifier (if applicable)",
   })
-  type: AccountType;
+  parentId: string;
 
   @ApiProperty({
     example: '2023-01-01T00:00:00.000Z',

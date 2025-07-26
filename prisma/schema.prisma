@@ -74,12 +74,12 @@ model CostCenter {
   id          String   @id @default(uuid())
   name        String
   description String
-  code        String
+  code        String   @unique
   parentId    String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  TransactionAllocation TransactionAllocation[]
+  transactionAllocation TransactionAllocation[]
 
   parent   CostCenter?  @relation("Children", fields: [parentId], references: [id])
   children CostCenter[] @relation("Children")
@@ -87,23 +87,19 @@ model CostCenter {
   @@map("cost_centers")
 }
 
-enum AccountType {
-  ASSET
-  LIABILITY
-  INCOME
-  EXPENSE
-  EQUITY
-}
-
 model AccountPlan {
-  id        String      @id @default(uuid())
-  name      String
-  code      String      @unique
-  type      AccountType
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  code        String   @unique
+  parentId    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  allocations TransactionAllocation[]
+  transactionAllocation TransactionAllocation[]
+
+  parent   AccountPlan?  @relation("Children", fields: [parentId], references: [id])
+  children AccountPlan[] @relation("Children")
 
   @@map("account_plans")
 }

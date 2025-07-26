@@ -23,8 +23,8 @@ const createCostCenterBodySchema = z.object({
     .max(150, { message: 'Name must be at most 150 characters long.' }),
   description: z
     .string()
-    .min(3, { message: 'Registration must be at least 3 characters long.' })
-    .max(250, { message: 'Registration must be at most 250 characters long.' }),
+    .min(3, { message: 'Description must be at least 3 characters long.' })
+    .max(250, { message: 'Description must be at most 250 characters long.' }),
   code: z
     .string()
     .min(1, { message: 'Code must be at least 1 character long.' }),

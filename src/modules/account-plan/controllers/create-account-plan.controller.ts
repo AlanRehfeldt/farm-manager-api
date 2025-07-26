@@ -3,6 +3,7 @@ import {
   ApiBadRequestResponse,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiNotFoundResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
@@ -13,16 +14,21 @@ import { BadRequestDto } from 'src/common/errors/bad-request.dto';
 import { ConflictDto } from 'src/common/errors/conflict.dto';
 import { CreateAccountPlanResponseDto } from '../dtos/response/create-account-plan.dto';
 import { CreateAccountPlanBodyDto } from '../dtos/request/create-account-plan.dto';
+import { NotFoundDto } from 'src/common/errors/not-found.dto';
 
 const createAccountPlanBodySchema = z.object({
   name: z
     .string()
     .min(5, { message: 'Name must be at least 5 characters long.' })
     .max(150, { message: 'Name must be at most 150 characters long.' }),
+  description: z
+    .string()
+    .min(3, { message: 'Description must be at least 3 characters long.' })
+    .max(250, { message: 'Description must be at most 250 characters long.' }),
   code: z
     .string()
     .min(1, { message: 'Code must be at least 1 character long.' }),
-  type: z.enum(['ASSET', 'LIABILITY', 'INCOME', 'EXPENSE', 'EQUITY']),
+  parentId: z.uuid().optional(),
 });
 
 @ApiTags('AccountPlan')
@@ -44,6 +50,10 @@ export class CreateAccountPlanController {
   @ApiConflictResponse({
     description: 'Conflict: Code already exists',
     type: ConflictDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Not found: ParentId does not exist',
+    type: NotFoundDto,
   })
   @Post()
   @UsePipes(new ZodValidationPipe(createAccountPlanBodySchema))

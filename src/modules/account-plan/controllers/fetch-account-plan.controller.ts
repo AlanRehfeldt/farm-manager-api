@@ -15,10 +15,9 @@ import { FetchAccountPlansResponseDto } from '../dtos/response/fetch-account-pla
 const fetchAccountPlansSchema = z.object({
   id: z.uuid().optional(),
   name: z.string().optional(),
+  description: z.string().optional(),
   code: z.string().optional(),
-  type: z
-    .enum(['ASSET', 'LIABILITY', 'INCOME', 'EXPENSE', 'EQUITY'])
-    .optional(),
+  parentId: z.uuid().optional(),
   page: z.coerce.number().optional().default(1),
   perPage: z.coerce.number().optional().default(10),
   orderBy: z.string().optional().default('name'),

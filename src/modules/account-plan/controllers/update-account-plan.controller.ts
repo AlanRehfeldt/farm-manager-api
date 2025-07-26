@@ -29,13 +29,16 @@ const updateAccountPlanSchema = z.object({
     .min(5, { message: 'Name must be at least 5 characters long.' })
     .max(150, { message: 'Name must be at most 150 characters long.' })
     .optional(),
+  descrioption: z
+    .string()
+    .min(3, { message: 'Description must be at least 3 characters long.' })
+    .max(250, { message: 'Description must be at most 250 characters long.' })
+    .optional(),
   code: z
     .string()
     .min(1, { message: 'Code must be at least 1 character long.' })
     .optional(),
-  type: z
-    .enum(['ASSET', 'LIABILITY', 'INCOME', 'EXPENSE', 'EQUITY'])
-    .optional(),
+  parentId: z.uuid().optional(),
 });
 
 @ApiTags('AccountPlan')
@@ -59,7 +62,7 @@ export class UpdateAccountPlanController {
     type: ConflictDto,
   })
   @ApiNotFoundResponse({
-    description: 'Not found: Account plan does not exist',
+    description: 'Not found: Account plan/ParentId does not exist',
     type: NotFoundDto,
   })
   @Put(':id')

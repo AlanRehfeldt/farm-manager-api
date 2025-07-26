@@ -70,17 +70,17 @@ export class PrismaCostCenterRepository implements CostCenterRepository {
       .join(' AND ');
 
     const query = `
-    WITH RECURSIVE sector_ancestors AS (
+    WITH RECURSIVE cost_center_ancestors AS (
       SELECT s."id", s."name", s."description", s."code", s."parentId", s."createdAt", s."updatedAt"
       FROM cost_centers s
       ${whereClauses ? `WHERE ${whereClauses}` : ''}
       UNION ALL
       SELECT s."id", s."name", s."description", s."code", s."parentId", s."createdAt", s."updatedAt"
       FROM cost_centers s
-      INNER JOIN sector_ancestors sa ON s."id" = sa."parentId"
+      INNER JOIN cost_center_ancestors sa ON s."id" = sa."parentId"
     )
     SELECT DISTINCT "id", "name", "description", "code", "parentId", "createdAt", "updatedAt"
-    FROM sector_ancestors
+    FROM cost_center_ancestors
     ORDER BY "${orderBy}" ${orderDirection}
   `;
 

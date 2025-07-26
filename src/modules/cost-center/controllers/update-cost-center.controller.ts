@@ -31,8 +31,8 @@ const updateCostCenterSchema = z.object({
     .optional(),
   descrioption: z
     .string()
-    .min(3, { message: 'Registration must be at least 3 characters long.' })
-    .max(250, { message: 'Registration must be at most 250 characters long.' })
+    .min(3, { message: 'Description must be at least 3 characters long.' })
+    .max(250, { message: 'Description must be at most 250 characters long.' })
     .optional(),
   code: z
     .string()
