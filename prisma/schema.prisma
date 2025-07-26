@@ -121,7 +121,7 @@ enum PaymentForm {
 
 model Installment {
   id            String      @id @default(uuid())
-  value         BigInt
+  valueInCents  BigInt
   dueDate       DateTime
   paymentDate   DateTime?
   paymentForm   PaymentForm
