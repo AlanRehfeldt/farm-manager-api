@@ -12,9 +12,8 @@ export class DeleteSupplierService {
   ) {}
 
   async execute(id: string) {
-    const supplier = await this.supplierRepository.findById(id);
-
-    if (!supplier) {
+    const checkIfSupplierExists = await this.supplierRepository.findById(id);
+    if (!checkIfSupplierExists) {
       throw new NotFoundException('Supplier does not exist');
     }
 

@@ -33,7 +33,7 @@ export class GetEmployeeController {
     type: BadRequestDto,
   })
   @ApiNotFoundResponse({
-    description: 'Employee does not exist',
+    description: 'Not found: Employee does not exist',
     type: NotFoundDto,
   })
   @Get(':id')

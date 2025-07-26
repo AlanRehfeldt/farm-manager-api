@@ -33,7 +33,7 @@ export class GetUserController {
     type: BadRequestDto,
   })
   @ApiNotFoundResponse({
-    description: 'User does not exist',
+    description: 'Not found: User does not exist',
     type: NotFoundDto,
   })
   @Get(':id')

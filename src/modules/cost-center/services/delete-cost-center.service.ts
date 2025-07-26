@@ -8,16 +8,16 @@ import {
 export class DeleteCostCenterService {
   constructor(
     @Inject(COST_CENTER_REPOSITORY)
-    private readonly costcenterRepository: CostCenterRepository,
+    private readonly costCenterRepository: CostCenterRepository,
   ) {}
 
   async execute(id: string) {
-    const costcenter = await this.costcenterRepository.findById(id);
-
-    if (!costcenter) {
+    const checkIfCostCenterExists =
+      await this.costCenterRepository.findById(id);
+    if (!checkIfCostCenterExists) {
       throw new NotFoundException('Cost center does not exist');
     }
 
-    return await this.costcenterRepository.delete(id);
+    return await this.costCenterRepository.delete(id);
   }
 }

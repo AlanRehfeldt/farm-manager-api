@@ -8,7 +8,7 @@ export class DeleteCostCenterResponseDto {
   statusCode: string;
 
   @ApiProperty({
-    default: 'Cost center updated successfully',
+    default: 'Cost center deleted successfully',
   })
   message: string;
 

@@ -62,7 +62,7 @@ export class UpdateCostCenterController {
     type: ConflictDto,
   })
   @ApiNotFoundResponse({
-    description: 'Not found: ParentId does not exist',
+    description: 'Not found: Cost center/ParentId does not exist',
     type: NotFoundDto,
   })
   @Put(':id')
@@ -73,7 +73,7 @@ export class UpdateCostCenterController {
     data: UpdateCostCenterBodyDto,
   ) {
     try {
-      const { costcenter } = await this.updateCostCenterService.execute({
+      const { costCenter } = await this.updateCostCenterService.execute({
         id: param.id,
         ...data,
       });
@@ -81,7 +81,7 @@ export class UpdateCostCenterController {
       return {
         statusCode: HttpStatus.OK,
         message: 'Cost center updated successfully',
-        costcenter,
+        result: costCenter,
       };
     } catch (error) {
       console.error('Error updating cost center', error);

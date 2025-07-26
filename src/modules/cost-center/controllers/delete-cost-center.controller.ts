@@ -35,7 +35,7 @@ export class DeleteCostCenterController {
     type: BadRequestDto,
   })
   @ApiNotFoundResponse({
-    description: 'CostCenter does not exist',
+    description: 'Not found: Cost center does not exist',
     type: NotFoundDto,
   })
   @Delete(':id')

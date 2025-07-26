@@ -8,16 +8,16 @@ import {
 export class GetCostCenterService {
   constructor(
     @Inject(COST_CENTER_REPOSITORY)
-    private readonly costcenterRepository: CostCenterRepository,
+    private readonly costCenterRepository: CostCenterRepository,
   ) {}
 
   async execute(id: string) {
-    const costcenter = await this.costcenterRepository.findById(id);
+    const costCenter = await this.costCenterRepository.findById(id);
 
-    if (!costcenter) {
+    if (!costCenter) {
       throw new NotFoundException('Cost center does not exist');
     }
 
-    return { costcenter };
+    return { costCenter };
   }
 }

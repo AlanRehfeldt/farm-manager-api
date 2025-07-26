@@ -33,7 +33,7 @@ export class GetCostCenterController {
     type: BadRequestDto,
   })
   @ApiNotFoundResponse({
-    description: 'Cost center does not exist',
+    description: 'Not found: Cost center does not exist',
     type: NotFoundDto,
   })
   @Get(':id')
@@ -42,12 +42,12 @@ export class GetCostCenterController {
     param: GetCostCenterParamDto,
   ) {
     try {
-      const { costcenter } = await this.getCostCenterService.execute(param.id);
+      const { costCenter } = await this.getCostCenterService.execute(param.id);
 
       return {
         statusCode: HttpStatus.OK,
         message: 'Cost center retrived successfully',
-        costcenter,
+        result: costCenter,
       };
     } catch (error) {
       console.error('Error getting cost center', error);

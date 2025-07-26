@@ -6,6 +6,7 @@ import { envSchema } from './env';
 import { EmployeeModule } from './modules/employee/employee.module';
 import { SupplierModule } from './modules/supplier/supplier.module';
 import { CostCenterModule } from './modules/cost-center/cost-center.module';
+import { AccountPlanModule } from './modules/account-plan/account-plan.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { CostCenterModule } from './modules/cost-center/cost-center.module';
     EmployeeModule,
     SupplierModule,
     CostCenterModule,
+    AccountPlanModule,
   ],
   controllers: [],
   providers: [],

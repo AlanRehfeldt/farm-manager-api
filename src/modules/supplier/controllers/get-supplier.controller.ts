@@ -33,7 +33,7 @@ export class GetSupplierController {
     type: BadRequestDto,
   })
   @ApiNotFoundResponse({
-    description: 'Supplier does not exist',
+    description: 'Not found: Supplier does not exist',
     type: NotFoundDto,
   })
   @Get(':id')

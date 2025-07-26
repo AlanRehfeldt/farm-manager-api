@@ -33,7 +33,7 @@ export class DeleteUserController {
     type: BadRequestDto,
   })
   @ApiNotFoundResponse({
-    description: 'User does not exist',
+    description: 'Not found: User does not exist',
     type: NotFoundDto,
   })
   @Delete(':id')

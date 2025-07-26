@@ -48,7 +48,7 @@ export class UpdateUserController {
     type: ConflictDto,
   })
   @ApiNotFoundResponse({
-    description: 'Not found: Employee does not exists',
+    description: 'Not found: User/Employee does not exists',
     type: NotFoundDto,
   })
   @Put(':id')

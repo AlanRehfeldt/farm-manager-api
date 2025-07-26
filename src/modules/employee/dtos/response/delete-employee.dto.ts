@@ -8,7 +8,7 @@ export class DeleteEmployeeResponseDto {
   statusCode: string;
 
   @ApiProperty({
-    default: 'Employee updated successfully',
+    default: 'Employee deleted successfully',
   })
   message: string;
 

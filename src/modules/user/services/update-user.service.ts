@@ -24,6 +24,11 @@ export class UpdateUserService {
   ) {}
 
   async execute({ id, name, email, employeeId }: UpdateUserData) {
+    const checkIfUserExists = await this.userRepository.findById(id);
+    if (!checkIfUserExists) {
+      throw new NotFoundException('User does not exist');
+    }
+
     if (email) {
       const checkIfEmailExists = await this.userRepository.findByEmail(email);
       if (checkIfEmailExists) {

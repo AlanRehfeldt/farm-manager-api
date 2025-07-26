@@ -3,6 +3,7 @@ import {
   ApiBadRequestResponse,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiNotFoundResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
@@ -16,6 +17,7 @@ import {
   UpdateEmployeeBodyDto,
   UpdateEmployeeParamDto,
 } from '../dtos/request/update-employee.dto';
+import { NotFoundDto } from 'src/common/errors/not-found.dto';
 
 const updateEmployeeParamSchema = z.object({
   id: z.uuid(),
@@ -67,6 +69,10 @@ export class UpdateEmployeeController {
   @ApiConflictResponse({
     description: 'Conflict: Registration already exists',
     type: ConflictDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Not found: Employee does not exist',
+    type: NotFoundDto,
   })
   @Put(':id')
   async update(

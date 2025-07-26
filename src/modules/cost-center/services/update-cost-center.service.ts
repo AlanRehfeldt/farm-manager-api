@@ -14,7 +14,7 @@ import { UpdateCostCenterData } from '../repositories/@types';
 export class UpdateCostCenterService {
   constructor(
     @Inject(COST_CENTER_REPOSITORY)
-    private readonly costcenterRepository: CostCenterRepository,
+    private readonly costCenterRepository: CostCenterRepository,
   ) {}
 
   async execute({
@@ -24,9 +24,15 @@ export class UpdateCostCenterService {
     code,
     parentId,
   }: UpdateCostCenterData) {
+    const checkIfCostCenterIdExists =
+      await this.costCenterRepository.findById(id);
+    if (checkIfCostCenterIdExists) {
+      throw new NotFoundException('Cost center does not exist');
+    }
+
     if (code) {
       const checkIfCodeExists =
-        await this.costcenterRepository.findByCode(code);
+        await this.costCenterRepository.findByCode(code);
       if (checkIfCodeExists) {
         throw new ConflictException('Code already exists');
       }
@@ -34,13 +40,13 @@ export class UpdateCostCenterService {
 
     if (parentId) {
       const checkIfParentIdExists =
-        await this.costcenterRepository.findById(parentId);
+        await this.costCenterRepository.findById(parentId);
       if (checkIfParentIdExists) {
         throw new NotFoundException('ParentId does not exist');
       }
     }
 
-    const costcenter = await this.costcenterRepository.update({
+    const costCenter = await this.costCenterRepository.update({
       id,
       name,
       description,
@@ -48,6 +54,6 @@ export class UpdateCostCenterService {
       parentId,
     });
 
-    return { costcenter };
+    return { costCenter };
   }
 }

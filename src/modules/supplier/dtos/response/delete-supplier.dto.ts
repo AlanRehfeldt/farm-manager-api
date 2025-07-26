@@ -8,7 +8,7 @@ export class DeleteSupplierResponseDto {
   statusCode: string;
 
   @ApiProperty({
-    default: 'Supplier updated successfully',
+    default: 'Supplier deleted successfully',
   })
   message: string;
 

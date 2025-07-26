@@ -59,12 +59,12 @@ export class CreateCostCenterController {
   @UsePipes(new ZodValidationPipe(createCostCenterBodySchema))
   async create(@Body() data: CreateCostCenterBodyDto) {
     try {
-      const { costcenter } = await this.createCostCenterService.execute(data);
+      const { costCenter } = await this.createCostCenterService.execute(data);
 
       return {
         statusCode: HttpStatus.CREATED,
         message: 'Cost center created successfully',
-        result: costcenter,
+        result: costCenter,
       };
     } catch (error) {
       console.error('Error creating cost center', error);

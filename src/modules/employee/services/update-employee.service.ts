@@ -1,4 +1,9 @@
-import { ConflictException, Inject, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   EMPLOYEE_REPOSITORY,
   EmployeeRepository,
@@ -13,6 +18,11 @@ export class UpdateEmployeeService {
   ) {}
 
   async execute({ id, name, registration, type }: UpdateEmployeeData) {
+    const checkIfEmployeeExists = await this.employeeRepository.findById(id);
+    if (!checkIfEmployeeExists) {
+      throw new NotFoundException('Employee does not exist');
+    }
+
     if (registration) {
       const checkIfRegistrationExists =
         await this.employeeRepository.findByRegistration(registration);

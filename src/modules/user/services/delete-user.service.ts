@@ -12,9 +12,8 @@ export class DeleteUserService {
   ) {}
 
   async execute(id: string) {
-    const user = await this.userRepository.findById(id);
-
-    if (!user) {
+    const checkIfUserExists = await this.userRepository.findById(id);
+    if (!checkIfUserExists) {
       throw new NotFoundException('User does not exist');
     }
 

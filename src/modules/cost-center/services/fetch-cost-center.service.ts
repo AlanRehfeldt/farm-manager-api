@@ -9,15 +9,15 @@ import { SearchManyQuery } from '../repositories/@types';
 export class FetchCostCentersService {
   constructor(
     @Inject(COST_CENTER_REPOSITORY)
-    private readonly costcenterRepository: CostCenterRepository,
+    private readonly costCenterRepository: CostCenterRepository,
   ) {}
 
   async execute(params: SearchManyQuery) {
-    const costcenters = await this.costcenterRepository.searchMany(params);
-    const total = await this.costcenterRepository.count(params);
+    const costCenters = await this.costCenterRepository.searchMany(params);
+    const total = await this.costCenterRepository.count(params);
 
     return {
-      results: costcenters,
+      results: costCenters,
       total,
       page: params.page,
       perPage: params.perPage,

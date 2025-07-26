@@ -3,6 +3,7 @@ import {
   ApiBadRequestResponse,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiNotFoundResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
@@ -16,6 +17,7 @@ import {
   UpdateSupplierBodyDto,
   UpdateSupplierParamDto,
 } from '../dtos/request/update-supplier.dto';
+import { NotFoundDto } from 'src/common/errors/not-found.dto';
 
 const updateSupplierParamSchema = z.object({
   id: z.uuid(),
@@ -52,6 +54,10 @@ export class UpdateSupplierController {
   @ApiConflictResponse({
     description: 'Conflict: Registration already exists',
     type: ConflictDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Not found: Supplier does not exist',
+    type: NotFoundDto,
   })
   @Put(':id')
   async update(

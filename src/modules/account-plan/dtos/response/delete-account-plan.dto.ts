@@ -1,14 +1,14 @@
 import { HttpStatus } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class DeleteUserResponseDto {
+export class DeleteAccountPlanResponseDto {
   @ApiProperty({
     default: HttpStatus.OK,
   })
   statusCode: string;
 
   @ApiProperty({
-    default: 'User deleted successfully',
+    default: 'Account plan deleted successfully',
   })
   message: string;
 

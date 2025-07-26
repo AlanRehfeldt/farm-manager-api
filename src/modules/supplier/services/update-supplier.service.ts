@@ -3,6 +3,7 @@ import {
   ConflictException,
   Inject,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import {
   SUPPLIER_REPOSITORY,
@@ -19,6 +20,11 @@ export class UpdateSupplierService {
   ) {}
 
   async execute({ id, name, cnpj, address, phoneNumber }: UpdateSupplierData) {
+    const checkIfSupplierExists = await this.supplierRepository.findById(id);
+    if (!checkIfSupplierExists) {
+      throw new NotFoundException('Supplier does not exist');
+    }
+
     if (cnpj) {
       const checkIfCnpjIsValid = cnpjValidator.isValid(cnpj);
       if (!checkIfCnpjIsValid) {
