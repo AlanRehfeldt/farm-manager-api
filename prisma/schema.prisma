@@ -81,8 +81,8 @@ model CostCenter {
 
   TransactionAllocation TransactionAllocation[]
 
-  costCenter CostCenter?  @relation("Children", fields: [parentId], references: [id])
-  children   CostCenter[] @relation("Children")
+  parent   CostCenter?  @relation("Children", fields: [parentId], references: [id])
+  children CostCenter[] @relation("Children")
 
   @@map("cost_centers")
 }

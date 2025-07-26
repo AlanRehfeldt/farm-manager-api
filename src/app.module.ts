@@ -5,6 +5,7 @@ import { ConfigModule } from '@nestjs/config';
 import { envSchema } from './env';
 import { EmployeeModule } from './modules/employee/employee.module';
 import { SupplierModule } from './modules/supplier/supplier.module';
+import { CostCenterModule } from './modules/cost-center/cost-center.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { SupplierModule } from './modules/supplier/supplier.module';
     UserModule,
     EmployeeModule,
     SupplierModule,
+    CostCenterModule,
   ],
   controllers: [],
   providers: [],

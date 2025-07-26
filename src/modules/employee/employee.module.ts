@@ -7,7 +7,7 @@ import { CreateEmployeeService } from './services/create-employee.service';
 import { UpdateEmployeeController } from './controllers/update-employee.controller';
 import { DeleteEmployeeController } from './controllers/delete-employee.controller';
 import { GetEmployeeController } from './controllers/get-employee.controller';
-import { FetchEmployeesController } from './controllers/fetch-employee.controller';
+import { FetchEmployeesController } from './controllers/fetch-employees.controller';
 import { UpdateEmployeeService } from './services/update-employee.service';
 import { DeleteEmployeeService } from './services/delete-employee.service';
 import { GetEmployeeService } from './services/get-employee.service';

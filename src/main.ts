@@ -37,7 +37,7 @@ async function bootstrap() {
         content: document,
       },
       metaData: {
-        title: 'Master data API docs',
+        title: 'Farm Manager API docs',
       },
     }),
   );
