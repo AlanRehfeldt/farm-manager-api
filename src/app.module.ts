@@ -8,6 +8,7 @@ import { SupplierModule } from './modules/supplier/supplier.module';
 import { CostCenterModule } from './modules/cost-center/cost-center.module';
 import { AccountPlanModule } from './modules/account-plan/account-plan.module';
 import { InstallmentModule } from './modules/installment/installment.module';
+import { TransactionModule } from './modules/transaction/transaction.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { InstallmentModule } from './modules/installment/installment.module';
     CostCenterModule,
     AccountPlanModule,
     InstallmentModule,
+    TransactionModule,
   ],
   controllers: [],
   providers: [],
