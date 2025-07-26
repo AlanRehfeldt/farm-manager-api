@@ -9,6 +9,8 @@ import { CostCenterModule } from './modules/cost-center/cost-center.module';
 import { AccountPlanModule } from './modules/account-plan/account-plan.module';
 import { InstallmentModule } from './modules/installment/installment.module';
 import { TransactionModule } from './modules/transaction/transaction.module';
+import { UnitOfMeasurementModule } from './modules/unit-of-measurement/unit-of-measurement.module';
+import { ProductModule } from './modules/product/product.module';
 
 @Module({
   imports: [
@@ -24,6 +26,8 @@ import { TransactionModule } from './modules/transaction/transaction.module';
     AccountPlanModule,
     InstallmentModule,
     TransactionModule,
+    UnitOfMeasurementModule,
+    ProductModule,
   ],
   controllers: [],
   providers: [],

@@ -150,15 +150,27 @@ model TransactionAllocation {
   @@map("transaction_allocations")
 }
 
-model Product {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-  unit        String
-  quantity    BigInt
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model UnitOfMeasurement {
+  id        String   @id @default(uuid())
+  name      String
+  acronym   String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
+  products Product[]
+
+  @@map("unit_of_measurements")
+}
+
+model Product {
+  id                  String   @id @default(uuid())
+  name                String
+  description         String?
+  unitOfMeasurementId String
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  unitOfMeasurement           UnitOfMeasurement            @relation(fields: [unitOfMeasurementId], references: [id])
   purchaseTransactionProducts PurchaseTransactionProduct[]
   StockMovement               StockMovement[]
 
