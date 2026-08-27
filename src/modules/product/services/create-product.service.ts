@@ -21,8 +21,8 @@ export class CreateProductService {
   async execute({ name, description, unitOfMeasurementId }: CreateProductData) {
     const checkIfUnitOfMeasurementExists =
       await this.unitOfMeasurementRepository.findById(unitOfMeasurementId);
-    if (checkIfUnitOfMeasurementExists) {
-      throw new NotFoundException('Unit os measurement does not exist');
+    if (!checkIfUnitOfMeasurementExists) {
+      throw new NotFoundException('Unit of measurement does not exist');
     }
 
     const product = await this.productRepository.create({

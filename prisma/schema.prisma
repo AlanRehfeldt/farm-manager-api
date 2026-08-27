@@ -172,14 +172,15 @@ model Product {
 
   unitOfMeasurement           UnitOfMeasurement            @relation(fields: [unitOfMeasurementId], references: [id])
   purchaseTransactionProducts PurchaseTransactionProduct[]
-  StockMovement               StockMovement[]
+  stockMovements              StockMovement[]
+  stockBalance                ProductStockBalance?
 
   @@map("products")
 }
 
 model PurchaseTransactionProduct {
   id                    String   @id @default(uuid())
-  quantity              BigInt
+  quantity              Decimal  @db.Decimal(18, 6)
   priceInCents          BigInt
   productId             String
   purchaseTransactionId String
@@ -194,7 +195,7 @@ model PurchaseTransactionProduct {
 
 model PurchaseTransaction {
   id            String   @id @default(uuid())
-  nfNumber      String
+  documentRef   String?
   supplierId    String
   transactionId String   @unique
   createdAt     DateTime @default(now())
@@ -281,19 +282,42 @@ enum StockMovementType {
   ADJUSTMENT // ajustes manuais
 }
 
+enum StockMovementSourceType {
+  PURCHASE
+  ACTIVITY
+  ADJUSTMENT
+}
+
 model StockMovement {
-  id            String            @id @default(uuid())
+  id            String                   @id @default(uuid())
   type          StockMovementType
   productId     String
-  date          DateTime          @default(now())
-  quantity      BigInt
+  date          DateTime                 @default(now())
+  quantity      Decimal                  @db.Decimal(18, 6)
   note          String?
   transactionId String?
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
+  sourceType    StockMovementSourceType?
+  sourceId      String?
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
 
   product     Product      @relation(fields: [productId], references: [id])
   transaction Transaction? @relation(fields: [transactionId], references: [id])
 
   @@map("stock_movements")
+}
+
+// PR-03: PK composta (farmId, productId) quando Farm existir (ADR-012).
+model ProductStockBalance {
+  id             String   @id @default(uuid())
+  productId      String   @unique
+  quantityOnHand Decimal  @default(0) @db.Decimal(18, 6)
+  avgCost        Decimal  @default(0) @db.Decimal(18, 8)
+  version        Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("product_stock_balances")
 }

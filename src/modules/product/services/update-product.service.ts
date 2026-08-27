@@ -1,9 +1,4 @@
-import {
-  ConflictException,
-  Inject,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import {
   PRODUCT_REPOSITORY,
   ProductRepository,
@@ -37,8 +32,8 @@ export class UpdateProductService {
     if (unitOfMeasurementId) {
       const checkIfUnitOfMeasurementExists =
         await this.unitOfMeasurementRepository.findById(unitOfMeasurementId);
-      if (checkIfUnitOfMeasurementExists) {
-        throw new ConflictException('Unit os measurement does not exist');
+      if (!checkIfUnitOfMeasurementExists) {
+        throw new NotFoundException('Unit of measurement does not exist');
       }
     }
 

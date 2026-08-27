@@ -11,12 +11,7 @@ export interface UpdateAccountPlanData {
 }
 
 export type OrderableAccountPlanField =
-  | 'id'
-  | 'name'
-  | 'description'
-  | 'code'
-  | 'createdAt'
-  | 'updatedAt';
+  'id' | 'name' | 'description' | 'code' | 'createdAt' | 'updatedAt';
 
 export interface SearchManyQuery {
   id?: string;

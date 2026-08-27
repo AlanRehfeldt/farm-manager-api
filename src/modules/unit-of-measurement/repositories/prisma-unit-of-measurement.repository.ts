@@ -9,9 +9,7 @@ import {
 import { Injectable } from '@nestjs/common';
 
 @Injectable()
-export class PrismaUnitOfMeasurementRepository
-  implements UnitOfMeasurementRepository
-{
+export class PrismaUnitOfMeasurementRepository implements UnitOfMeasurementRepository {
   constructor(private prisma: PrismaService) {}
 
   async create(data: CreateUnitOfMeasurementData): Promise<UnitOfMeasurement> {
