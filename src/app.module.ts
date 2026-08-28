@@ -11,6 +11,7 @@ import { InstallmentModule } from './modules/installment/installment.module';
 import { TransactionModule } from './modules/transaction/transaction.module';
 import { UnitOfMeasurementModule } from './modules/unit-of-measurement/unit-of-measurement.module';
 import { ProductModule } from './modules/product/product.module';
+import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { ProductModule } from './modules/product/product.module';
       isGlobal: true,
     }),
     PrismaModule,
+    AuthModule,
     UserModule,
     EmployeeModule,
     SupplierModule,

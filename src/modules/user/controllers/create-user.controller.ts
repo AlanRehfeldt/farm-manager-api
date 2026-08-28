@@ -15,6 +15,7 @@ import { ConflictDto } from 'src/common/errors/conflict.dto';
 import { CreateUserResponseDto } from '../dtos/response/create-user.dto';
 import { CreateUserBodyDto } from '../dtos/request/create-user.dto';
 import { NotFoundDto } from 'src/common/errors/not-found.dto';
+import { Public } from 'src/modules/auth/decorators/public.decorator';
 
 const createUserBodySchema = z.object({
   name: z
@@ -50,6 +51,7 @@ const createUserBodySchema = z.object({
 export class CreateUserController {
   constructor(private readonly createUserService: CreateUserService) {}
 
+  @Public()
   @ApiOperation({ summary: 'Create user' })
   @ApiCreatedResponse({
     description: 'User created successfully',

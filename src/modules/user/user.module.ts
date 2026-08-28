@@ -34,5 +34,6 @@ import { GetUserService } from './services/get-user.service';
     GetUserService,
     FetchUsersService,
   ],
+  exports: [USER_REPOSITORY],
 })
 export class UserModule {}

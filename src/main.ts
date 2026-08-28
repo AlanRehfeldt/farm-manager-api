@@ -4,13 +4,18 @@ import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { apiReference } from '@scalar/nestjs-api-reference';
 import { ConfigService } from '@nestjs/config';
+import cookieParser from 'cookie-parser';
 import { Env } from './env';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  const configService = app.get<ConfigService<Env, true>>(ConfigService);
+
+  app.use(cookieParser());
+
   app.enableCors({
-    origin: '*',
+    origin: configService.get('CORS_ORIGIN', { infer: true }),
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     preflightContinue: false,
@@ -21,9 +26,10 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('NestJS Farm Manager API')
-    .setDescription('Rest API for Farm Manager')
+    .setDescription(
+      'REST API for Farm Manager. Authentication uses httpOnly cookies (access + refresh); send credentials on cross-origin requests.',
+    )
     .setVersion('1.0')
-    .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('/swagger', app, document);
@@ -33,18 +39,15 @@ async function bootstrap() {
     apiReference({
       theme: 'kepler',
       hideModels: true,
-      spec: {
-        content: document,
-      },
+      content: document,
       metaData: {
         title: 'Farm Manager API docs',
       },
     }),
   );
 
-  const configService = app.get<ConfigService<Env, true>>(ConfigService);
   const port = configService.get('SERVER_PORT', { infer: true });
 
   await app.listen(port);
 }
-bootstrap();
+void bootstrap();
