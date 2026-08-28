@@ -54,7 +54,7 @@ Migrations em `prisma/migrations/`. Não editar migrations já aplicadas — cri
 
 ## Transações
 
-`prisma.$transaction()` **não é usado** amplamente hoje. Para use cases que alteram múltiplas tabelas e exigem atomicidade, usar transação no repository ou service que orquestra:
+`prisma.$transaction()` é usado em create de Organization (org + membership ADMIN). Para use cases que alteram múltiplas tabelas e exigem atomicidade, usar transação no repository ou service que orquestra:
 
 ```typescript
 await this.prisma.$transaction(async (tx) => {
@@ -70,7 +70,7 @@ await this.prisma.$transaction(async (tx) => {
 | Soft delete | Deletes são hard `delete()` |
 | `$extends` / client extensions | Não usado |
 | Driver adapters (Prisma 7) | Projeto em Prisma 6 |
-| Tenancy filters automáticos | Planejado com tenancy ADR |
+| Tenancy filters automáticos | Não — filtro nos repositórios (`organizationId` / visibilidade / `farmId`). Ver [08-tenancy.md](./08-tenancy.md) |
 | Optimistic locking global | Planejado para saldo/version em inventory |
 
 ## Seeds

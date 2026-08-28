@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UsePipes } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiOkResponse,
@@ -6,11 +6,14 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import z from 'zod';
+import { FarmId } from 'src/common/tenancy/farm-id.decorator';
+import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
+import { OrganizationId } from 'src/common/tenancy/organization-id.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
-import { FetchEmployeesService } from '../services/fetch-employee.service';
 import { FetchEmployeesQueryDto } from '../dtos/request/fetch-employees.dto';
 import { FetchEmployeesResponseDto } from '../dtos/response/fetch-employees.dto';
+import { FetchEmployeesService } from '../services/fetch-employee.service';
 
 const fetchEmployeesSchema = z.object({
   id: z.uuid().optional(),
@@ -39,13 +42,14 @@ const fetchEmployeesSchema = z.object({
 });
 
 @ApiTags('Employee')
+@FarmScoped()
 @Controller('/employees')
 export class FetchEmployeesController {
   constructor(private readonly fetchEmployeesService: FetchEmployeesService) {}
 
   @ApiOperation({ summary: 'List employees' })
   @ApiOkResponse({
-    description: 'Employees retrived successfully',
+    description: 'Employees retrieved successfully',
     type: FetchEmployeesResponseDto,
   })
   @ApiBadRequestResponse({
@@ -53,23 +57,30 @@ export class FetchEmployeesController {
     type: BadRequestDto,
   })
   @Get()
-  @UsePipes(new ZodValidationPipe(fetchEmployeesSchema))
-  async fetch(@Query() query: FetchEmployeesQueryDto) {
-    try {
-      const { results, total, page, perPage, orderBy, orderDirection } =
-        await this.fetchEmployeesService.execute(query);
+  async fetch(
+    @OrganizationId() organizationId: string,
+    @FarmId() farmId: string,
+    @Query(new ZodValidationPipe(fetchEmployeesSchema))
+    query: FetchEmployeesQueryDto,
+  ) {
+    const { results, total, page, perPage, orderBy, orderDirection } =
+      await this.fetchEmployeesService.execute({
+        ...query,
+        organizationId,
+        farmId,
+        page: query.page ?? 1,
+        perPage: query.perPage ?? 10,
+        orderBy: query.orderBy ?? 'name',
+        orderDirection: query.orderDirection ?? 'asc',
+      });
 
-      return {
-        results,
-        total,
-        page,
-        perPage,
-        orderBy,
-        orderDirection,
-      };
-    } catch (error) {
-      console.error('Error fetching employees', error);
-      throw error;
-    }
+    return {
+      results,
+      total,
+      page,
+      perPage,
+      orderBy,
+      orderDirection,
+    };
   }
 }

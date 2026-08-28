@@ -4,11 +4,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { UpdateCostCenterData } from '../repositories/@types';
 import {
   COST_CENTER_REPOSITORY,
   CostCenterRepository,
 } from '../repositories/cost-center.repository';
-import { UpdateCostCenterData } from '../repositories/@types';
 
 @Injectable()
 export class UpdateCostCenterService {
@@ -17,31 +17,34 @@ export class UpdateCostCenterService {
     private readonly costCenterRepository: CostCenterRepository,
   ) {}
 
-  async execute({
-    id,
-    name,
-    description,
-    code,
-    parentId,
-  }: UpdateCostCenterData) {
-    const checkIfCostCenterIdExists =
-      await this.costCenterRepository.findById(id);
-    if (checkIfCostCenterIdExists) {
+  async execute(
+    organizationId: string,
+    { id, name, description, code, parentId }: UpdateCostCenterData,
+  ) {
+    const existing = await this.costCenterRepository.findById(
+      id,
+      organizationId,
+    );
+    if (!existing) {
       throw new NotFoundException('Cost center does not exist');
     }
 
     if (code) {
-      const checkIfCodeExists =
-        await this.costCenterRepository.findByCode(code);
-      if (checkIfCodeExists) {
+      const duplicate = await this.costCenterRepository.findByCode(
+        organizationId,
+        code,
+      );
+      if (duplicate && duplicate.id !== id) {
         throw new ConflictException('Code already exists');
       }
     }
 
     if (parentId) {
-      const checkIfParentIdExists =
-        await this.costCenterRepository.findById(parentId);
-      if (checkIfParentIdExists) {
+      const parent = await this.costCenterRepository.findById(
+        parentId,
+        organizationId,
+      );
+      if (!parent) {
         throw new NotFoundException('ParentId does not exist');
       }
     }

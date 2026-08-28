@@ -1,25 +1,27 @@
-import { Body, Controller, HttpStatus, Post, UsePipes } from '@nestjs/common';
+import { Body, Controller, HttpStatus, Post } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiCreatedResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-
-import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
-import { CreateTransactionService } from '../services/create-transaction.service';
-import { BadRequestDto } from 'src/common/errors/bad-request.dto';
-import { CreateTransactionResponseDto } from '../dtos/response/create-transaction.dto';
-import { CreateTransactionBodyDto } from '../dtos/request/create-transaction.dto';
 import z from 'zod';
+import { FarmId } from 'src/common/tenancy/farm-id.decorator';
+import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
+import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
+import { BadRequestDto } from 'src/common/errors/bad-request.dto';
+import { CreateTransactionBodyDto } from '../dtos/request/create-transaction.dto';
+import { CreateTransactionResponseDto } from '../dtos/response/create-transaction.dto';
+import { CreateTransactionService } from '../services/create-transaction.service';
 
 const createTransactionBodySchema = z.object({
   type: z.enum(['PURCHASE_INPUT', 'SALARY_PAYMENT', 'GENERIC']),
-  date: z.date(),
+  date: z.coerce.date(),
   note: z.string().optional(),
 });
 
 @ApiTags('Transaction')
+@FarmScoped()
 @Controller('/transactions')
 export class CreateTransactionController {
   constructor(
@@ -36,19 +38,20 @@ export class CreateTransactionController {
     type: BadRequestDto,
   })
   @Post()
-  @UsePipes(new ZodValidationPipe(createTransactionBodySchema))
-  async create(@Body() data: CreateTransactionBodyDto) {
-    try {
-      const { transaction } = await this.createTransactionService.execute(data);
+  async create(
+    @FarmId() farmId: string,
+    @Body(new ZodValidationPipe(createTransactionBodySchema))
+    data: CreateTransactionBodyDto,
+  ) {
+    const { transaction } = await this.createTransactionService.execute({
+      ...data,
+      farmId,
+    });
 
-      return {
-        statusCode: HttpStatus.CREATED,
-        message: 'Transaction created successfully',
-        result: transaction,
-      };
-    } catch (error) {
-      console.error('Error creating transaction', error);
-      throw error;
-    }
+    return {
+      statusCode: HttpStatus.CREATED,
+      message: 'Transaction created successfully',
+      result: transaction,
+    };
   }
 }

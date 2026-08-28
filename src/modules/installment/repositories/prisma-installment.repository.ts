@@ -1,12 +1,12 @@
-import { PrismaService } from 'src/common/prisma/prisma.service';
-import { InstallmentRepository } from './installment.repository';
+import { Injectable } from '@nestjs/common';
 import { Installment } from '@prisma/client';
+import { PrismaService } from 'src/common/prisma/prisma.service';
 import {
   CreateInstallmentData,
-  UpdateInstallmentData,
   SearchManyQuery,
+  UpdateInstallmentData,
 } from './@types';
-import { Injectable } from '@nestjs/common';
+import { InstallmentRepository } from './installment.repository';
 
 @Injectable()
 export class PrismaInstallmentRepository implements InstallmentRepository {
@@ -35,22 +35,19 @@ export class PrismaInstallmentRepository implements InstallmentRepository {
     });
   }
 
-  async findById(id: string): Promise<Installment | null> {
-    return await this.prisma.installment.findUnique({
+  async findById(id: string, farmId: string): Promise<Installment | null> {
+    return await this.prisma.installment.findFirst({
       where: {
         id,
+        transaction: { farmId },
       },
     });
   }
 
   async searchMany(query: SearchManyQuery): Promise<Installment[]> {
-    const orderBy = query.orderBy;
-    const orderDirection = query.orderDirection;
-    const page = query.page;
-    const perPage = query.perPage;
-
     return await this.prisma.installment.findMany({
       where: {
+        transaction: { farmId: query.farmId },
         valueInCents: {
           gte: query.valueInCentsFrom,
           lte: query.valueInCentsTo,
@@ -74,10 +71,10 @@ export class PrismaInstallmentRepository implements InstallmentRepository {
           lte: query.updatedAtTo,
         },
       },
-      skip: (page - 1) * perPage,
-      take: perPage,
+      skip: (query.page - 1) * query.perPage,
+      take: query.perPage,
       orderBy: {
-        [orderBy]: orderDirection,
+        [query.orderBy]: query.orderDirection,
       },
     });
   }
@@ -85,6 +82,7 @@ export class PrismaInstallmentRepository implements InstallmentRepository {
   async count(query: SearchManyQuery): Promise<number> {
     return await this.prisma.installment.count({
       where: {
+        transaction: { farmId: query.farmId },
         valueInCents: {
           gte: query.valueInCentsFrom,
           lte: query.valueInCentsTo,

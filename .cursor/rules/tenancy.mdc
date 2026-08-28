@@ -1,0 +1,32 @@
+---
+description: Tenancy Organization/Farm e header x-farm-id
+globs: src/common/tenancy/**,src/modules/organization/**,src/modules/farm/**,src/modules/membership/**,src/modules/product/**,src/modules/supplier/**,src/modules/employee/**,src/modules/unit-of-measurement/**,src/modules/cost-center/**,src/modules/account-plan/**,src/modules/transaction/**,src/modules/installment/**
+alwaysApply: false
+---
+
+# Tenancy
+
+Detalhe: `docs/08-tenancy.md`. ADR-005 em `farm-manager-docs`.
+
+## HTTP
+
+- Header obrigatório `x-farm-id` nas rotas de catálogo e lançamentos: decorator `@FarmScoped()`.
+- Sem header → 400. Farm inexistente ou sem membership → 403.
+- `organizationId` **nunca** vem no body; usar `@OrganizationId()` (derivado da farm do header).
+- Guard **não** é global. Org/farm/membership checam ADMIN no service.
+
+## Escopo por entidade
+
+| Camada | Entidades | Filtro |
+|--------|-----------|--------|
+| Sempre org | UoM, CostCenter, AccountPlan | `organizationId` |
+| Org + visibilidade | Product, Supplier, Employee | org + (`farmId` null **ou** farm ativa) |
+| Sempre farm | Transaction, StockMovement, ProductStockBalance | `farmId` do header |
+
+`farmId` null em Product/Supplier/Employee/Membership = todas as fazendas da org. Se enviado no create, tem de igualar o header.
+
+## Não fazer
+
+- Não filtrar UoM/CC/plano por `farmId`.
+- Não aceitar `farmId` no body de Transaction.
+- Não implementar ACL nomeada (ADR-013) nem tabela N:N cadastro×fazendas neste estágio.

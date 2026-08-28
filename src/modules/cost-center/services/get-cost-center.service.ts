@@ -11,8 +11,11 @@ export class GetCostCenterService {
     private readonly costCenterRepository: CostCenterRepository,
   ) {}
 
-  async execute(id: string) {
-    const costCenter = await this.costCenterRepository.findById(id);
+  async execute(id: string, organizationId: string) {
+    const costCenter = await this.costCenterRepository.findById(
+      id,
+      organizationId,
+    );
 
     if (!costCenter) {
       throw new NotFoundException('Cost center does not exist');

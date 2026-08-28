@@ -1,24 +1,27 @@
 import { Controller, Delete, HttpStatus, Param } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
-  ApiCreatedResponse,
   ApiNotFoundResponse,
+  ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
 import z from 'zod';
+import { OrganizationId } from 'src/common/tenancy/organization-id.decorator';
+import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
-import { DeleteAccountPlanService } from '../services/delete-account-plan.service';
+import { NotFoundDto } from 'src/common/errors/not-found.dto';
 import { DeleteAccountPlanParamDto } from '../dtos/request/delete-account-plan.dto';
 import { DeleteAccountPlanResponseDto } from '../dtos/response/delete-account-plan.dto';
-import { NotFoundDto } from 'src/common/errors/not-found.dto';
+import { DeleteAccountPlanService } from '../services/delete-account-plan.service';
 
 const deleteAccountPlanParamSchema = z.object({
   id: z.uuid(),
 });
 
 @ApiTags('AccountPlan')
+@FarmScoped()
 @Controller('/account-plans')
 export class DeleteAccountPlanController {
   constructor(
@@ -26,7 +29,7 @@ export class DeleteAccountPlanController {
   ) {}
 
   @ApiOperation({ summary: 'Delete account plan' })
-  @ApiCreatedResponse({
+  @ApiOkResponse({
     description: 'Account plan deleted successfully',
     type: DeleteAccountPlanResponseDto,
   })
@@ -40,20 +43,16 @@ export class DeleteAccountPlanController {
   })
   @Delete(':id')
   async delete(
+    @OrganizationId() organizationId: string,
     @Param(new ZodValidationPipe(deleteAccountPlanParamSchema))
     param: DeleteAccountPlanParamDto,
   ) {
-    try {
-      await this.deleteAccountPlanService.execute(param.id);
+    await this.deleteAccountPlanService.execute(param.id, organizationId);
 
-      return {
-        statusCode: HttpStatus.OK,
-        message: 'Account plan deleted successfully',
-        result: null,
-      };
-    } catch (error) {
-      console.error('Error deleting account plan', error);
-      throw error;
-    }
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Account plan deleted successfully',
+      result: null,
+    };
   }
 }

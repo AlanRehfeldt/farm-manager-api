@@ -1,13 +1,13 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import {
-  PRODUCT_REPOSITORY,
-  ProductRepository,
-} from '../repositories/product.repository';
-import { UpdateProductData } from '../repositories/@types';
-import {
   UNIT_OF_MEASUREMENT_REPOSITORY,
   UnitOfMeasurementRepository,
 } from 'src/modules/unit-of-measurement/repositories/unit-of-measurement.repository';
+import { UpdateProductData } from '../repositories/@types';
+import {
+  PRODUCT_REPOSITORY,
+  ProductRepository,
+} from '../repositories/product.repository';
 
 @Injectable()
 export class UpdateProductService {
@@ -18,20 +18,26 @@ export class UpdateProductService {
     private readonly unitOfMeasurementRepository: UnitOfMeasurementRepository,
   ) {}
 
-  async execute({
-    id,
-    name,
-    description,
-    unitOfMeasurementId,
-  }: UpdateProductData) {
-    const checkIfProductExists = await this.productRepository.findById(id);
+  async execute(
+    organizationId: string,
+    farmId: string,
+    { id, name, description, unitOfMeasurementId }: UpdateProductData,
+  ) {
+    const checkIfProductExists = await this.productRepository.findById(
+      id,
+      organizationId,
+      farmId,
+    );
     if (!checkIfProductExists) {
       throw new NotFoundException('Product does not exist');
     }
 
     if (unitOfMeasurementId) {
       const checkIfUnitOfMeasurementExists =
-        await this.unitOfMeasurementRepository.findById(unitOfMeasurementId);
+        await this.unitOfMeasurementRepository.findById(
+          unitOfMeasurementId,
+          organizationId,
+        );
       if (!checkIfUnitOfMeasurementExists) {
         throw new NotFoundException('Unit of measurement does not exist');
       }

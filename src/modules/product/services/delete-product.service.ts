@@ -11,8 +11,12 @@ export class DeleteProductService {
     private readonly productRepository: ProductRepository,
   ) {}
 
-  async execute(id: string) {
-    const checkIfProductExists = await this.productRepository.findById(id);
+  async execute(id: string, organizationId: string, farmId: string) {
+    const checkIfProductExists = await this.productRepository.findById(
+      id,
+      organizationId,
+      farmId,
+    );
     if (!checkIfProductExists) {
       throw new NotFoundException('Product does not exist');
     }

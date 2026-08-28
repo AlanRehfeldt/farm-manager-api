@@ -11,9 +11,11 @@ export class GetUnitOfMeasurementService {
     private readonly unitOfMeasurementRepository: UnitOfMeasurementRepository,
   ) {}
 
-  async execute(id: string) {
-    const unitOfMeasurement =
-      await this.unitOfMeasurementRepository.findById(id);
+  async execute(id: string, organizationId: string) {
+    const unitOfMeasurement = await this.unitOfMeasurementRepository.findById(
+      id,
+      organizationId,
+    );
 
     if (!unitOfMeasurement) {
       throw new NotFoundException('Unit of measurement does not exist');

@@ -11,9 +11,11 @@ export class DeleteAccountPlanService {
     private readonly accountPlanRepository: AccountPlanRepository,
   ) {}
 
-  async execute(id: string) {
-    const checkIfAccountPlanExists =
-      await this.accountPlanRepository.findById(id);
+  async execute(id: string, organizationId: string) {
+    const checkIfAccountPlanExists = await this.accountPlanRepository.findById(
+      id,
+      organizationId,
+    );
     if (!checkIfAccountPlanExists) {
       throw new NotFoundException('Account plan does not exist');
     }

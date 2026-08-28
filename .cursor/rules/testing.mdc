@@ -10,7 +10,7 @@ Detalhe: `docs/07-development.md`. Invariantes de produto: `farm-manager-docs/07
 
 ## Estado atual
 
-Não há `*.spec.ts` em `src/`. E2e scaffold em `test/app.e2e-spec.ts` está desatualizado.
+Unitários em `src/common/tenancy/*.spec.ts`. E2e: `test/app.e2e-spec.ts` (401) e `test/tenancy.e2e-spec.ts` (INV-TEN).
 
 ## Quando adicionar testes
 

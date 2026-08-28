@@ -1,4 +1,4 @@
-import { Body, Controller, HttpStatus, Post, UsePipes } from '@nestjs/common';
+import { Body, Controller, HttpStatus, Post } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiConflictResponse,
@@ -7,12 +7,14 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import z from 'zod';
+import { OrganizationId } from 'src/common/tenancy/organization-id.decorator';
+import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
-import { CreateUnitOfMeasurementService } from '../services/create-unit-of-measurement.service';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
 import { ConflictDto } from 'src/common/errors/conflict.dto';
-import { CreateUnitOfMeasurementResponseDto } from '../dtos/response/create-unit-of-measurement.dto';
 import { CreateUnitOfMeasurementBodyDto } from '../dtos/request/create-unit-of-measurement.dto';
+import { CreateUnitOfMeasurementResponseDto } from '../dtos/response/create-unit-of-measurement.dto';
+import { CreateUnitOfMeasurementService } from '../services/create-unit-of-measurement.service';
 
 const createUnitOfMeasurementBodySchema = z.object({
   name: z
@@ -26,6 +28,7 @@ const createUnitOfMeasurementBodySchema = z.object({
 });
 
 @ApiTags('UnitOfMeasurement')
+@FarmScoped()
 @Controller('/unit-of-measurements')
 export class CreateUnitOfMeasurementController {
   constructor(
@@ -46,20 +49,22 @@ export class CreateUnitOfMeasurementController {
     type: ConflictDto,
   })
   @Post()
-  @UsePipes(new ZodValidationPipe(createUnitOfMeasurementBodySchema))
-  async create(@Body() data: CreateUnitOfMeasurementBodyDto) {
-    try {
-      const { unitOfMeasurement } =
-        await this.createUnitOfMeasurementService.execute(data);
+  async create(
+    @OrganizationId() organizationId: string,
+    @Body(new ZodValidationPipe(createUnitOfMeasurementBodySchema))
+    data: CreateUnitOfMeasurementBodyDto,
+  ) {
+    const { unitOfMeasurement } =
+      await this.createUnitOfMeasurementService.execute(
+        organizationId,
+        data.name,
+        data.acronym,
+      );
 
-      return {
-        statusCode: HttpStatus.CREATED,
-        message: 'Unit of measurement created successfully',
-        result: unitOfMeasurement,
-      };
-    } catch (error) {
-      console.error('Error creating unit of measurement', error);
-      throw error;
-    }
+    return {
+      statusCode: HttpStatus.CREATED,
+      message: 'Unit of measurement created successfully',
+      result: unitOfMeasurement,
+    };
   }
 }

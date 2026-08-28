@@ -46,7 +46,7 @@ Referências úteis:
 
 ## Estado atual vs. ADRs (não inventar)
 
-O código **ainda não implementa** tenancy por farm (`@FarmId()`), RBAC por role, outbox de eventos, CostEntry ledger, soft delete ou exception filter global. Documentado em `docs/01-architecture.md` como drift/planejado.
+O código **ainda não implementa** RBAC nomeado (ADR-013), outbox de eventos, CostEntry ledger, soft delete ou exception filter global. Tenancy (Organization, Farm, Membership, `@FarmScoped()`) está em `docs/08-tenancy.md`.
 
 ## Rules do Cursor
 
@@ -59,6 +59,7 @@ O código **ainda não implementa** tenancy por farm (`@FarmId()`), RBAC por rol
 | `errors.mdc` | services, controllers, `common/errors` |
 | `prisma.mdc` | `prisma/**`, repositories |
 | `auth.mdc` | `src/modules/auth/**` |
+| `tenancy.mdc` | tenancy e módulos com `x-farm-id` |
 | `testing.mdc` | `*.spec.ts`, `test/**` |
 
 A skill comunitária `nestjs-best-practices` pode recomendar `class-validator`; **ignorar** — este projeto usa Zod.

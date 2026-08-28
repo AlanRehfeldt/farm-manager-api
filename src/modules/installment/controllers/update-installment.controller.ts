@@ -1,23 +1,23 @@
 import { Body, Controller, HttpStatus, Param, Put } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
-  ApiConflictResponse,
-  ApiCreatedResponse,
   ApiNotFoundResponse,
+  ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
 import z from 'zod';
+import { FarmId } from 'src/common/tenancy/farm-id.decorator';
+import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
-import { ConflictDto } from 'src/common/errors/conflict.dto';
-import { UpdateInstallmentService } from '../services/update-installment.service';
-import { UpdateInstallmentResponseDto } from '../dtos/response/update-installment.dto';
+import { NotFoundDto } from 'src/common/errors/not-found.dto';
 import {
   UpdateInstallmentBodyDto,
   UpdateInstallmentParamDto,
 } from '../dtos/request/update-installment.dto';
-import { NotFoundDto } from 'src/common/errors/not-found.dto';
+import { UpdateInstallmentResponseDto } from '../dtos/response/update-installment.dto';
+import { UpdateInstallmentService } from '../services/update-installment.service';
 
 const updateInstallmentParamSchema = z.object({
   id: z.uuid(),
@@ -50,6 +50,7 @@ const updateInstallmentSchema = z.object({
 });
 
 @ApiTags('Installment')
+@FarmScoped()
 @Controller('/installments')
 export class UpdateInstallmentController {
   constructor(
@@ -57,7 +58,7 @@ export class UpdateInstallmentController {
   ) {}
 
   @ApiOperation({ summary: 'Update installment' })
-  @ApiCreatedResponse({
+  @ApiOkResponse({
     description: 'Installment updated successfully',
     type: UpdateInstallmentResponseDto,
   })
@@ -65,35 +66,30 @@ export class UpdateInstallmentController {
     description: 'Bad request: Invalid request body',
     type: BadRequestDto,
   })
-  @ApiConflictResponse({
-    description: 'Conflict: Registration already exists',
-    type: ConflictDto,
-  })
   @ApiNotFoundResponse({
     description: 'Not found: Installment does not exist',
     type: NotFoundDto,
   })
   @Put(':id')
   async update(
+    @FarmId() farmId: string,
     @Param(new ZodValidationPipe(updateInstallmentParamSchema))
     param: UpdateInstallmentParamDto,
     @Body(new ZodValidationPipe(updateInstallmentSchema))
     data: UpdateInstallmentBodyDto,
   ) {
-    try {
-      const { installment } = await this.updateInstallmentService.execute({
+    const { installment } = await this.updateInstallmentService.execute(
+      farmId,
+      {
         id: param.id,
         ...data,
-      });
+      },
+    );
 
-      return {
-        statusCode: HttpStatus.OK,
-        message: 'Installment updated successfully',
-        installment,
-      };
-    } catch (error) {
-      console.error('Error updating installment', error);
-      throw error;
-    }
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Installment updated successfully',
+      result: installment,
+    };
   }
 }

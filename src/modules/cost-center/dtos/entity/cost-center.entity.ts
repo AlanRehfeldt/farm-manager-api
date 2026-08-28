@@ -8,6 +8,12 @@ export class CostCenterDto {
   id!: string;
 
   @ApiProperty({
+    example: 'uuid',
+    description: "Cost center's organization identifier",
+  })
+  organizationId!: string;
+
+  @ApiProperty({
     example: 'Research & Development',
     description: "Cost center's name",
   })

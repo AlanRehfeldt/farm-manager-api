@@ -15,6 +15,7 @@ export interface SearchManyQuery {
   dateFrom?: Date;
   dateTo?: Date;
   note?: string;
+  farmId: string;
   page: number;
   perPage: number;
   orderBy: string;

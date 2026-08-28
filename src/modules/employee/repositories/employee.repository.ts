@@ -10,7 +10,15 @@ export interface EmployeeRepository {
   update(data: UpdateEmployeeData): Promise<Employee>;
   delete(id: string): Promise<void>;
   findById(id: string): Promise<Employee | null>;
-  findByRegistration(registration: string): Promise<Employee | null>;
+  findById(
+    id: string,
+    organizationId: string,
+    farmId: string,
+  ): Promise<Employee | null>;
+  findByRegistration(
+    organizationId: string,
+    registration: string,
+  ): Promise<Employee | null>;
   searchMany(query: SearchManyQuery): Promise<Employee[]>;
   count(query: SearchManyQuery): Promise<number>;
 }

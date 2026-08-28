@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from 'src/common/prisma/prisma.module';
+import { TransactionModule } from 'src/modules/transaction/transaction.module';
 import { PrismaInstallmentRepository } from './repositories/prisma-installment.repository';
 import { INSTALLMENT_REPOSITORY } from './repositories/installment.repository';
 import { CreateInstallmentController } from './controllers/create-installment.controller';
@@ -14,7 +15,7 @@ import { GetInstallmentService } from './services/get-installment.service';
 import { FetchInstallmentsService } from './services/fetch-installments.service';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, TransactionModule],
   controllers: [
     CreateInstallmentController,
     UpdateInstallmentController,

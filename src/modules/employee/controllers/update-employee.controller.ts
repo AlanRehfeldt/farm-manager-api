@@ -2,22 +2,25 @@ import { Body, Controller, HttpStatus, Param, Put } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiConflictResponse,
-  ApiCreatedResponse,
   ApiNotFoundResponse,
+  ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
 import z from 'zod';
+import { FarmId } from 'src/common/tenancy/farm-id.decorator';
+import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
+import { OrganizationId } from 'src/common/tenancy/organization-id.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
 import { ConflictDto } from 'src/common/errors/conflict.dto';
-import { UpdateEmployeeService } from '../services/update-employee.service';
-import { UpdateEmployeeResponseDto } from '../dtos/response/update-employee.dto';
+import { NotFoundDto } from 'src/common/errors/not-found.dto';
 import {
   UpdateEmployeeBodyDto,
   UpdateEmployeeParamDto,
 } from '../dtos/request/update-employee.dto';
-import { NotFoundDto } from 'src/common/errors/not-found.dto';
+import { UpdateEmployeeResponseDto } from '../dtos/response/update-employee.dto';
+import { UpdateEmployeeService } from '../services/update-employee.service';
 
 const updateEmployeeParamSchema = z.object({
   id: z.uuid(),
@@ -53,12 +56,13 @@ const updateEmployeeSchema = z.object({
 });
 
 @ApiTags('Employee')
+@FarmScoped()
 @Controller('/employees')
 export class UpdateEmployeeController {
   constructor(private readonly updateEmployeeService: UpdateEmployeeService) {}
 
   @ApiOperation({ summary: 'Update employee' })
-  @ApiCreatedResponse({
+  @ApiOkResponse({
     description: 'Employee updated successfully',
     type: UpdateEmployeeResponseDto,
   })
@@ -76,25 +80,26 @@ export class UpdateEmployeeController {
   })
   @Put(':id')
   async update(
+    @OrganizationId() organizationId: string,
+    @FarmId() farmId: string,
     @Param(new ZodValidationPipe(updateEmployeeParamSchema))
     param: UpdateEmployeeParamDto,
     @Body(new ZodValidationPipe(updateEmployeeSchema))
     data: UpdateEmployeeBodyDto,
   ) {
-    try {
-      const { employee } = await this.updateEmployeeService.execute({
+    const { employee } = await this.updateEmployeeService.execute(
+      organizationId,
+      farmId,
+      {
         id: param.id,
         ...data,
-      });
+      },
+    );
 
-      return {
-        statusCode: HttpStatus.OK,
-        message: 'Employee updated successfully',
-        employee,
-      };
-    } catch (error) {
-      console.error('Error updating employee', error);
-      throw error;
-    }
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Employee updated successfully',
+      result: employee,
+    };
   }
 }

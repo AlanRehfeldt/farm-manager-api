@@ -1,9 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { SearchManyQuery } from '../repositories/@types';
 import {
   PRODUCT_REPOSITORY,
   ProductRepository,
 } from '../repositories/product.repository';
-import { SearchManyQuery } from '../repositories/@types';
 
 @Injectable()
 export class FetchProductsService {

@@ -16,6 +16,8 @@ export interface SearchManyQuery {
   cnpj?: string;
   address?: string;
   phoneNumber?: string;
+  organizationId: string;
+  farmId: string;
   page: number;
   perPage: number;
   orderBy: string;

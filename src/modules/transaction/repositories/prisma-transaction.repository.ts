@@ -1,12 +1,12 @@
-import { PrismaService } from 'src/common/prisma/prisma.service';
-import { TransactionRepository } from './transaction.repository';
+import { Injectable } from '@nestjs/common';
 import { Transaction } from '@prisma/client';
+import { PrismaService } from 'src/common/prisma/prisma.service';
 import {
   CreateTransactionData,
-  UpdateTransactionData,
   SearchManyQuery,
+  UpdateTransactionData,
 } from './@types';
-import { Injectable } from '@nestjs/common';
+import { TransactionRepository } from './transaction.repository';
 
 @Injectable()
 export class PrismaTransactionRepository implements TransactionRepository {
@@ -35,22 +35,19 @@ export class PrismaTransactionRepository implements TransactionRepository {
     });
   }
 
-  async findById(id: string): Promise<Transaction | null> {
-    return await this.prisma.transaction.findUnique({
+  async findById(id: string, farmId: string): Promise<Transaction | null> {
+    return await this.prisma.transaction.findFirst({
       where: {
         id,
+        farmId,
       },
     });
   }
 
   async searchMany(query: SearchManyQuery): Promise<Transaction[]> {
-    const orderBy = query.orderBy;
-    const orderDirection = query.orderDirection;
-    const page = query.page;
-    const perPage = query.perPage;
-
     return await this.prisma.transaction.findMany({
       where: {
+        farmId: query.farmId,
         type: query.type,
         date: {
           gte: query.dateFrom,
@@ -61,10 +58,10 @@ export class PrismaTransactionRepository implements TransactionRepository {
           mode: 'insensitive',
         },
       },
-      skip: (page - 1) * perPage,
-      take: perPage,
+      skip: (query.page - 1) * query.perPage,
+      take: query.perPage,
       orderBy: {
-        [orderBy]: orderDirection,
+        [query.orderBy]: query.orderDirection,
       },
     });
   }
@@ -72,6 +69,7 @@ export class PrismaTransactionRepository implements TransactionRepository {
   async count(query: SearchManyQuery): Promise<number> {
     return await this.prisma.transaction.count({
       where: {
+        farmId: query.farmId,
         type: query.type,
         date: {
           gte: query.dateFrom,

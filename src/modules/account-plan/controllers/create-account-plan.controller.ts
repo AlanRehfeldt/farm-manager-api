@@ -1,4 +1,4 @@
-import { Body, Controller, HttpStatus, Post, UsePipes } from '@nestjs/common';
+import { Body, Controller, HttpStatus, Post } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiConflictResponse,
@@ -8,13 +8,15 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import z from 'zod';
+import { OrganizationId } from 'src/common/tenancy/organization-id.decorator';
+import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
-import { CreateAccountPlanService } from '../services/create-account-plan.service';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
 import { ConflictDto } from 'src/common/errors/conflict.dto';
-import { CreateAccountPlanResponseDto } from '../dtos/response/create-account-plan.dto';
-import { CreateAccountPlanBodyDto } from '../dtos/request/create-account-plan.dto';
 import { NotFoundDto } from 'src/common/errors/not-found.dto';
+import { CreateAccountPlanBodyDto } from '../dtos/request/create-account-plan.dto';
+import { CreateAccountPlanResponseDto } from '../dtos/response/create-account-plan.dto';
+import { CreateAccountPlanService } from '../services/create-account-plan.service';
 
 const createAccountPlanBodySchema = z.object({
   name: z
@@ -32,6 +34,7 @@ const createAccountPlanBodySchema = z.object({
 });
 
 @ApiTags('AccountPlan')
+@FarmScoped()
 @Controller('/account-plans')
 export class CreateAccountPlanController {
   constructor(
@@ -56,19 +59,20 @@ export class CreateAccountPlanController {
     type: NotFoundDto,
   })
   @Post()
-  @UsePipes(new ZodValidationPipe(createAccountPlanBodySchema))
-  async create(@Body() data: CreateAccountPlanBodyDto) {
-    try {
-      const { accountPlan } = await this.createAccountPlanService.execute(data);
+  async create(
+    @OrganizationId() organizationId: string,
+    @Body(new ZodValidationPipe(createAccountPlanBodySchema))
+    data: CreateAccountPlanBodyDto,
+  ) {
+    const { accountPlan } = await this.createAccountPlanService.execute({
+      ...data,
+      organizationId,
+    });
 
-      return {
-        statusCode: HttpStatus.CREATED,
-        message: 'Account plan created successfully',
-        result: accountPlan,
-      };
-    } catch (error) {
-      console.error('Error creating account plan', error);
-      throw error;
-    }
+    return {
+      statusCode: HttpStatus.CREATED,
+      message: 'Account plan created successfully',
+      result: accountPlan,
+    };
   }
 }

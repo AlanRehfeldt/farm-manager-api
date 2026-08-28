@@ -1,4 +1,4 @@
-import { Body, Controller, HttpStatus, Post, UsePipes } from '@nestjs/common';
+import { Body, Controller, HttpStatus, Post } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiConflictResponse,
@@ -8,13 +8,15 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import z from 'zod';
+import { OrganizationId } from 'src/common/tenancy/organization-id.decorator';
+import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
-import { CreateCostCenterService } from '../services/create-cost-center.service';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
 import { ConflictDto } from 'src/common/errors/conflict.dto';
-import { CreateCostCenterResponseDto } from '../dtos/response/create-cost-center.dto';
-import { CreateCostCenterBodyDto } from '../dtos/request/create-cost-center.dto';
 import { NotFoundDto } from 'src/common/errors/not-found.dto';
+import { CreateCostCenterBodyDto } from '../dtos/request/create-cost-center.dto';
+import { CreateCostCenterResponseDto } from '../dtos/response/create-cost-center.dto';
+import { CreateCostCenterService } from '../services/create-cost-center.service';
 
 const createCostCenterBodySchema = z.object({
   name: z
@@ -32,6 +34,7 @@ const createCostCenterBodySchema = z.object({
 });
 
 @ApiTags('CostCenter')
+@FarmScoped()
 @Controller('/cost-centers')
 export class CreateCostCenterController {
   constructor(
@@ -48,7 +51,7 @@ export class CreateCostCenterController {
     type: BadRequestDto,
   })
   @ApiConflictResponse({
-    description: 'Conflict: Registration already exists',
+    description: 'Conflict: Code already exists',
     type: ConflictDto,
   })
   @ApiNotFoundResponse({
@@ -56,19 +59,20 @@ export class CreateCostCenterController {
     type: NotFoundDto,
   })
   @Post()
-  @UsePipes(new ZodValidationPipe(createCostCenterBodySchema))
-  async create(@Body() data: CreateCostCenterBodyDto) {
-    try {
-      const { costCenter } = await this.createCostCenterService.execute(data);
+  async create(
+    @OrganizationId() organizationId: string,
+    @Body(new ZodValidationPipe(createCostCenterBodySchema))
+    data: CreateCostCenterBodyDto,
+  ) {
+    const { costCenter } = await this.createCostCenterService.execute({
+      ...data,
+      organizationId,
+    });
 
-      return {
-        statusCode: HttpStatus.CREATED,
-        message: 'Cost center created successfully',
-        result: costCenter,
-      };
-    } catch (error) {
-      console.error('Error creating cost center', error);
-      throw error;
-    }
+    return {
+      statusCode: HttpStatus.CREATED,
+      message: 'Cost center created successfully',
+      result: costCenter,
+    };
   }
 }

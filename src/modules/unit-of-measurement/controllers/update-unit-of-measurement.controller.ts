@@ -2,22 +2,24 @@ import { Body, Controller, HttpStatus, Param, Put } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiConflictResponse,
-  ApiCreatedResponse,
   ApiNotFoundResponse,
+  ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
 import z from 'zod';
+import { OrganizationId } from 'src/common/tenancy/organization-id.decorator';
+import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
 import { ConflictDto } from 'src/common/errors/conflict.dto';
-import { UpdateUnitOfMeasurementService } from '../services/update-unit-of-measurement.service';
-import { UpdateUnitOfMeasurementResponseDto } from '../dtos/response/update-unit-of-measurement.dto';
+import { NotFoundDto } from 'src/common/errors/not-found.dto';
 import {
   UpdateUnitOfMeasurementBodyDto,
   UpdateUnitOfMeasurementParamDto,
 } from '../dtos/request/update-unit-of-measurement.dto';
-import { NotFoundDto } from 'src/common/errors/not-found.dto';
+import { UpdateUnitOfMeasurementResponseDto } from '../dtos/response/update-unit-of-measurement.dto';
+import { UpdateUnitOfMeasurementService } from '../services/update-unit-of-measurement.service';
 
 const updateUnitOfMeasurementParamSchema = z.object({
   id: z.uuid(),
@@ -37,6 +39,7 @@ const updateUnitOfMeasurementSchema = z.object({
 });
 
 @ApiTags('UnitOfMeasurement')
+@FarmScoped()
 @Controller('/unit-of-measurements')
 export class UpdateUnitOfMeasurementController {
   constructor(
@@ -44,7 +47,7 @@ export class UpdateUnitOfMeasurementController {
   ) {}
 
   @ApiOperation({ summary: 'Update unit of measurement' })
-  @ApiCreatedResponse({
+  @ApiOkResponse({
     description: 'Unit of measurement updated successfully',
     type: UpdateUnitOfMeasurementResponseDto,
   })
@@ -62,26 +65,22 @@ export class UpdateUnitOfMeasurementController {
   })
   @Put(':id')
   async update(
+    @OrganizationId() organizationId: string,
     @Param(new ZodValidationPipe(updateUnitOfMeasurementParamSchema))
     param: UpdateUnitOfMeasurementParamDto,
     @Body(new ZodValidationPipe(updateUnitOfMeasurementSchema))
     data: UpdateUnitOfMeasurementBodyDto,
   ) {
-    try {
-      const { unitOfMeasurement } =
-        await this.updateUnitOfMeasurementService.execute({
-          id: param.id,
-          ...data,
-        });
+    const { unitOfMeasurement } =
+      await this.updateUnitOfMeasurementService.execute(organizationId, {
+        id: param.id,
+        ...data,
+      });
 
-      return {
-        statusCode: HttpStatus.OK,
-        message: 'Unit of measurement updated successfully',
-        result: unitOfMeasurement,
-      };
-    } catch (error) {
-      console.error('Error updating unit of measurement', error);
-      throw error;
-    }
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Unit of measurement updated successfully',
+      result: unitOfMeasurement,
+    };
   }
 }

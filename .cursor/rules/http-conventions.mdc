@@ -35,6 +35,7 @@ return { results, total, page, perPage, orderBy, orderDirection };
 - Request/response DTOs com `@ApiProperty` — espelhar o envelope real.
 - DTOs de erro: `src/common/errors/*.dto.ts`.
 - Auth: cookies httpOnly — não documentar Bearer se o fluxo é cookie.
+- Catálogo/lançamentos: `@FarmScoped()` + `@ApiHeader` `x-farm-id` (já incluso no decorator).
 
 ## Rotas
 

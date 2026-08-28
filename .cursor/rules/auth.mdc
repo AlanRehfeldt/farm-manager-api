@@ -31,8 +31,9 @@ Públicas hoje: `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`, `
 
 ## O que não existe
 
-- `@Roles()` / guards de permissão
-- Tenancy por farm no guard
+- `@Roles()` / guards de permissão nomeada (ADR-013)
 - Bearer token como fluxo principal
+
+Tenancy de fazenda **não** está no JwtAuthGuard. Rotas de catálogo/lançamentos usam `@FarmScoped()` (`x-farm-id`). Ver `docs/08-tenancy.md` e `.cursor/rules/tenancy.mdc`.
 
 Não documentar ou implementar Bearer como padrão sem mudança explícita de arquitetura.

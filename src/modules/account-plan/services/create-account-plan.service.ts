@@ -8,7 +8,14 @@ import {
   ACCOUNT_PLAN_REPOSITORY,
   AccountPlanRepository,
 } from '../repositories/account-plan.repository';
-import { CreateAccountPlanData } from '../repositories/@types';
+
+type CreateAccountPlanInput = {
+  name: string;
+  description: string;
+  code: string;
+  parentId?: string;
+  organizationId: string;
+};
 
 @Injectable()
 export class CreateAccountPlanService {
@@ -17,15 +24,26 @@ export class CreateAccountPlanService {
     private readonly accountPlanRepository: AccountPlanRepository,
   ) {}
 
-  async execute({ name, description, code, parentId }: CreateAccountPlanData) {
-    const checkIfCodeExists = await this.accountPlanRepository.findByCode(code);
+  async execute({
+    name,
+    description,
+    code,
+    parentId,
+    organizationId,
+  }: CreateAccountPlanInput) {
+    const checkIfCodeExists = await this.accountPlanRepository.findByCode(
+      organizationId,
+      code,
+    );
     if (checkIfCodeExists) {
       throw new ConflictException('Code already exists');
     }
 
     if (parentId) {
-      const checkIfParentIdExists =
-        await this.accountPlanRepository.findById(parentId);
+      const checkIfParentIdExists = await this.accountPlanRepository.findById(
+        parentId,
+        organizationId,
+      );
       if (!checkIfParentIdExists) {
         throw new NotFoundException('ParentId does not exist');
       }
@@ -36,6 +54,7 @@ export class CreateAccountPlanService {
       description,
       code,
       parentId,
+      organizationId,
     });
 
     return { accountPlan };

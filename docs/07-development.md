@@ -66,7 +66,10 @@ npx prisma db pull         # introspect (cuidado em prod)
 
 ## Testes
 
-Estado atual: sem testes unitários em `src/`. E2e scaffold em `test/app.e2e-spec.ts` desatualizado.
+- Unit: `src/**/*.spec.ts` (ex.: `FarmMembershipGuard`, helpers de visibilidade).
+- E2e: `test/app.e2e-spec.ts` (auth 401) e `test/tenancy.e2e-spec.ts` (INV-TEN, catálogo compartilhado vs restrito, saldo por fazenda).
+
+E2e precisa de PostgreSQL com migrations aplicadas e `.env` válida (`DATABASE_URL`, `JWT_SECRET`). Arquivos de teste usam `tsconfig.spec.json` (tipos Jest + pasta `test/`).
 
 Ao adicionar testes, ver `.cursor/rules/testing.mdc` e `farm-manager-docs/07-plataforma/03-testing-strategy.md`.
 

@@ -13,6 +13,7 @@ export interface SearchManyQuery {
   id?: string;
   name?: string;
   acronym?: string;
+  organizationId: string;
   page: number;
   perPage: number;
   orderBy: string;

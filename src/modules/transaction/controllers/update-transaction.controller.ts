@@ -1,21 +1,23 @@
 import { Body, Controller, HttpStatus, Param, Put } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
-  ApiCreatedResponse,
   ApiNotFoundResponse,
+  ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
 import z from 'zod';
+import { FarmId } from 'src/common/tenancy/farm-id.decorator';
+import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
-import { UpdateTransactionService } from '../services/update-transaction.service';
-import { UpdateTransactionResponseDto } from '../dtos/response/update-transaction.dto';
+import { NotFoundDto } from 'src/common/errors/not-found.dto';
 import {
   UpdateTransactionBodyDto,
   UpdateTransactionParamDto,
 } from '../dtos/request/update-transaction.dto';
-import { NotFoundDto } from 'src/common/errors/not-found.dto';
+import { UpdateTransactionResponseDto } from '../dtos/response/update-transaction.dto';
+import { UpdateTransactionService } from '../services/update-transaction.service';
 
 const updateTransactionParamSchema = z.object({
   id: z.uuid(),
@@ -28,6 +30,7 @@ const updateTransactionSchema = z.object({
 });
 
 @ApiTags('Transaction')
+@FarmScoped()
 @Controller('/transactions')
 export class UpdateTransactionController {
   constructor(
@@ -35,7 +38,7 @@ export class UpdateTransactionController {
   ) {}
 
   @ApiOperation({ summary: 'Update transaction' })
-  @ApiCreatedResponse({
+  @ApiOkResponse({
     description: 'Transaction updated successfully',
     type: UpdateTransactionResponseDto,
   })
@@ -49,25 +52,24 @@ export class UpdateTransactionController {
   })
   @Put(':id')
   async update(
+    @FarmId() farmId: string,
     @Param(new ZodValidationPipe(updateTransactionParamSchema))
     param: UpdateTransactionParamDto,
     @Body(new ZodValidationPipe(updateTransactionSchema))
     data: UpdateTransactionBodyDto,
   ) {
-    try {
-      const { transaction } = await this.updateTransactionService.execute({
+    const { transaction } = await this.updateTransactionService.execute(
+      farmId,
+      {
         id: param.id,
         ...data,
-      });
+      },
+    );
 
-      return {
-        statusCode: HttpStatus.OK,
-        message: 'Transaction updated successfully',
-        transaction,
-      };
-    } catch (error) {
-      console.error('Error updating transaction', error);
-      throw error;
-    }
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Transaction updated successfully',
+      result: transaction,
+    };
   }
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UsePipes } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiOkResponse,
@@ -6,11 +6,13 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import z from 'zod';
+import { OrganizationId } from 'src/common/tenancy/organization-id.decorator';
+import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
-import { FetchUnitOfMeasurementsService } from '../services/fetch-unit-of-measurement.service';
 import { FetchUnitOfMeasurementsQueryDto } from '../dtos/request/fetch-unit-of-measurements.dto';
 import { FetchUnitOfMeasurementsResponseDto } from '../dtos/response/fetch-unit-of-measurements.dto';
+import { FetchUnitOfMeasurementsService } from '../services/fetch-unit-of-measurement.service';
 
 const fetchUnitOfMeasurementsSchema = z.object({
   id: z.uuid().optional(),
@@ -23,6 +25,7 @@ const fetchUnitOfMeasurementsSchema = z.object({
 });
 
 @ApiTags('UnitOfMeasurement')
+@FarmScoped()
 @Controller('/unit-of-measurements')
 export class FetchUnitOfMeasurementsController {
   constructor(
@@ -31,7 +34,7 @@ export class FetchUnitOfMeasurementsController {
 
   @ApiOperation({ summary: 'List unit of measurements' })
   @ApiOkResponse({
-    description: 'Unit of measurements retrived successfully',
+    description: 'Unit of measurements retrieved successfully',
     type: FetchUnitOfMeasurementsResponseDto,
   })
   @ApiBadRequestResponse({
@@ -39,23 +42,18 @@ export class FetchUnitOfMeasurementsController {
     type: BadRequestDto,
   })
   @Get()
-  @UsePipes(new ZodValidationPipe(fetchUnitOfMeasurementsSchema))
-  async fetch(@Query() query: FetchUnitOfMeasurementsQueryDto) {
-    try {
-      const { results, total, page, perPage, orderBy, orderDirection } =
-        await this.fetchUnitOfMeasurementsService.execute(query);
-
-      return {
-        results,
-        total,
-        page,
-        perPage,
-        orderBy,
-        orderDirection,
-      };
-    } catch (error) {
-      console.error('Error fetching unit of measurements', error);
-      throw error;
-    }
+  async fetch(
+    @OrganizationId() organizationId: string,
+    @Query(new ZodValidationPipe(fetchUnitOfMeasurementsSchema))
+    query: FetchUnitOfMeasurementsQueryDto,
+  ) {
+    return this.fetchUnitOfMeasurementsService.execute({
+      ...query,
+      organizationId,
+      page: query.page ?? 1,
+      perPage: query.perPage ?? 10,
+      orderBy: query.orderBy ?? 'name',
+      orderDirection: query.orderDirection ?? 'asc',
+    });
   }
 }

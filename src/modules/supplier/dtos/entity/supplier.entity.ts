@@ -8,6 +8,19 @@ export class SupplierDto {
   id!: string;
 
   @ApiProperty({
+    example: 'uuid',
+    description: "Supplier's organization identifier",
+  })
+  organizationId!: string;
+
+  @ApiPropertyOptional({
+    example: 'uuid',
+    nullable: true,
+    description: 'When set, supplier is visible only on this farm',
+  })
+  farmId?: string | null;
+
+  @ApiProperty({
     example: 'John Doe',
     description: "Supplier's name",
   })

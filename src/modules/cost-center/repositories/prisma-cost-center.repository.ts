@@ -1,13 +1,13 @@
-import { PrismaService } from 'src/common/prisma/prisma.service';
-import { CostCenterRepository } from './cost-center.repository';
-import { CostCenter } from '@prisma/client';
-import {
-  CreateCostCenterData,
-  UpdateCostCenterData,
-  SearchManyQuery,
-  CostCenterWithChildren,
-} from './@types';
 import { Injectable } from '@nestjs/common';
+import { CostCenter } from '@prisma/client';
+import { PrismaService } from 'src/common/prisma/prisma.service';
+import {
+  CostCenterWithChildren,
+  CreateCostCenterData,
+  SearchManyQuery,
+  UpdateCostCenterData,
+} from './@types';
+import { CostCenterRepository } from './cost-center.repository';
 
 @Injectable()
 export class PrismaCostCenterRepository implements CostCenterRepository {
@@ -36,26 +36,41 @@ export class PrismaCostCenterRepository implements CostCenterRepository {
     });
   }
 
-  async findById(id: string): Promise<CostCenter | null> {
-    return await this.prisma.costCenter.findUnique({
+  async findById(
+    id: string,
+    organizationId: string,
+  ): Promise<CostCenter | null> {
+    return await this.prisma.costCenter.findFirst({
       where: {
         id,
+        organizationId,
       },
     });
   }
 
-  async findByCode(code: string): Promise<CostCenter | null> {
+  async findByCode(
+    organizationId: string,
+    code: string,
+  ): Promise<CostCenter | null> {
     return await this.prisma.costCenter.findFirst({
       where: {
+        organizationId,
         code,
       },
     });
   }
 
   async searchMany(params: SearchManyQuery): Promise<CostCenterWithChildren[]> {
-    const { page, perPage, orderBy, orderDirection, ...filters } = params;
+    const {
+      page,
+      perPage,
+      orderBy,
+      orderDirection,
+      organizationId,
+      ...filters
+    } = params;
 
-    const whereClauses = Object.entries(filters)
+    const filterClauses = Object.entries(filters)
       .map(([key, value]) => {
         if (value) {
           if (key === 'name' || key === 'description' || key === 'code') {
@@ -66,20 +81,25 @@ export class PrismaCostCenterRepository implements CostCenterRepository {
         }
         return null;
       })
-      .filter(Boolean)
-      .join(' AND ');
+      .filter(Boolean);
+
+    const whereClauses = [
+      `s."organizationId" = '${organizationId}'`,
+      ...filterClauses,
+    ].join(' AND ');
 
     const query = `
     WITH RECURSIVE cost_center_ancestors AS (
-      SELECT s."id", s."name", s."description", s."code", s."parentId", s."createdAt", s."updatedAt"
+      SELECT s."id", s."name", s."description", s."code", s."parentId", s."organizationId", s."createdAt", s."updatedAt"
       FROM cost_centers s
-      ${whereClauses ? `WHERE ${whereClauses}` : ''}
+      WHERE ${whereClauses}
       UNION ALL
-      SELECT s."id", s."name", s."description", s."code", s."parentId", s."createdAt", s."updatedAt"
+      SELECT s."id", s."name", s."description", s."code", s."parentId", s."organizationId", s."createdAt", s."updatedAt"
       FROM cost_centers s
       INNER JOIN cost_center_ancestors sa ON s."id" = sa."parentId"
+      WHERE s."organizationId" = '${organizationId}'
     )
-    SELECT DISTINCT "id", "name", "description", "code", "parentId", "createdAt", "updatedAt"
+    SELECT DISTINCT "id", "name", "description", "code", "parentId", "organizationId", "createdAt", "updatedAt"
     FROM cost_center_ancestors
     ORDER BY "${orderBy}" ${orderDirection}
   `;
@@ -137,6 +157,7 @@ export class PrismaCostCenterRepository implements CostCenterRepository {
   async count(query: SearchManyQuery): Promise<number> {
     return await this.prisma.costCenter.count({
       where: {
+        organizationId: query.organizationId,
         name: {
           contains: query.name,
           mode: 'insensitive',

@@ -1,12 +1,13 @@
-import { PrismaService } from 'src/common/prisma/prisma.service';
-import { SupplierRepository } from './supplier.repository';
+import { Injectable } from '@nestjs/common';
 import { Supplier } from '@prisma/client';
+import { catalogVisibilityWhere } from 'src/common/tenancy/catalog-visibility';
+import { PrismaService } from 'src/common/prisma/prisma.service';
 import {
   CreateSupplierData,
-  UpdateSupplierData,
   SearchManyQuery,
+  UpdateSupplierData,
 } from './@types';
-import { Injectable } from '@nestjs/common';
+import { SupplierRepository } from './supplier.repository';
 
 @Injectable()
 export class PrismaSupplierRepository implements SupplierRepository {
@@ -35,30 +36,35 @@ export class PrismaSupplierRepository implements SupplierRepository {
     });
   }
 
-  async findById(id: string): Promise<Supplier | null> {
-    return await this.prisma.supplier.findUnique({
+  async findById(
+    id: string,
+    organizationId: string,
+    farmId: string,
+  ): Promise<Supplier | null> {
+    return await this.prisma.supplier.findFirst({
       where: {
         id,
+        ...catalogVisibilityWhere(organizationId, farmId),
       },
     });
   }
 
-  async findByCnpj(cnpj: string): Promise<Supplier | null> {
-    return await this.prisma.supplier.findUnique({
+  async findByCnpj(
+    organizationId: string,
+    cnpj: string,
+  ): Promise<Supplier | null> {
+    return await this.prisma.supplier.findFirst({
       where: {
+        organizationId,
         cnpj,
       },
     });
   }
 
   async searchMany(query: SearchManyQuery): Promise<Supplier[]> {
-    const orderBy = query.orderBy;
-    const orderDirection = query.orderDirection;
-    const page = query.page;
-    const perPage = query.perPage;
-
     return await this.prisma.supplier.findMany({
       where: {
+        ...catalogVisibilityWhere(query.organizationId, query.farmId),
         name: {
           contains: query.name,
           mode: 'insensitive',
@@ -76,10 +82,10 @@ export class PrismaSupplierRepository implements SupplierRepository {
           mode: 'insensitive',
         },
       },
-      skip: (page - 1) * perPage,
-      take: perPage,
+      skip: (query.page - 1) * query.perPage,
+      take: query.perPage,
       orderBy: {
-        [orderBy]: orderDirection,
+        [query.orderBy]: query.orderDirection,
       },
     });
   }
@@ -87,6 +93,7 @@ export class PrismaSupplierRepository implements SupplierRepository {
   async count(query: SearchManyQuery): Promise<number> {
     return await this.prisma.supplier.count({
       where: {
+        ...catalogVisibilityWhere(query.organizationId, query.farmId),
         name: {
           contains: query.name,
           mode: 'insensitive',

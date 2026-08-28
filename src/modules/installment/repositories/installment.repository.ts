@@ -9,7 +9,7 @@ export interface InstallmentRepository {
   create(data: CreateInstallmentData): Promise<Installment>;
   update(data: UpdateInstallmentData): Promise<Installment>;
   delete(id: string): Promise<void>;
-  findById(id: string): Promise<Installment | null>;
+  findById(id: string, farmId: string): Promise<Installment | null>;
   searchMany(query: SearchManyQuery): Promise<Installment[]>;
   count(query: SearchManyQuery): Promise<number>;
 }

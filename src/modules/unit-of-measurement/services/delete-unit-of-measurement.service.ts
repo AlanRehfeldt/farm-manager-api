@@ -11,10 +11,12 @@ export class DeleteUnitOfMeasurementService {
     private readonly unitOfMeasurementRepository: UnitOfMeasurementRepository,
   ) {}
 
-  async execute(id: string) {
-    const checkIfUnitOfMeasurementExists =
-      await this.unitOfMeasurementRepository.findById(id);
-    if (!checkIfUnitOfMeasurementExists) {
+  async execute(id: string, organizationId: string) {
+    const existing = await this.unitOfMeasurementRepository.findById(
+      id,
+      organizationId,
+    );
+    if (!existing) {
       throw new NotFoundException('Unit of measurement does not exist');
     }
 

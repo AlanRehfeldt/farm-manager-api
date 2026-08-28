@@ -8,6 +8,12 @@ export class AccountPlanDto {
   id!: string;
 
   @ApiProperty({
+    example: 'uuid',
+    description: "Account plan's organization identifier",
+  })
+  organizationId!: string;
+
+  @ApiProperty({
     example: 'Bank XPTO C/c 0000-0',
     description: "Account plan's name",
   })

@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["jest", "node"],
+    "baseUrl": ".",
+    "rootDir": ".",
+    "noEmit": true,
+    "paths": {
+      "src/*": ["./src/*"]
+    }
+  },
+  "include": ["src/**/*.spec.ts", "test/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

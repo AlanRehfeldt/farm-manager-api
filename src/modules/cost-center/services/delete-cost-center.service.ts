@@ -11,9 +11,11 @@ export class DeleteCostCenterService {
     private readonly costCenterRepository: CostCenterRepository,
   ) {}
 
-  async execute(id: string) {
-    const checkIfCostCenterExists =
-      await this.costCenterRepository.findById(id);
+  async execute(id: string, organizationId: string) {
+    const checkIfCostCenterExists = await this.costCenterRepository.findById(
+      id,
+      organizationId,
+    );
     if (!checkIfCostCenterExists) {
       throw new NotFoundException('Cost center does not exist');
     }

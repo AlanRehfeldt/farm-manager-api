@@ -9,8 +9,8 @@ export interface AccountPlanRepository {
   create(data: CreateAccountPlanData): Promise<AccountPlan>;
   update(data: UpdateAccountPlanData): Promise<AccountPlan>;
   delete(id: string): Promise<void>;
-  findById(id: string): Promise<AccountPlan | null>;
-  findByCode(code: string): Promise<AccountPlan | null>;
+  findById(id: string, organizationId: string): Promise<AccountPlan | null>;
+  findByCode(organizationId: string, code: string): Promise<AccountPlan | null>;
   searchMany(query: SearchManyQuery): Promise<AccountPlan[]>;
   count(query: SearchManyQuery): Promise<number>;
 }

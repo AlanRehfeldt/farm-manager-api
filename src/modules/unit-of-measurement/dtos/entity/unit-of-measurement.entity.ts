@@ -8,6 +8,12 @@ export class UnitOfMeasurementDto {
   id!: string;
 
   @ApiProperty({
+    example: 'uuid',
+    description: "Unit of measurement's organization identifier",
+  })
+  organizationId!: string;
+
+  @ApiProperty({
     example: 'Liter',
     description: "Unit of measurement's name",
   })

@@ -11,9 +11,11 @@ export class DeleteTransactionService {
     private readonly transactionRepository: TransactionRepository,
   ) {}
 
-  async execute(id: string) {
-    const checkIfTransactionExists =
-      await this.transactionRepository.findById(id);
+  async execute(id: string, farmId: string) {
+    const checkIfTransactionExists = await this.transactionRepository.findById(
+      id,
+      farmId,
+    );
     if (!checkIfTransactionExists) {
       throw new NotFoundException('Transaction does not exist');
     }

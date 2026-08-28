@@ -19,6 +19,7 @@ export interface SearchManyQuery {
   description?: string;
   code?: string;
   parentId?: string;
+  organizationId: string;
   page: number;
   perPage: number;
   orderBy: OrderableCostCenterField;

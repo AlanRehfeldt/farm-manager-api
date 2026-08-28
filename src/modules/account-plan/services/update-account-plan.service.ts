@@ -4,11 +4,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { UpdateAccountPlanData } from '../repositories/@types';
 import {
   ACCOUNT_PLAN_REPOSITORY,
   AccountPlanRepository,
 } from '../repositories/account-plan.repository';
-import { UpdateAccountPlanData } from '../repositories/@types';
 
 @Injectable()
 export class UpdateAccountPlanService {
@@ -17,31 +17,34 @@ export class UpdateAccountPlanService {
     private readonly accountPlanRepository: AccountPlanRepository,
   ) {}
 
-  async execute({
-    id,
-    name,
-    description,
-    code,
-    parentId,
-  }: UpdateAccountPlanData) {
-    const checkIfAccountPlanExists =
-      await this.accountPlanRepository.findById(id);
-    if (!checkIfAccountPlanExists) {
+  async execute(
+    organizationId: string,
+    { id, name, description, code, parentId }: UpdateAccountPlanData,
+  ) {
+    const existing = await this.accountPlanRepository.findById(
+      id,
+      organizationId,
+    );
+    if (!existing) {
       throw new NotFoundException('Account plan does not exist');
     }
 
     if (code) {
-      const checkIfCodeExists =
-        await this.accountPlanRepository.findByCode(code);
-      if (checkIfCodeExists) {
+      const duplicate = await this.accountPlanRepository.findByCode(
+        organizationId,
+        code,
+      );
+      if (duplicate && duplicate.id !== id) {
         throw new ConflictException('Code already exists');
       }
     }
 
     if (parentId) {
-      const checkIfParentIdExists =
-        await this.accountPlanRepository.findById(parentId);
-      if (checkIfParentIdExists) {
+      const parent = await this.accountPlanRepository.findById(
+        parentId,
+        organizationId,
+      );
+      if (!parent) {
         throw new NotFoundException('ParentId does not exist');
       }
     }

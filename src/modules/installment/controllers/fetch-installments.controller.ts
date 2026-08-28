@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UsePipes } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiOkResponse,
@@ -6,11 +6,13 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import z from 'zod';
+import { FarmId } from 'src/common/tenancy/farm-id.decorator';
+import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
-import { FetchInstallmentsService } from '../services/fetch-installments.service';
 import { FetchInstallmentsQueryDto } from '../dtos/request/fetch-installments.dto';
 import { FetchInstallmentsResponseDto } from '../dtos/response/fetch-installments.dto';
+import { FetchInstallmentsService } from '../services/fetch-installments.service';
 
 const fetchInstallmentsSchema = z.object({
   id: z.uuid().optional(),
@@ -48,6 +50,7 @@ const fetchInstallmentsSchema = z.object({
 });
 
 @ApiTags('Installment')
+@FarmScoped()
 @Controller('/installments')
 export class FetchInstallmentsController {
   constructor(
@@ -56,7 +59,7 @@ export class FetchInstallmentsController {
 
   @ApiOperation({ summary: 'List installments' })
   @ApiOkResponse({
-    description: 'Installments retrived successfully',
+    description: 'Installments retrieved successfully',
     type: FetchInstallmentsResponseDto,
   })
   @ApiBadRequestResponse({
@@ -64,23 +67,28 @@ export class FetchInstallmentsController {
     type: BadRequestDto,
   })
   @Get()
-  @UsePipes(new ZodValidationPipe(fetchInstallmentsSchema))
-  async fetch(@Query() query: FetchInstallmentsQueryDto) {
-    try {
-      const { results, total, page, perPage, orderBy, orderDirection } =
-        await this.fetchInstallmentsService.execute(query);
+  async fetch(
+    @FarmId() farmId: string,
+    @Query(new ZodValidationPipe(fetchInstallmentsSchema))
+    query: FetchInstallmentsQueryDto,
+  ) {
+    const { results, total, page, perPage, orderBy, orderDirection } =
+      await this.fetchInstallmentsService.execute({
+        ...query,
+        farmId,
+        page: query.page ?? 1,
+        perPage: query.perPage ?? 10,
+        orderBy: query.orderBy ?? 'name',
+        orderDirection: query.orderDirection ?? 'asc',
+      });
 
-      return {
-        results,
-        total,
-        page,
-        perPage,
-        orderBy,
-        orderDirection,
-      };
-    } catch (error) {
-      console.error('Error fetching installments', error);
-      throw error;
-    }
+    return {
+      results,
+      total,
+      page,
+      perPage,
+      orderBy,
+      orderDirection,
+    };
   }
 }

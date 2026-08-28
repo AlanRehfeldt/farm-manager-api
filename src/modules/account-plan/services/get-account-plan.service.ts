@@ -11,8 +11,11 @@ export class GetAccountPlanService {
     private readonly accountPlanRepository: AccountPlanRepository,
   ) {}
 
-  async execute(id: string) {
-    const accountPlan = await this.accountPlanRepository.findById(id);
+  async execute(id: string, organizationId: string) {
+    const accountPlan = await this.accountPlanRepository.findById(
+      id,
+      organizationId,
+    );
 
     if (!accountPlan) {
       throw new NotFoundException('Account plan does not exist');

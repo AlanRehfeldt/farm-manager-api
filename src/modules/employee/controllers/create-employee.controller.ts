@@ -1,4 +1,4 @@
-import { Body, Controller, HttpStatus, Post, UsePipes } from '@nestjs/common';
+import { Body, Controller, HttpStatus, Post } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiConflictResponse,
@@ -7,12 +7,15 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import z from 'zod';
+import { FarmId } from 'src/common/tenancy/farm-id.decorator';
+import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
+import { OrganizationId } from 'src/common/tenancy/organization-id.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
-import { CreateEmployeeService } from '../services/create-employee.service';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
 import { ConflictDto } from 'src/common/errors/conflict.dto';
-import { CreateEmployeeResponseDto } from '../dtos/response/create-employee.dto';
 import { CreateEmployeeBodyDto } from '../dtos/request/create-employee.dto';
+import { CreateEmployeeResponseDto } from '../dtos/response/create-employee.dto';
+import { CreateEmployeeService } from '../services/create-employee.service';
 
 const createEmployeeBodySchema = z.object({
   name: z
@@ -37,9 +40,11 @@ const createEmployeeBodySchema = z.object({
     'TEMPORARY_WORKER',
     'OTHER',
   ]),
+  farmId: z.uuid().nullable().optional(),
 });
 
 @ApiTags('Employee')
+@FarmScoped()
 @Controller('/employees')
 export class CreateEmployeeController {
   constructor(private readonly createEmployeeService: CreateEmployeeService) {}
@@ -58,19 +63,22 @@ export class CreateEmployeeController {
     type: ConflictDto,
   })
   @Post()
-  @UsePipes(new ZodValidationPipe(createEmployeeBodySchema))
-  async create(@Body() data: CreateEmployeeBodyDto) {
-    try {
-      const { employee } = await this.createEmployeeService.execute(data);
+  async create(
+    @OrganizationId() organizationId: string,
+    @FarmId() farmId: string,
+    @Body(new ZodValidationPipe(createEmployeeBodySchema))
+    data: CreateEmployeeBodyDto,
+  ) {
+    const { employee } = await this.createEmployeeService.execute({
+      ...data,
+      organizationId,
+      activeFarmId: farmId,
+    });
 
-      return {
-        statusCode: HttpStatus.CREATED,
-        message: 'Employee created successfully',
-        result: employee,
-      };
-    } catch (error) {
-      console.error('Error creating employee', error);
-      throw error;
-    }
+    return {
+      statusCode: HttpStatus.CREATED,
+      message: 'Employee created successfully',
+      result: employee,
+    };
   }
 }

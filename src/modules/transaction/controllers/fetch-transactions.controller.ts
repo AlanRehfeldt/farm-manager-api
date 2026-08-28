@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UsePipes } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiOkResponse,
@@ -6,11 +6,13 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import z from 'zod';
+import { FarmId } from 'src/common/tenancy/farm-id.decorator';
+import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
-import { FetchTransactionsService } from '../services/fetch-transactions.service';
 import { FetchTransactionsQueryDto } from '../dtos/request/fetch-transactions.dto';
 import { FetchTransactionsResponseDto } from '../dtos/response/fetch-transactions.dto';
+import { FetchTransactionsService } from '../services/fetch-transactions.service';
 
 const fetchTransactionsSchema = z.object({
   id: z.uuid().optional(),
@@ -19,11 +21,12 @@ const fetchTransactionsSchema = z.object({
   note: z.string().optional(),
   page: z.coerce.number().optional().default(1),
   perPage: z.coerce.number().optional().default(10),
-  orderBy: z.string().optional().default('name'),
+  orderBy: z.string().optional().default('date'),
   orderDirection: z.string().optional().default('asc'),
 });
 
 @ApiTags('Transaction')
+@FarmScoped()
 @Controller('/transactions')
 export class FetchTransactionsController {
   constructor(
@@ -32,7 +35,7 @@ export class FetchTransactionsController {
 
   @ApiOperation({ summary: 'List transactions' })
   @ApiOkResponse({
-    description: 'Transactions retrived successfully',
+    description: 'Transactions retrieved successfully',
     type: FetchTransactionsResponseDto,
   })
   @ApiBadRequestResponse({
@@ -40,23 +43,28 @@ export class FetchTransactionsController {
     type: BadRequestDto,
   })
   @Get()
-  @UsePipes(new ZodValidationPipe(fetchTransactionsSchema))
-  async fetch(@Query() query: FetchTransactionsQueryDto) {
-    try {
-      const { results, total, page, perPage, orderBy, orderDirection } =
-        await this.fetchTransactionsService.execute(query);
+  async fetch(
+    @FarmId() farmId: string,
+    @Query(new ZodValidationPipe(fetchTransactionsSchema))
+    query: FetchTransactionsQueryDto,
+  ) {
+    const { results, total, page, perPage, orderBy, orderDirection } =
+      await this.fetchTransactionsService.execute({
+        ...query,
+        farmId,
+        page: query.page ?? 1,
+        perPage: query.perPage ?? 10,
+        orderBy: query.orderBy ?? 'date',
+        orderDirection: query.orderDirection ?? 'asc',
+      });
 
-      return {
-        results,
-        total,
-        page,
-        perPage,
-        orderBy,
-        orderDirection,
-      };
-    } catch (error) {
-      console.error('Error fetching transactions', error);
-      throw error;
-    }
+    return {
+      results,
+      total,
+      page,
+      perPage,
+      orderBy,
+      orderDirection,
+    };
   }
 }

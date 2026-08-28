@@ -14,6 +14,8 @@ export interface SearchManyQuery {
   name?: string;
   registration?: string;
   type?: EmployeeType;
+  organizationId: string;
+  farmId: string;
   page: number;
   perPage: number;
   orderBy: string;

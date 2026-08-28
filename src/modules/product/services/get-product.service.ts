@@ -11,8 +11,12 @@ export class GetProductService {
     private readonly productRepository: ProductRepository,
   ) {}
 
-  async execute(id: string) {
-    const product = await this.productRepository.findById(id);
+  async execute(id: string, organizationId: string, farmId: string) {
+    const product = await this.productRepository.findById(
+      id,
+      organizationId,
+      farmId,
+    );
 
     if (!product) {
       throw new NotFoundException('Product does not exist');

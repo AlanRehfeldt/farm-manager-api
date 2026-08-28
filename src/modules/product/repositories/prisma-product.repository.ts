@@ -1,12 +1,13 @@
-import { PrismaService } from 'src/common/prisma/prisma.service';
-import { ProductRepository } from './product.repository';
+import { Injectable } from '@nestjs/common';
 import { Product } from '@prisma/client';
+import { catalogVisibilityWhere } from 'src/common/tenancy/catalog-visibility';
+import { PrismaService } from 'src/common/prisma/prisma.service';
 import {
   CreateProductData,
-  UpdateProductData,
   SearchManyQuery,
+  UpdateProductData,
 } from './@types';
-import { Injectable } from '@nestjs/common';
+import { ProductRepository } from './product.repository';
 
 @Injectable()
 export class PrismaProductRepository implements ProductRepository {
@@ -35,22 +36,23 @@ export class PrismaProductRepository implements ProductRepository {
     });
   }
 
-  async findById(id: string): Promise<Product | null> {
-    return await this.prisma.product.findUnique({
+  async findById(
+    id: string,
+    organizationId: string,
+    farmId: string,
+  ): Promise<Product | null> {
+    return await this.prisma.product.findFirst({
       where: {
         id,
+        ...catalogVisibilityWhere(organizationId, farmId),
       },
     });
   }
 
   async searchMany(query: SearchManyQuery): Promise<Product[]> {
-    const orderBy = query.orderBy;
-    const orderDirection = query.orderDirection;
-    const page = query.page;
-    const perPage = query.perPage;
-
     return await this.prisma.product.findMany({
       where: {
+        ...catalogVisibilityWhere(query.organizationId, query.farmId),
         name: {
           contains: query.name,
           mode: 'insensitive',
@@ -61,10 +63,10 @@ export class PrismaProductRepository implements ProductRepository {
         },
         unitOfMeasurementId: query.unitOfMeasurementId,
       },
-      skip: (page - 1) * perPage,
-      take: perPage,
+      skip: (query.page - 1) * query.perPage,
+      take: query.perPage,
       orderBy: {
-        [orderBy]: orderDirection,
+        [query.orderBy]: query.orderDirection,
       },
     });
   }
@@ -72,6 +74,7 @@ export class PrismaProductRepository implements ProductRepository {
   async count(query: SearchManyQuery): Promise<number> {
     return await this.prisma.product.count({
       where: {
+        ...catalogVisibilityWhere(query.organizationId, query.farmId),
         name: {
           contains: query.name,
           mode: 'insensitive',

@@ -13,7 +13,13 @@
 | `POST` | `/auth/login` | `@Public()` | Email + senha → set cookies |
 | `POST` | `/auth/refresh` | `@Public()` | Refresh cookie → novos tokens |
 | `POST` | `/auth/logout` | `@Public()` | Revoga refresh, limpa cookies |
-| `GET` | `/auth/me` | Protegido | Usuário atual (`@CurrentUser()`) |
+| `GET` | `/auth/me` | Protegido | Usuário atual + memberships |
+
+## Tenancy
+
+Rotas de catálogo e lançamentos: `@FarmScoped()` + header `x-farm-id`. Ver [08-tenancy.md](./08-tenancy.md).
+
+`GET /auth/me` devolve `memberships` (`farmId` null = org-wide).
 
 ## Guard global
 
@@ -68,14 +74,15 @@ Requisições cross-origin precisam de `credentials: 'include'` (ou equivalente)
 
 | Item | Planejado |
 |------|-----------|
-| Guards de role (`ADMIN` vs `USER`) | ADR-013, roadmap |
-| Tenancy por farm | ADR-005, `@FarmId()` no roadmap |
+| Guards de role (`ADMIN` vs `USER`) em rotas de catálogo | ADR-013; hoje ADMIN é checado no service de org/farm/membership |
+| ACL nomeada | ADR-013 |
 | Bearer como fluxo principal | Não — cookies são o padrão atual |
 
 Não documentar Bearer no OpenAPI como mecanismo principal sem mudança de arquitetura.
 
 ## Referências
 
+- [08-tenancy.md](./08-tenancy.md)
 - `src/modules/auth/`
 - [03-http.md](./03-http.md)
 - `farm-manager-docs/03-modulos/04-implementation-roadmap.md` (PR-02 auth)

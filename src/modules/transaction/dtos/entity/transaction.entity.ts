@@ -9,6 +9,12 @@ export class TransactionDto {
   id!: string;
 
   @ApiProperty({
+    example: 'uuid',
+    description: "Transaction's farm identifier",
+  })
+  farmId!: string;
+
+  @ApiProperty({
     example: TransactionType.PURCHASE_INPUT,
     description: "Transaction's type",
     enum: TransactionType,

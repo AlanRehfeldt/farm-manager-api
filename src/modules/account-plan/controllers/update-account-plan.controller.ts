@@ -2,22 +2,24 @@ import { Body, Controller, HttpStatus, Param, Put } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiConflictResponse,
-  ApiCreatedResponse,
   ApiNotFoundResponse,
+  ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
 import z from 'zod';
+import { OrganizationId } from 'src/common/tenancy/organization-id.decorator';
+import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
 import { ConflictDto } from 'src/common/errors/conflict.dto';
-import { UpdateAccountPlanService } from '../services/update-account-plan.service';
-import { UpdateAccountPlanResponseDto } from '../dtos/response/update-account-plan.dto';
+import { NotFoundDto } from 'src/common/errors/not-found.dto';
 import {
   UpdateAccountPlanBodyDto,
   UpdateAccountPlanParamDto,
 } from '../dtos/request/update-account-plan.dto';
-import { NotFoundDto } from 'src/common/errors/not-found.dto';
+import { UpdateAccountPlanResponseDto } from '../dtos/response/update-account-plan.dto';
+import { UpdateAccountPlanService } from '../services/update-account-plan.service';
 
 const updateAccountPlanParamSchema = z.object({
   id: z.uuid(),
@@ -42,6 +44,7 @@ const updateAccountPlanSchema = z.object({
 });
 
 @ApiTags('AccountPlan')
+@FarmScoped()
 @Controller('/account-plans')
 export class UpdateAccountPlanController {
   constructor(
@@ -49,7 +52,7 @@ export class UpdateAccountPlanController {
   ) {}
 
   @ApiOperation({ summary: 'Update account plan' })
-  @ApiCreatedResponse({
+  @ApiOkResponse({
     description: 'Account Plan updated successfully',
     type: UpdateAccountPlanResponseDto,
   })
@@ -58,7 +61,7 @@ export class UpdateAccountPlanController {
     type: BadRequestDto,
   })
   @ApiConflictResponse({
-    description: 'Conflict: Registration already exists',
+    description: 'Conflict: Code already exists',
     type: ConflictDto,
   })
   @ApiNotFoundResponse({
@@ -67,25 +70,24 @@ export class UpdateAccountPlanController {
   })
   @Put(':id')
   async update(
+    @OrganizationId() organizationId: string,
     @Param(new ZodValidationPipe(updateAccountPlanParamSchema))
     param: UpdateAccountPlanParamDto,
     @Body(new ZodValidationPipe(updateAccountPlanSchema))
     data: UpdateAccountPlanBodyDto,
   ) {
-    try {
-      const { accountPlan } = await this.updateAccountPlanService.execute({
+    const { accountPlan } = await this.updateAccountPlanService.execute(
+      organizationId,
+      {
         id: param.id,
         ...data,
-      });
+      },
+    );
 
-      return {
-        statusCode: HttpStatus.OK,
-        message: 'Account Plan updated successfully',
-        resukt: accountPlan,
-      };
-    } catch (error) {
-      console.error('Error updating account plan', error);
-      throw error;
-    }
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Account Plan updated successfully',
+      result: accountPlan,
+    };
   }
 }

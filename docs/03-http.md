@@ -5,6 +5,7 @@
 - **Sem prefixo global** — endpoints na raiz (`/products`, não `/api/products`).
 - **Plural**, kebab-case: `/cost-centers`, `/unit-of-measurements`, `/account-plans`.
 - Auth: `/auth/login`, `/auth/refresh`, `/auth/logout`, `/auth/me`.
+- Tenancy: `/organizations`, `/farms`, `/memberships`. Rotas de catálogo e lançamentos exigem header `x-farm-id` — ver [08-tenancy.md](./08-tenancy.md).
 
 Padrão CRUD por recurso:
 
@@ -61,15 +62,7 @@ Query params comuns (validados via Zod):
 
 ## Drift conhecido (não copiar)
 
-Vários controllers **get/update** ainda retornam a entidade com nome próprio em vez de `result`:
-
-```json
-{ "statusCode": 200, "message": "...", "product": { ... } }
-```
-
-Módulos afetados: Product, User, Employee, Supplier, Transaction, Installment.
-
-Módulos já alinhados com `result`: UnitOfMeasurement, CostCenter, AccountPlan.
+Alguns controllers de User ainda usam try/catch + `console.error`. Código novo deve delegar exceções ao Nest e usar envelope `result`.
 
 Ao tocar um controller legado, preferir migrar ao envelope `result` na mesma PR.
 

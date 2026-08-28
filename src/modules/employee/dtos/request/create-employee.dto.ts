@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { EmployeeType } from '@prisma/client';
 
 export class CreateEmployeeBodyDto {
@@ -20,4 +20,12 @@ export class CreateEmployeeBodyDto {
     enum: EmployeeType,
   })
   type!: EmployeeType;
+
+  @ApiPropertyOptional({
+    example: 'uuid',
+    nullable: true,
+    description:
+      'Restrict visibility to this farm; omit for all farms in the organization',
+  })
+  farmId?: string | null;
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UsePipes } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiOkResponse,
@@ -6,11 +6,14 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import z from 'zod';
+import { FarmId } from 'src/common/tenancy/farm-id.decorator';
+import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
+import { OrganizationId } from 'src/common/tenancy/organization-id.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
-import { FetchSuppliersService } from '../services/fetch-supplier.service';
 import { FetchSuppliersQueryDto } from '../dtos/request/fetch-supplier.dto';
 import { FetchSuppliersResponseDto } from '../dtos/response/fetch-supplier.dto';
+import { FetchSuppliersService } from '../services/fetch-supplier.service';
 
 const fetchSuppliersSchema = z.object({
   id: z.uuid().optional(),
@@ -25,13 +28,14 @@ const fetchSuppliersSchema = z.object({
 });
 
 @ApiTags('Supplier')
+@FarmScoped()
 @Controller('/suppliers')
 export class FetchSuppliersController {
   constructor(private readonly fetchSuppliersService: FetchSuppliersService) {}
 
   @ApiOperation({ summary: 'List suppliers' })
   @ApiOkResponse({
-    description: 'Suppliers retrived successfully',
+    description: 'Suppliers retrieved successfully',
     type: FetchSuppliersResponseDto,
   })
   @ApiBadRequestResponse({
@@ -39,23 +43,30 @@ export class FetchSuppliersController {
     type: BadRequestDto,
   })
   @Get()
-  @UsePipes(new ZodValidationPipe(fetchSuppliersSchema))
-  async fetch(@Query() query: FetchSuppliersQueryDto) {
-    try {
-      const { results, total, page, perPage, orderBy, orderDirection } =
-        await this.fetchSuppliersService.execute(query);
+  async fetch(
+    @OrganizationId() organizationId: string,
+    @FarmId() farmId: string,
+    @Query(new ZodValidationPipe(fetchSuppliersSchema))
+    query: FetchSuppliersQueryDto,
+  ) {
+    const { results, total, page, perPage, orderBy, orderDirection } =
+      await this.fetchSuppliersService.execute({
+        ...query,
+        organizationId,
+        farmId,
+        page: query.page ?? 1,
+        perPage: query.perPage ?? 10,
+        orderBy: query.orderBy ?? 'name',
+        orderDirection: query.orderDirection ?? 'asc',
+      });
 
-      return {
-        results,
-        total,
-        page,
-        perPage,
-        orderBy,
-        orderDirection,
-      };
-    } catch (error) {
-      console.error('Error fetching suppliers', error);
-      throw error;
-    }
+    return {
+      results,
+      total,
+      page,
+      perPage,
+      orderBy,
+      orderDirection,
+    };
   }
 }

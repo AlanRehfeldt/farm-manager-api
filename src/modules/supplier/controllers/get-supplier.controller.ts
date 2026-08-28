@@ -7,25 +7,29 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import z from 'zod';
+import { FarmId } from 'src/common/tenancy/farm-id.decorator';
+import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
+import { OrganizationId } from 'src/common/tenancy/organization-id.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
-import { GetSupplierService } from '../services/get-supplier.service';
 import { NotFoundDto } from 'src/common/errors/not-found.dto';
 import { GetSupplierParamDto } from '../dtos/request/get-supplier.dto';
 import { GetSupplierResponseDto } from '../dtos/response/get-supplier.dto';
+import { GetSupplierService } from '../services/get-supplier.service';
 
 const getSupplierParamSchema = z.object({
   id: z.uuid(),
 });
 
 @ApiTags('Supplier')
+@FarmScoped()
 @Controller('/suppliers')
 export class GetSupplierController {
   constructor(private readonly getSupplierService: GetSupplierService) {}
 
   @ApiOperation({ summary: 'Get supplier' })
   @ApiOkResponse({
-    description: 'Supplier retrived successfully',
+    description: 'Supplier retrieved successfully',
     type: GetSupplierResponseDto,
   })
   @ApiBadRequestResponse({
@@ -38,20 +42,21 @@ export class GetSupplierController {
   })
   @Get(':id')
   async get(
+    @OrganizationId() organizationId: string,
+    @FarmId() farmId: string,
     @Param(new ZodValidationPipe(getSupplierParamSchema))
     param: GetSupplierParamDto,
   ) {
-    try {
-      const { supplier } = await this.getSupplierService.execute(param.id);
+    const { supplier } = await this.getSupplierService.execute(
+      param.id,
+      organizationId,
+      farmId,
+    );
 
-      return {
-        statusCode: HttpStatus.OK,
-        message: 'Supplier retrived successfully',
-        supplier,
-      };
-    } catch (error) {
-      console.error('Error getting supplier', error);
-      throw error;
-    }
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Supplier retrieved successfully',
+      result: supplier,
+    };
   }
 }

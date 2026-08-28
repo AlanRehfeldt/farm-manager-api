@@ -7,25 +7,28 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import z from 'zod';
+import { FarmId } from 'src/common/tenancy/farm-id.decorator';
+import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
-import { GetInstallmentService } from '../services/get-installment.service';
 import { NotFoundDto } from 'src/common/errors/not-found.dto';
 import { GetInstallmentParamDto } from '../dtos/request/get-installment.dto';
 import { GetInstallmentResponseDto } from '../dtos/response/get-installment.dto';
+import { GetInstallmentService } from '../services/get-installment.service';
 
 const getInstallmentParamSchema = z.object({
   id: z.uuid(),
 });
 
 @ApiTags('Installment')
+@FarmScoped()
 @Controller('/installments')
 export class GetInstallmentController {
   constructor(private readonly getInstallmentService: GetInstallmentService) {}
 
   @ApiOperation({ summary: 'Get installment' })
   @ApiOkResponse({
-    description: 'Installment retrived successfully',
+    description: 'Installment retrieved successfully',
     type: GetInstallmentResponseDto,
   })
   @ApiBadRequestResponse({
@@ -38,22 +41,19 @@ export class GetInstallmentController {
   })
   @Get(':id')
   async get(
+    @FarmId() farmId: string,
     @Param(new ZodValidationPipe(getInstallmentParamSchema))
     param: GetInstallmentParamDto,
   ) {
-    try {
-      const { installment } = await this.getInstallmentService.execute(
-        param.id,
-      );
+    const { installment } = await this.getInstallmentService.execute(
+      param.id,
+      farmId,
+    );
 
-      return {
-        statusCode: HttpStatus.OK,
-        message: 'Installment retrived successfully',
-        installment,
-      };
-    } catch (error) {
-      console.error('Error getting installment', error);
-      throw error;
-    }
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Installment retrieved successfully',
+      result: installment,
+    };
   }
 }

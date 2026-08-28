@@ -9,7 +9,7 @@ export interface TransactionRepository {
   create(data: CreateTransactionData): Promise<Transaction>;
   update(data: UpdateTransactionData): Promise<Transaction>;
   delete(id: string): Promise<void>;
-  findById(id: string): Promise<Transaction | null>;
+  findById(id: string, farmId: string): Promise<Transaction | null>;
   searchMany(query: SearchManyQuery): Promise<Transaction[]>;
   count(query: SearchManyQuery): Promise<number>;
 }

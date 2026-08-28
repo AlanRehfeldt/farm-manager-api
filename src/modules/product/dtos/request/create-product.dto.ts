@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateProductBodyDto {
   @ApiProperty({
@@ -18,4 +18,12 @@ export class CreateProductBodyDto {
     description: "Unit of measurement's unique identifier",
   })
   unitOfMeasurementId!: string;
+
+  @ApiPropertyOptional({
+    example: 'uuid',
+    nullable: true,
+    description:
+      'Restrict visibility to this farm; omit for all farms in the organization',
+  })
+  farmId?: string | null;
 }

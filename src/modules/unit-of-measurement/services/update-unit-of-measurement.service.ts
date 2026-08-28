@@ -4,11 +4,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { UpdateUnitOfMeasurementData } from '../repositories/@types';
 import {
   UNIT_OF_MEASUREMENT_REPOSITORY,
   UnitOfMeasurementRepository,
 } from '../repositories/unit-of-measurement.repository';
-import { UpdateUnitOfMeasurementData } from '../repositories/@types';
 
 @Injectable()
 export class UpdateUnitOfMeasurementService {
@@ -17,18 +17,25 @@ export class UpdateUnitOfMeasurementService {
     private readonly unitOfMeasurementRepository: UnitOfMeasurementRepository,
   ) {}
 
-  async execute({ id, name, acronym }: UpdateUnitOfMeasurementData) {
-    const checkIfUnitOfMeasurementExists =
-      await this.unitOfMeasurementRepository.findById(id);
-    if (!checkIfUnitOfMeasurementExists) {
+  async execute(
+    organizationId: string,
+    { id, name, acronym }: UpdateUnitOfMeasurementData,
+  ) {
+    const existing = await this.unitOfMeasurementRepository.findById(
+      id,
+      organizationId,
+    );
+    if (!existing) {
       throw new NotFoundException('Unit of measurement does not exist');
     }
 
     if (acronym) {
-      const checkIfRegistrationExists =
-        await this.unitOfMeasurementRepository.findByAcronym(acronym);
-      if (checkIfRegistrationExists) {
-        throw new ConflictException('Registration already exists');
+      const duplicate = await this.unitOfMeasurementRepository.findByAcronym(
+        organizationId,
+        acronym,
+      );
+      if (duplicate && duplicate.id !== id) {
+        throw new ConflictException('Acronym already exists');
       }
     }
 

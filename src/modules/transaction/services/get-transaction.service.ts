@@ -11,8 +11,8 @@ export class GetTransactionService {
     private readonly transactionRepository: TransactionRepository,
   ) {}
 
-  async execute(id: string) {
-    const transaction = await this.transactionRepository.findById(id);
+  async execute(id: string, farmId: string) {
+    const transaction = await this.transactionRepository.findById(id, farmId);
 
     if (!transaction) {
       throw new NotFoundException('Transaction does not exist');

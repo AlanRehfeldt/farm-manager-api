@@ -35,6 +35,6 @@ Use `prisma.$transaction()` quando o use case altera mais de um aggregate e falh
 
 - Soft delete (`deletedAt`)
 - Optimistic locking global
-- Tenancy filters automáticos no Prisma
+- Tenancy filters automáticos no Prisma (filtro nos repositórios; ver `docs/08-tenancy.md`)
 
 Não adicionar sem alinhar com ADRs em `farm-manager-docs`.

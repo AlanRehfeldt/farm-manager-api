@@ -11,8 +11,12 @@ export class GetSupplierService {
     private readonly supplierRepository: SupplierRepository,
   ) {}
 
-  async execute(id: string) {
-    const supplier = await this.supplierRepository.findById(id);
+  async execute(id: string, organizationId: string, farmId: string) {
+    const supplier = await this.supplierRepository.findById(
+      id,
+      organizationId,
+      farmId,
+    );
 
     if (!supplier) {
       throw new NotFoundException('Supplier does not exist');

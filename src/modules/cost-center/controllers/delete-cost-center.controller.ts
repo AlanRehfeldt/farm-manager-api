@@ -1,24 +1,27 @@
 import { Controller, Delete, HttpStatus, Param } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
-  ApiCreatedResponse,
   ApiNotFoundResponse,
+  ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
 import z from 'zod';
+import { OrganizationId } from 'src/common/tenancy/organization-id.decorator';
+import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
-import { DeleteCostCenterService } from '../services/delete-cost-center.service';
+import { NotFoundDto } from 'src/common/errors/not-found.dto';
 import { DeleteCostCenterParamDto } from '../dtos/request/delete-cost-center.dto';
 import { DeleteCostCenterResponseDto } from '../dtos/response/delete-cost-center.dto';
-import { NotFoundDto } from 'src/common/errors/not-found.dto';
+import { DeleteCostCenterService } from '../services/delete-cost-center.service';
 
 const deleteCostCenterParamSchema = z.object({
   id: z.uuid(),
 });
 
 @ApiTags('CostCenter')
+@FarmScoped()
 @Controller('/cost-centers')
 export class DeleteCostCenterController {
   constructor(
@@ -26,7 +29,7 @@ export class DeleteCostCenterController {
   ) {}
 
   @ApiOperation({ summary: 'Delete cost center' })
-  @ApiCreatedResponse({
+  @ApiOkResponse({
     description: 'Cost center deleted successfully',
     type: DeleteCostCenterResponseDto,
   })
@@ -40,20 +43,16 @@ export class DeleteCostCenterController {
   })
   @Delete(':id')
   async delete(
+    @OrganizationId() organizationId: string,
     @Param(new ZodValidationPipe(deleteCostCenterParamSchema))
     param: DeleteCostCenterParamDto,
   ) {
-    try {
-      await this.deleteCostCenterService.execute(param.id);
+    await this.deleteCostCenterService.execute(param.id, organizationId);
 
-      return {
-        statusCode: HttpStatus.OK,
-        message: 'Cost center deleted successfully',
-        result: null,
-      };
-    } catch (error) {
-      console.error('Error deleting cost center', error);
-      throw error;
-    }
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Cost center deleted successfully',
+      result: null,
+    };
   }
 }

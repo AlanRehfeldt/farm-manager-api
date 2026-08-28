@@ -11,8 +11,12 @@ export class GetEmployeeService {
     private readonly employeeRepository: EmployeeRepository,
   ) {}
 
-  async execute(id: string) {
-    const employee = await this.employeeRepository.findById(id);
+  async execute(id: string, organizationId: string, farmId: string) {
+    const employee = await this.employeeRepository.findById(
+      id,
+      organizationId,
+      farmId,
+    );
 
     if (!employee) {
       throw new NotFoundException('Employee does not exist');

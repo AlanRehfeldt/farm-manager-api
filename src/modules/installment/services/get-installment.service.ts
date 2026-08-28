@@ -11,8 +11,8 @@ export class GetInstallmentService {
     private readonly installmentRepository: InstallmentRepository,
   ) {}
 
-  async execute(id: string) {
-    const installment = await this.installmentRepository.findById(id);
+  async execute(id: string, farmId: string) {
+    const installment = await this.installmentRepository.findById(id, farmId);
 
     if (!installment) {
       throw new NotFoundException('Installment does not exist');

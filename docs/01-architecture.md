@@ -46,6 +46,9 @@ Em `src/app.module.ts`:
 | Módulo | Contexto aproximado |
 |--------|---------------------|
 | `AuthModule` | Identity — login, refresh, logout, me |
+| `OrganizationModule` | Tenancy — org |
+| `FarmModule` | Tenancy — fazendas |
+| `MembershipModule` | Tenancy — papéis ADMIN/USER |
 | `UserModule` | Identity |
 | `EmployeeModule` | People |
 | `SupplierModule` | Catalog |
@@ -56,28 +59,28 @@ Em `src/app.module.ts`:
 | `TransactionModule` | Finance |
 | `InstallmentModule` | Finance |
 
-`src/common/`: `PrismaModule`, `ZodValidationPipe`, DTOs de erro para Swagger.
+`src/common/`: `PrismaModule`, `TenancyModule` (global), `ZodValidationPipe`, DTOs de erro para Swagger.
 
 ## Alinhamento com bounded contexts
 
-O mapa alvo de contextos e fronteiras está em `farm-manager-docs/04-tecnico/03-api-boundaries.md`. Os módulos Nest atuais são um **subconjunto** do catálogo — sem Season, Inventory, Operations, Harvest, Costing, Tenancy explícitos ainda.
+O mapa alvo de contextos e fronteiras está em `farm-manager-docs/04-tecnico/03-api-boundaries.md`. Os módulos Nest atuais são um **subconjunto** do catálogo — sem Season, Inventory HTTP, Operations, Harvest ou Costing.
 
 ## Implementado vs. planejado (ADRs)
 
 | Capacidade | No código hoje | Planejado (docs/ADRs) |
 |------------|----------------|-------------------------|
 | Auth JWT cookie | Sim | — |
-| Role enum em `User` | Sim (sem guard) | ADR-013 permissions |
-| Tenancy por farm/org | Não | ADR-005, `@FarmId()` no roadmap |
+| Role enum em `User` | Sim (legado; authz de fazenda = Membership) | ADR-013 permissions |
+| Tenancy por farm/org | Sim (`@FarmScoped()`, `@FarmId()`, `@OrganizationId()`) | ACL nomeada ADR-013 |
 | CostEntry ledger | Não | ADR-006, ADR-007 |
-| Inventory desacoplado | Não | ADR-012 |
+| Inventory desacoplado | Parcial (`ProductStockBalance` por farm; sem API de movimento) | ADR-012 |
 | Domain event outbox | Não | ADR-015 |
 | Ports entre módulos | Parcial (token de repo exportado) | ADR-016 — ports formais |
 | Soft delete | Não | — |
 | Exception filter global | Não | Erros de domínio estruturados |
 | Boundary lint (imports) | Não | `04-architecture-overview.md` |
 
-**Não implementar** tenancy, RBAC ou outbox em código novo sem PR/ADR explícito — documentar drift se necessário.
+**Não implementar** RBAC nomeado, outbox ou CostEntry em código novo sem PR/ADR explícito — documentar drift se necessário.
 
 ## Infra transversal
 

@@ -15,6 +15,7 @@ Documentação **interna do repositório** da API NestJS: como o código está o
 | [05-auth.md](./05-auth.md) | JWT, cookies, rotas públicas |
 | [06-persistence.md](./06-persistence.md) | Prisma, migrations, repositórios |
 | [07-development.md](./07-development.md) | Setup local, env, scripts |
+| [08-tenancy.md](./08-tenancy.md) | Organization, Farm, Membership, `x-farm-id` |
 
 ## Fronteira com `farm-manager-docs`
 

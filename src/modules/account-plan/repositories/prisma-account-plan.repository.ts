@@ -1,13 +1,13 @@
-import { PrismaService } from 'src/common/prisma/prisma.service';
-import { AccountPlanRepository } from './account-plan.repository';
-import { AccountPlan } from '@prisma/client';
-import {
-  CreateAccountPlanData,
-  UpdateAccountPlanData,
-  SearchManyQuery,
-  AccountPlanWithChildren,
-} from './@types';
 import { Injectable } from '@nestjs/common';
+import { AccountPlan } from '@prisma/client';
+import { PrismaService } from 'src/common/prisma/prisma.service';
+import {
+  AccountPlanWithChildren,
+  CreateAccountPlanData,
+  SearchManyQuery,
+  UpdateAccountPlanData,
+} from './@types';
+import { AccountPlanRepository } from './account-plan.repository';
 
 @Injectable()
 export class PrismaAccountPlanRepository implements AccountPlanRepository {
@@ -36,17 +36,25 @@ export class PrismaAccountPlanRepository implements AccountPlanRepository {
     });
   }
 
-  async findById(id: string): Promise<AccountPlan | null> {
-    return await this.prisma.accountPlan.findUnique({
+  async findById(
+    id: string,
+    organizationId: string,
+  ): Promise<AccountPlan | null> {
+    return await this.prisma.accountPlan.findFirst({
       where: {
         id,
+        organizationId,
       },
     });
   }
 
-  async findByCode(code: string): Promise<AccountPlan | null> {
+  async findByCode(
+    organizationId: string,
+    code: string,
+  ): Promise<AccountPlan | null> {
     return await this.prisma.accountPlan.findFirst({
       where: {
+        organizationId,
         code,
       },
     });
@@ -55,9 +63,16 @@ export class PrismaAccountPlanRepository implements AccountPlanRepository {
   async searchMany(
     params: SearchManyQuery,
   ): Promise<AccountPlanWithChildren[]> {
-    const { page, perPage, orderBy, orderDirection, ...filters } = params;
+    const {
+      page,
+      perPage,
+      orderBy,
+      orderDirection,
+      organizationId,
+      ...filters
+    } = params;
 
-    const whereClauses = Object.entries(filters)
+    const filterClauses = Object.entries(filters)
       .map(([key, value]) => {
         if (value) {
           if (key === 'name' || key === 'description' || key === 'code') {
@@ -68,20 +83,25 @@ export class PrismaAccountPlanRepository implements AccountPlanRepository {
         }
         return null;
       })
-      .filter(Boolean)
-      .join(' AND ');
+      .filter(Boolean);
+
+    const whereClauses = [
+      `s."organizationId" = '${organizationId}'`,
+      ...filterClauses,
+    ].join(' AND ');
 
     const query = `
       WITH RECURSIVE account_plan_ancestors AS (
-        SELECT s."id", s."name", s."description", s."code", s."parentId", s."createdAt", s."updatedAt"
+        SELECT s."id", s."name", s."description", s."code", s."parentId", s."organizationId", s."createdAt", s."updatedAt"
         FROM account_plans s
-        ${whereClauses ? `WHERE ${whereClauses}` : ''}
+        WHERE ${whereClauses}
         UNION ALL
-        SELECT s."id", s."name", s."description", s."code", s."parentId", s."createdAt", s."updatedAt"
+        SELECT s."id", s."name", s."description", s."code", s."parentId", s."organizationId", s."createdAt", s."updatedAt"
         FROM account_plans s
         INNER JOIN account_plan_ancestors sa ON s."id" = sa."parentId"
+        WHERE s."organizationId" = '${organizationId}'
       )
-      SELECT DISTINCT "id", "name", "description", "code", "parentId", "createdAt", "updatedAt"
+      SELECT DISTINCT "id", "name", "description", "code", "parentId", "organizationId", "createdAt", "updatedAt"
       FROM account_plan_ancestors
       ORDER BY "${orderBy}" ${orderDirection}
     `;
@@ -139,6 +159,7 @@ export class PrismaAccountPlanRepository implements AccountPlanRepository {
   async count(query: SearchManyQuery): Promise<number> {
     return await this.prisma.accountPlan.count({
       where: {
+        organizationId: query.organizationId,
         name: {
           contains: query.name,
           mode: 'insensitive',

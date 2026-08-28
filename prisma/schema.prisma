@@ -12,6 +12,64 @@ enum Role {
   USER
 }
 
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  farms               Farm[]
+  memberships         Membership[]
+  employees           Employee[]
+  suppliers           Supplier[]
+  costCenters         CostCenter[]
+  accountPlans        AccountPlan[]
+  unitsOfMeasurement  UnitOfMeasurement[]
+  products            Product[]
+
+  @@map("organizations")
+}
+
+model Farm {
+  id             String   @id @default(uuid())
+  organizationId String
+  name           String
+  timezone       String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization   Organization          @relation(fields: [organizationId], references: [id])
+  memberships    Membership[]
+  employees      Employee[]
+  suppliers      Supplier[]
+  products       Product[]
+  transactions   Transaction[]
+  stockMovements StockMovement[]
+  stockBalances  ProductStockBalance[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@map("farms")
+}
+
+model Membership {
+  id             String   @id @default(uuid())
+  userId         String
+  organizationId String
+  farmId         String?
+  role           Role     @default(USER)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  farm         Farm?        @relation(fields: [farmId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([organizationId])
+  @@map("memberships")
+}
+
 model User {
   id         String   @id @default(uuid())
   name       String
@@ -24,6 +82,7 @@ model User {
 
   employee      Employee?      @relation(fields: [employeeId], references: [id])
   refreshTokens RefreshToken[]
+  memberships   Membership[]
 
   @@map("users")
 }
@@ -58,64 +117,90 @@ enum EmployeeType {
 }
 
 model Employee {
-  id           String       @id @default(uuid())
-  name         String
-  registration String       @unique
-  type         EmployeeType
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  id             String       @id @default(uuid())
+  organizationId String
+  farmId         String?
+  name           String
+  registration   String
+  type           EmployeeType
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  farm         Farm?        @relation(fields: [farmId], references: [id])
 
   users              User[]
   salaryTransactions SalaryTransaction[]
 
+  @@unique([organizationId, registration])
+  @@index([organizationId])
+  @@index([farmId])
   @@map("employees")
 }
 
 model Supplier {
-  id          String   @id @default(uuid())
-  name        String
-  cnpj        String   @unique
-  address     String?
-  phoneNumber String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String   @id @default(uuid())
+  organizationId String
+  farmId         String?
+  name           String
+  cnpj           String
+  address        String?
+  phoneNumber    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  farm         Farm?        @relation(fields: [farmId], references: [id])
 
   purchaseTransactions PurchaseTransaction[]
 
+  @@unique([organizationId, cnpj])
+  @@index([organizationId])
+  @@index([farmId])
   @@map("suppliers")
 }
 
 model CostCenter {
-  id          String   @id @default(uuid())
-  name        String
-  description String
-  code        String   @unique
-  parentId    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String   @id @default(uuid())
+  organizationId String
+  name           String
+  description    String
+  code           String
+  parentId       String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
 
   transactionAllocation TransactionAllocation[]
 
   parent   CostCenter?  @relation("Children", fields: [parentId], references: [id])
   children CostCenter[] @relation("Children")
 
+  @@unique([organizationId, code])
+  @@index([organizationId])
   @@map("cost_centers")
 }
 
 model AccountPlan {
-  id          String   @id @default(uuid())
-  name        String
-  description String
-  code        String   @unique
-  parentId    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String   @id @default(uuid())
+  organizationId String
+  name           String
+  description    String
+  code           String
+  parentId       String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
 
   transactionAllocation TransactionAllocation[]
 
   parent   AccountPlan?  @relation("Children", fields: [parentId], references: [id])
   children AccountPlan[] @relation("Children")
 
+  @@unique([organizationId, code])
+  @@index([organizationId])
   @@map("account_plans")
 }
 
@@ -166,30 +251,41 @@ model TransactionAllocation {
 }
 
 model UnitOfMeasurement {
-  id        String   @id @default(uuid())
-  name      String
-  acronym   String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String   @id @default(uuid())
+  organizationId String
+  name           String
+  acronym        String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  products Product[]
+  organization Organization @relation(fields: [organizationId], references: [id])
+  products     Product[]
 
+  @@unique([organizationId, acronym])
+  @@index([organizationId])
   @@map("unit_of_measurements")
 }
 
 model Product {
   id                  String   @id @default(uuid())
+  organizationId      String
+  farmId              String?
   name                String
   description         String?
   unitOfMeasurementId String
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
-  unitOfMeasurement           UnitOfMeasurement            @relation(fields: [unitOfMeasurementId], references: [id])
+  organization      Organization      @relation(fields: [organizationId], references: [id])
+  farm              Farm?             @relation(fields: [farmId], references: [id])
+  unitOfMeasurement UnitOfMeasurement @relation(fields: [unitOfMeasurementId], references: [id])
+
   purchaseTransactionProducts PurchaseTransactionProduct[]
   stockMovements              StockMovement[]
-  stockBalance                ProductStockBalance?
+  stockBalances               ProductStockBalance[]
 
+  @@index([organizationId])
+  @@index([farmId])
   @@map("products")
 }
 
@@ -274,11 +370,14 @@ enum TransactionType {
 
 model Transaction {
   id        String          @id @default(uuid())
+  farmId    String
   type      TransactionType
   date      DateTime        @default(now())
   note      String?
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
+
+  farm Farm @relation(fields: [farmId], references: [id])
 
   installments           Installment[]
   transactionAllocations TransactionAllocation[]
@@ -288,6 +387,7 @@ model Transaction {
   genericDetails      GenericTransactionDetails?
   stockMovements      StockMovement[]
 
+  @@index([farmId])
   @@map("transactions")
 }
 
@@ -305,6 +405,7 @@ enum StockMovementSourceType {
 
 model StockMovement {
   id            String                   @id @default(uuid())
+  farmId        String
   type          StockMovementType
   productId     String
   date          DateTime                 @default(now())
@@ -316,23 +417,29 @@ model StockMovement {
   createdAt     DateTime                 @default(now())
   updatedAt     DateTime                 @updatedAt
 
+  farm        Farm         @relation(fields: [farmId], references: [id])
   product     Product      @relation(fields: [productId], references: [id])
   transaction Transaction? @relation(fields: [transactionId], references: [id])
 
+  @@index([farmId])
+  @@index([productId])
   @@map("stock_movements")
 }
 
-// PR-03: PK composta (farmId, productId) quando Farm existir (ADR-012).
 model ProductStockBalance {
   id             String   @id @default(uuid())
-  productId      String   @unique
+  farmId         String
+  productId      String
   quantityOnHand Decimal  @default(0) @db.Decimal(18, 6)
   avgCost        Decimal  @default(0) @db.Decimal(18, 8)
   version        Int      @default(0)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
+  farm    Farm    @relation(fields: [farmId], references: [id])
   product Product @relation(fields: [productId], references: [id])
 
+  @@unique([farmId, productId])
+  @@index([farmId])
   @@map("product_stock_balances")
 }

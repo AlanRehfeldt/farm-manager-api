@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { EmployeeType } from '@prisma/client';
 
 export class EmployeeDto {
@@ -7,6 +7,19 @@ export class EmployeeDto {
     description: "Employee's unique identifier",
   })
   id!: string;
+
+  @ApiProperty({
+    example: 'uuid',
+    description: "Employee's organization identifier",
+  })
+  organizationId!: string;
+
+  @ApiPropertyOptional({
+    example: 'uuid',
+    nullable: true,
+    description: 'When set, employee is visible only on this farm',
+  })
+  farmId?: string | null;
 
   @ApiProperty({
     example: 'John Doe',

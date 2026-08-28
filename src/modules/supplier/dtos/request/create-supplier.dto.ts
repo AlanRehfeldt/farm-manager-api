@@ -24,4 +24,12 @@ export class CreateSupplierBodyDto {
     description: "Supplier's phone number",
   })
   phoneNumber!: string;
+
+  @ApiPropertyOptional({
+    example: 'uuid',
+    nullable: true,
+    description:
+      'Restrict visibility to this farm; omit for all farms in the organization',
+  })
+  farmId?: string | null;
 }

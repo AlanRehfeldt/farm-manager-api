@@ -9,7 +9,11 @@ export interface ProductRepository {
   create(data: CreateProductData): Promise<Product>;
   update(data: UpdateProductData): Promise<Product>;
   delete(id: string): Promise<void>;
-  findById(id: string): Promise<Product | null>;
+  findById(
+    id: string,
+    organizationId: string,
+    farmId: string,
+  ): Promise<Product | null>;
   searchMany(query: SearchManyQuery): Promise<Product[]>;
   count(query: SearchManyQuery): Promise<number>;
 }

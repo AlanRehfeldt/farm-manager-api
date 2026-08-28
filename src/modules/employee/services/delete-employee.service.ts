@@ -11,8 +11,12 @@ export class DeleteEmployeeService {
     private readonly employeeRepository: EmployeeRepository,
   ) {}
 
-  async execute(id: string) {
-    const checkIfEmployeeExists = await this.employeeRepository.findById(id);
+  async execute(id: string, organizationId: string, farmId: string) {
+    const checkIfEmployeeExists = await this.employeeRepository.findById(
+      id,
+      organizationId,
+      farmId,
+    );
     if (!checkIfEmployeeExists) {
       throw new NotFoundException('Employee does not exist');
     }

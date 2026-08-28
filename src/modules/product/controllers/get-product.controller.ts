@@ -7,25 +7,29 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import z from 'zod';
+import { FarmId } from 'src/common/tenancy/farm-id.decorator';
+import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
+import { OrganizationId } from 'src/common/tenancy/organization-id.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
-import { GetProductService } from '../services/get-product.service';
 import { NotFoundDto } from 'src/common/errors/not-found.dto';
 import { GetProductParamDto } from '../dtos/request/get-product.dto';
 import { GetProductResponseDto } from '../dtos/response/get-product.dto';
+import { GetProductService } from '../services/get-product.service';
 
 const getProductParamSchema = z.object({
   id: z.uuid(),
 });
 
 @ApiTags('Product')
+@FarmScoped()
 @Controller('/products')
 export class GetProductController {
   constructor(private readonly getProductService: GetProductService) {}
 
   @ApiOperation({ summary: 'Get product' })
   @ApiOkResponse({
-    description: 'Product retrived successfully',
+    description: 'Product retrieved successfully',
     type: GetProductResponseDto,
   })
   @ApiBadRequestResponse({
@@ -38,20 +42,21 @@ export class GetProductController {
   })
   @Get(':id')
   async get(
+    @OrganizationId() organizationId: string,
+    @FarmId() farmId: string,
     @Param(new ZodValidationPipe(getProductParamSchema))
     param: GetProductParamDto,
   ) {
-    try {
-      const { product } = await this.getProductService.execute(param.id);
+    const { product } = await this.getProductService.execute(
+      param.id,
+      organizationId,
+      farmId,
+    );
 
-      return {
-        statusCode: HttpStatus.OK,
-        message: 'Product retrived successfully',
-        product,
-      };
-    } catch (error) {
-      console.error('Error getting product', error);
-      throw error;
-    }
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Product retrieved successfully',
+      result: product,
+    };
   }
 }

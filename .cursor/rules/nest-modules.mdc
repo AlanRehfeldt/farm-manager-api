@@ -34,6 +34,7 @@ src/modules/{entity}/
 | delete | `DeleteProductController` | `DeleteProductService` | `DELETE /products/:id` |
 
 - Rotas: plural, kebab-case (`/cost-centers`, `/unit-of-measurements`).
+- Catálogo e lançamentos: `@FarmScoped()` na classe; `@FarmId()` / `@OrganizationId()` nos params — **não** `@UsePipes` no método (validaria o contexto de tenancy como body).
 - Service: um método público `execute(...)`; lança exceções Nest (`NotFoundException`, etc.).
 
 ## Repository

@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class ProductDto {
   @ApiProperty({
@@ -6,6 +6,19 @@ export class ProductDto {
     description: "Product's unique identifier",
   })
   id!: string;
+
+  @ApiProperty({
+    example: 'uuid',
+    description: "Product's organization identifier",
+  })
+  organizationId!: string;
+
+  @ApiPropertyOptional({
+    example: 'uuid',
+    nullable: true,
+    description: 'When set, product is visible only on this farm',
+  })
+  farmId?: string | null;
 
   @ApiProperty({
     example: 'John Doe',

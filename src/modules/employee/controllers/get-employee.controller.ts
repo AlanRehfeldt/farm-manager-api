@@ -7,25 +7,29 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import z from 'zod';
+import { FarmId } from 'src/common/tenancy/farm-id.decorator';
+import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
+import { OrganizationId } from 'src/common/tenancy/organization-id.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
-import { GetEmployeeService } from '../services/get-employee.service';
 import { NotFoundDto } from 'src/common/errors/not-found.dto';
 import { GetEmployeeParamDto } from '../dtos/request/get-employee.dto';
 import { GetEmployeeResponseDto } from '../dtos/response/get-employee.dto';
+import { GetEmployeeService } from '../services/get-employee.service';
 
 const getEmployeeParamSchema = z.object({
   id: z.uuid(),
 });
 
 @ApiTags('Employee')
+@FarmScoped()
 @Controller('/employees')
 export class GetEmployeeController {
   constructor(private readonly getEmployeeService: GetEmployeeService) {}
 
   @ApiOperation({ summary: 'Get employee' })
   @ApiOkResponse({
-    description: 'Employee retrived successfully',
+    description: 'Employee retrieved successfully',
     type: GetEmployeeResponseDto,
   })
   @ApiBadRequestResponse({
@@ -38,20 +42,21 @@ export class GetEmployeeController {
   })
   @Get(':id')
   async get(
+    @OrganizationId() organizationId: string,
+    @FarmId() farmId: string,
     @Param(new ZodValidationPipe(getEmployeeParamSchema))
     param: GetEmployeeParamDto,
   ) {
-    try {
-      const { employee } = await this.getEmployeeService.execute(param.id);
+    const { employee } = await this.getEmployeeService.execute(
+      param.id,
+      organizationId,
+      farmId,
+    );
 
-      return {
-        statusCode: HttpStatus.OK,
-        message: 'Employee retrived successfully',
-        employee,
-      };
-    } catch (error) {
-      console.error('Error getting employee', error);
-      throw error;
-    }
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Employee retrieved successfully',
+      result: employee,
+    };
   }
 }

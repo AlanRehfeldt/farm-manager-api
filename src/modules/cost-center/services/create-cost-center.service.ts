@@ -8,7 +8,14 @@ import {
   COST_CENTER_REPOSITORY,
   CostCenterRepository,
 } from '../repositories/cost-center.repository';
-import { CreateCostCenterData } from '../repositories/@types';
+
+type CreateCostCenterInput = {
+  name: string;
+  description: string;
+  code: string;
+  parentId?: string;
+  organizationId: string;
+};
 
 @Injectable()
 export class CreateCostCenterService {
@@ -17,15 +24,26 @@ export class CreateCostCenterService {
     private readonly costCenterRepository: CostCenterRepository,
   ) {}
 
-  async execute({ name, description, code, parentId }: CreateCostCenterData) {
-    const checkIfCodeExists = await this.costCenterRepository.findByCode(code);
+  async execute({
+    name,
+    description,
+    code,
+    parentId,
+    organizationId,
+  }: CreateCostCenterInput) {
+    const checkIfCodeExists = await this.costCenterRepository.findByCode(
+      organizationId,
+      code,
+    );
     if (checkIfCodeExists) {
       throw new ConflictException('Code already exists');
     }
 
     if (parentId) {
-      const checkIfParentIdExists =
-        await this.costCenterRepository.findById(parentId);
+      const checkIfParentIdExists = await this.costCenterRepository.findById(
+        parentId,
+        organizationId,
+      );
       if (!checkIfParentIdExists) {
         throw new NotFoundException('ParentId does not exist');
       }
@@ -36,6 +54,7 @@ export class CreateCostCenterService {
       description,
       code,
       parentId,
+      organizationId,
     });
 
     return { costCenter };

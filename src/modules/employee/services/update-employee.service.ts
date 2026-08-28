@@ -4,11 +4,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { UpdateEmployeeData } from '../repositories/@types';
 import {
   EMPLOYEE_REPOSITORY,
   EmployeeRepository,
 } from '../repositories/employee.repository';
-import { UpdateEmployeeData } from '../repositories/@types';
 
 @Injectable()
 export class UpdateEmployeeService {
@@ -17,16 +17,26 @@ export class UpdateEmployeeService {
     private readonly employeeRepository: EmployeeRepository,
   ) {}
 
-  async execute({ id, name, registration, type }: UpdateEmployeeData) {
-    const checkIfEmployeeExists = await this.employeeRepository.findById(id);
+  async execute(
+    organizationId: string,
+    farmId: string,
+    { id, name, registration, type }: UpdateEmployeeData,
+  ) {
+    const checkIfEmployeeExists = await this.employeeRepository.findById(
+      id,
+      organizationId,
+      farmId,
+    );
     if (!checkIfEmployeeExists) {
       throw new NotFoundException('Employee does not exist');
     }
 
     if (registration) {
-      const checkIfRegistrationExists =
-        await this.employeeRepository.findByRegistration(registration);
-      if (checkIfRegistrationExists) {
+      const duplicate = await this.employeeRepository.findByRegistration(
+        organizationId,
+        registration,
+      );
+      if (duplicate && duplicate.id !== id) {
         throw new ConflictException('Registration already exists');
       }
     }

@@ -1,24 +1,27 @@
 import { Controller, Delete, HttpStatus, Param } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
-  ApiCreatedResponse,
   ApiNotFoundResponse,
+  ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
 import z from 'zod';
+import { FarmId } from 'src/common/tenancy/farm-id.decorator';
+import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
-import { DeleteInstallmentService } from '../services/delete-installment.service';
+import { NotFoundDto } from 'src/common/errors/not-found.dto';
 import { DeleteInstallmentParamDto } from '../dtos/request/delete-installment.dto';
 import { DeleteInstallmentResponseDto } from '../dtos/response/delete-installment.dto';
-import { NotFoundDto } from 'src/common/errors/not-found.dto';
+import { DeleteInstallmentService } from '../services/delete-installment.service';
 
 const deleteInstallmentParamSchema = z.object({
   id: z.uuid(),
 });
 
 @ApiTags('Installment')
+@FarmScoped()
 @Controller('/installments')
 export class DeleteInstallmentController {
   constructor(
@@ -26,7 +29,7 @@ export class DeleteInstallmentController {
   ) {}
 
   @ApiOperation({ summary: 'Delete installment' })
-  @ApiCreatedResponse({
+  @ApiOkResponse({
     description: 'Installment deleted successfully',
     type: DeleteInstallmentResponseDto,
   })
@@ -40,20 +43,16 @@ export class DeleteInstallmentController {
   })
   @Delete(':id')
   async delete(
+    @FarmId() farmId: string,
     @Param(new ZodValidationPipe(deleteInstallmentParamSchema))
     param: DeleteInstallmentParamDto,
   ) {
-    try {
-      await this.deleteInstallmentService.execute(param.id);
+    await this.deleteInstallmentService.execute(param.id, farmId);
 
-      return {
-        statusCode: HttpStatus.OK,
-        message: 'Installment deleted successfully',
-        result: null,
-      };
-    } catch (error) {
-      console.error('Error deleting installment', error);
-      throw error;
-    }
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Installment deleted successfully',
+      result: null,
+    };
   }
 }

@@ -11,9 +11,11 @@ export class DeleteInstallmentService {
     private readonly installmentRepository: InstallmentRepository,
   ) {}
 
-  async execute(id: string) {
-    const checkIfInstallmentExists =
-      await this.installmentRepository.findById(id);
+  async execute(id: string, farmId: string) {
+    const checkIfInstallmentExists = await this.installmentRepository.findById(
+      id,
+      farmId,
+    );
     if (!checkIfInstallmentExists) {
       throw new NotFoundException('Installment does not exist');
     }
