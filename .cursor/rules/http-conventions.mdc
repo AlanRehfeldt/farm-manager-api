@@ -1,0 +1,42 @@
+---
+description: Rotas HTTP, envelopes de resposta e Swagger
+globs: src/**/controllers/**,src/**/dtos/**
+alwaysApply: false
+---
+
+# HTTP e respostas
+
+Detalhe: `docs/03-http.md`
+
+## Envelope — comando e get/update
+
+```typescript
+return {
+  statusCode: HttpStatus.CREATED,
+  message: 'Product created successfully',
+  result: product,
+};
+```
+
+- Sempre `result` — não `product`, `user`, etc. (drift legado em alguns controllers).
+- Delete: `result: null`.
+
+## Listagem (fetch)
+
+Sem `statusCode`/`message`:
+
+```typescript
+return { results, total, page, perPage, orderBy, orderDirection };
+```
+
+## Swagger
+
+- `@ApiTags`, `@ApiOperation`, `@Api*Response` em cada controller.
+- Request/response DTOs com `@ApiProperty` — espelhar o envelope real.
+- DTOs de erro: `src/common/errors/*.dto.ts`.
+- Auth: cookies httpOnly — não documentar Bearer se o fluxo é cookie.
+
+## Rotas
+
+- Sem prefixo global (`/api`) — rotas na raiz (`/products`).
+- Plural, kebab-case.

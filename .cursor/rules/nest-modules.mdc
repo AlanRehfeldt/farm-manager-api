@@ -1,0 +1,55 @@
+---
+description: Estrutura de módulos NestJS e slice vertical
+globs: src/modules/**
+alwaysApply: false
+---
+
+# Módulos NestJS
+
+Detalhe: `docs/02-module-anatomy.md`
+
+## Anatomia
+
+```
+src/modules/{entity}/
+  {entity}.module.ts
+  controllers/{action}-{entity}.controller.ts
+  services/{action}-{entity}.service.ts
+  repositories/{entity}.repository.ts
+  repositories/prisma-{entity}.repository.ts
+  repositories/@types.ts
+  dtos/entity/{entity}.entity.ts
+  dtos/request/{action}-{entity}.dto.ts
+  dtos/response/{action}-{entity}.dto.ts
+```
+
+## Naming
+
+| Ação | Controller | Service | Rota |
+|------|------------|---------|------|
+| create | `CreateProductController` | `CreateProductService` | `POST /products` |
+| get | `GetProductController` | `GetProductService` | `GET /products/:id` |
+| fetch | `FetchProductsController` | `FetchProductsService` | `GET /products` |
+| update | `UpdateProductController` | `UpdateProductService` | `PUT /products/:id` |
+| delete | `DeleteProductController` | `DeleteProductService` | `DELETE /products/:id` |
+
+- Rotas: plural, kebab-case (`/cost-centers`, `/unit-of-measurements`).
+- Service: um método público `execute(...)`; lança exceções Nest (`NotFoundException`, etc.).
+
+## Repository
+
+```typescript
+// product.repository.ts
+export interface ProductRepository { /* ... */ }
+export const PRODUCT_REPOSITORY = 'PRODUCT_REPOSITORY';
+
+// product.module.ts
+providers: [
+  { provide: PRODUCT_REPOSITORY, useClass: PrismaProductRepository },
+  CreateProductService,
+],
+exports: [PRODUCT_REPOSITORY], // se outro módulo precisa
+```
+
+- Injetar via `@Inject(PRODUCT_REPOSITORY)` — não `PrismaService` direto no service de use case.
+- Cross-módulo: importar o módulo e usar o token exportado (ex.: `UnitOfMeasurementModule` em `ProductModule`).

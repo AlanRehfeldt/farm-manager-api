@@ -1,0 +1,49 @@
+---
+description: Validação com Zod 4 e ZodValidationPipe
+globs: src/**/controllers/**,src/common/pipes/**,src/env.ts
+alwaysApply: false
+---
+
+# Validação — Zod 4
+
+Detalhe: `docs/02-module-anatomy.md`, `docs/04-errors.md`
+
+**Não usar** `class-validator`, `class-transformer` nem global `ValidationPipe` para validar input.
+
+## Zod 4 (não Zod 3)
+
+```typescript
+// ❌ Zod 3
+z.string().email()
+z.string().uuid()
+
+// ✅ Zod 4
+z.email()
+z.uuid()
+z.url()
+```
+
+## Schema no controller
+
+Schema inline no topo do arquivo controller; DTOs em `dtos/request/` só para Swagger (`@ApiProperty`).
+
+```typescript
+const createBodySchema = z.object({
+  name: z.string().min(5).max(150),
+  unitOfMeasurementId: z.uuid(),
+});
+
+@Post()
+@UsePipes(new ZodValidationPipe(createBodySchema))
+async create(@Body() data: CreateProductBodyDto) { /* ... */ }
+```
+
+Params/query: `@Param(new ZodValidationPipe(idSchema))` ou `@UsePipes` no método.
+
+## Env
+
+`src/env.ts` — `envSchema` validado em `ConfigModule.forRoot({ validate })`. Acessar com `ConfigService<Env, true>` e `{ infer: true }`.
+
+## Erro de validação
+
+`ZodValidationPipe` retorna 400 com `{ statusCode, message: 'Validation failed', errors: [{ field, message }] }`.

@@ -1,0 +1,41 @@
+---
+description: Testes unitários e e2e (padrão futuro)
+globs: "**/*.spec.ts,test/**"
+alwaysApply: false
+---
+
+# Testes
+
+Detalhe: `docs/07-development.md`. Invariantes de produto: `farm-manager-docs/07-plataforma/03-testing-strategy.md`.
+
+## Estado atual
+
+Não há `*.spec.ts` em `src/`. E2e scaffold em `test/app.e2e-spec.ts` está desatualizado.
+
+## Quando adicionar testes
+
+### Unit (service)
+
+```typescript
+const module = await Test.createTestingModule({
+  providers: [
+    CreateProductService,
+    { provide: PRODUCT_REPOSITORY, useValue: mockProductRepository },
+  ],
+}).compile();
+```
+
+- Mock via token `ENTITY_REPOSITORY`, não `PrismaService` no service test.
+
+### E2E
+
+- `supertest` + app Nest bootstrap.
+- Auth: simular cookies (`fm_access_token`) após login ou mock de guard.
+- Um teste por rota crítica; não depender de `GET /` (não existe).
+
+## Scripts
+
+```bash
+npm test          # jest unit
+npm run test:e2e  # jest e2e
+```

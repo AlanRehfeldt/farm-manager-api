@@ -1,0 +1,15 @@
+---
+description: Convenções gerais do farm-manager-api para agentes
+alwaysApply: true
+---
+
+# Farm Manager API — projeto
+
+- Prosa de docs e comentários: português. Código, rotas, DTOs e tabelas: inglês.
+- Domínio e ADRs: `farm-manager-docs` — não reescrever aqui; linkar quando relevante.
+- Engenharia da API: `docs/` neste repositório.
+- Não inventar tenancy (`@FarmId()`), RBAC por role, outbox ou CostEntry — ainda não existem no código.
+- Não usar `class-validator` / `ValidationPipe` para validação — o projeto usa Zod 4 + `ZodValidationPipe`.
+- Não copiar `console.error` + try/catch nos controllers — é drift legado.
+- Imports: `src/...` (não `../../` profundo).
+- Skills instaladas: `nestjs-best-practices`, `prisma-*` — priorizar convenções deste repo quando conflitarem.

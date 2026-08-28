@@ -1,0 +1,38 @@
+---
+description: Autenticação JWT via cookies httpOnly
+globs: src/modules/auth/**
+alwaysApply: false
+---
+
+# Auth
+
+Detalhe: `docs/05-auth.md`
+
+## Fluxo
+
+- JWT access + refresh em cookies httpOnly (`JWT_ACCESS_COOKIE_NAME`, `JWT_REFRESH_COOKIE_NAME`).
+- `JwtAuthGuard` registrado globalmente via `APP_GUARD` em `AuthModule`.
+- `JwtStrategy` extrai token do cookie, não do header Bearer.
+
+## Rotas públicas
+
+Marcar com `@Public()` — sem isso, guard exige cookie válido.
+
+Públicas hoje: `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`, `POST /users`.
+
+## Decorators
+
+- `@Public()` — `src/modules/auth/decorators/public.decorator.ts`
+- `@CurrentUser()` — retorna `{ userId: string }`
+
+## CORS
+
+`credentials: true` + `CORS_ORIGIN` — frontend deve enviar cookies cross-origin.
+
+## O que não existe
+
+- `@Roles()` / guards de permissão
+- Tenancy por farm no guard
+- Bearer token como fluxo principal
+
+Não documentar ou implementar Bearer como padrão sem mudança explícita de arquitetura.

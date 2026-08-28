@@ -1,0 +1,40 @@
+---
+description: Prisma, migrations e padrão de repositório
+globs: prisma/**,src/**/repositories/**
+alwaysApply: false
+---
+
+# Prisma e persistência
+
+Detalhe: `docs/06-persistence.md`
+
+## Setup
+
+- Schema: `prisma/schema.prisma` — PostgreSQL, `@@map("snake_case")`.
+- Client: `PrismaService` em `src/common/prisma/` — cada módulo importa `PrismaModule`.
+- Versão: Prisma 6 (`@prisma/client` ^6).
+
+## Repositório
+
+- `PrismaXRepository` implementa interface do módulo; injeta `PrismaService`.
+- Services de use case **não** injetam `PrismaService` diretamente.
+- **Não** importar `PrismaClient` de outro módulo — usar token exportado ou port (ADR-016).
+
+## Migrations
+
+```bash
+npx prisma migrate dev --name descriptive_name
+npx prisma generate
+```
+
+## Transações
+
+Use `prisma.$transaction()` quando o use case altera mais de um aggregate e falha parcial não é aceitável. Hoje poucos use cases usam — código novo cross-entity deve considerar.
+
+## O que não existe hoje
+
+- Soft delete (`deletedAt`)
+- Optimistic locking global
+- Tenancy filters automáticos no Prisma
+
+Não adicionar sem alinhar com ADRs em `farm-manager-docs`.

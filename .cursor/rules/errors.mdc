@@ -1,0 +1,43 @@
+---
+description: Tratamento de erros HTTP e exceções Nest
+globs: src/**/controllers/**,src/**/services/**,src/common/errors/**
+alwaysApply: false
+---
+
+# Erros
+
+Detalhe: `docs/04-errors.md`. Códigos de domínio (`INSUFFICIENT_STOCK`, etc.): `farm-manager-docs/04-tecnico/03-api-boundaries.md`.
+
+## Onde lançar
+
+- **Service**: `throw new NotFoundException('...')`, `ConflictException`, `BadRequestException`, `UnauthorizedException`.
+- **Controller**: delegar ao service; não try/catch com `console.error`.
+
+## Validação (400)
+
+Formato do `ZodValidationPipe`:
+
+```json
+{
+  "statusCode": 400,
+  "message": "Validation failed",
+  "errors": [{ "field": "email", "message": "Invalid email address." }]
+}
+```
+
+## Exceções Nest (sem filter global)
+
+Nest formata automaticamente. Exemplo 404:
+
+```json
+{ "statusCode": 404, "message": "Product not found", "error": "Not Found" }
+```
+
+## DTOs de erro
+
+`src/common/errors/` — usados **apenas** em `@ApiBadRequestResponse`, `@ApiNotFoundResponse`, etc. Não garantem shape idêntico ao runtime para todos os status.
+
+## Código novo
+
+- Não adicionar exception filter sem ADR.
+- Códigos de erro de domínio estruturados (`code: 'INSUFFICIENT_STOCK'`) são planejados — não inventar até haver filter/envelope acordado.
