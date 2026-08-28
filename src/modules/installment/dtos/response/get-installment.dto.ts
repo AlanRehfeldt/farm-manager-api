@@ -6,13 +6,13 @@ export class GetInstallmentResponseDto {
   @ApiProperty({
     default: HttpStatus.OK,
   })
-  statusCode: string;
+  statusCode!: string;
 
   @ApiProperty({
     default: 'Installment retrived successfully',
   })
-  message: string;
+  message!: string;
 
   @ApiProperty()
-  result: InstallmentDto;
+  result!: InstallmentDto;
 }

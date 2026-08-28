@@ -4,5 +4,5 @@ export class GetInstallmentParamDto {
   @ApiProperty({
     description: "Installment's unique identifier",
   })
-  id: string;
+  id!: string;
 }

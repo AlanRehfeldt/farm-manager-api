@@ -6,13 +6,13 @@ export class GetAccountPlanResponseDto {
   @ApiProperty({
     default: HttpStatus.OK,
   })
-  statusCode: string;
+  statusCode!: string;
 
   @ApiProperty({
     default: 'Account plan retrived successfully',
   })
-  message: string;
+  message!: string;
 
   @ApiProperty()
-  result: AccountPlanDto;
+  result!: AccountPlanDto;
 }

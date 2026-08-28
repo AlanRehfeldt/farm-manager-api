@@ -5,15 +5,15 @@ export class NotFoundDto {
   @ApiProperty({
     default: HttpStatus.NOT_FOUND,
   })
-  statusCode: number;
+  statusCode!: number;
 
   @ApiProperty({
     default: 'Resource not found',
   })
-  message: string;
+  message!: string;
 
   @ApiProperty({
     default: 'Not Found',
   })
-  error: string;
+  error!: string;
 }

@@ -5,28 +5,28 @@ export class FetchInstallmentsResponseDto {
   @ApiProperty({
     type: [InstallmentDto],
   })
-  results: InstallmentDto[];
+  results!: InstallmentDto[];
 
   @ApiProperty()
-  total: number;
+  total!: number;
 
   @ApiProperty({
     default: 1,
   })
-  page: number;
+  page!: number;
 
   @ApiProperty({
     default: 10,
   })
-  perPage: number;
+  perPage!: number;
 
   @ApiProperty({
     default: 'name',
   })
-  orderBy: number;
+  orderBy!: number;
 
   @ApiProperty({
     default: 'asc',
   })
-  orderDirection: number;
+  orderDirection!: number;
 }

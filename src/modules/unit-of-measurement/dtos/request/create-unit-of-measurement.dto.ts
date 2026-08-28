@@ -5,11 +5,11 @@ export class CreateUnitOfMeasurementBodyDto {
     example: 'Liter',
     description: "Unit of measurement's name",
   })
-  name: string;
+  name!: string;
 
   @ApiProperty({
     example: 'L',
     description: "Unit of measurement's acronym",
   })
-  acronym: string;
+  acronym!: string;
 }

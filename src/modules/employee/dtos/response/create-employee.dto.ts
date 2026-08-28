@@ -7,13 +7,13 @@ export class CreateEmployeeResponseDto {
   @ApiProperty({
     default: HttpStatus.CREATED,
   })
-  statusCode: string;
+  statusCode!: string;
 
   @ApiProperty({
     default: 'Employee created successfully',
   })
-  message: string;
+  message!: string;
 
   @ApiProperty()
-  result: EmployeeDto;
+  result!: EmployeeDto;
 }

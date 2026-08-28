@@ -3,26 +3,26 @@ import { TransactionType } from '@prisma/client';
 
 export class FetchTransactionsQueryDto {
   @ApiPropertyOptional()
-  id: string;
+  id!: string;
 
   @ApiPropertyOptional()
-  type: TransactionType;
+  type!: TransactionType;
 
   @ApiPropertyOptional()
-  dateFrom: Date;
+  dateFrom!: Date;
 
   @ApiPropertyOptional()
-  dateTo: Date;
+  dateTo!: Date;
 
   @ApiPropertyOptional()
-  page: number;
+  page!: number;
 
   @ApiPropertyOptional()
-  perPage: number;
+  perPage!: number;
 
   @ApiPropertyOptional()
-  orderBy: string;
+  orderBy!: string;
 
   @ApiPropertyOptional()
-  orderDirection: 'asc' | 'desc';
+  orderDirection!: 'asc' | 'desc';
 }

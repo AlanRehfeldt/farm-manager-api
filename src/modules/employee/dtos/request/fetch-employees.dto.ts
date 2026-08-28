@@ -3,26 +3,26 @@ import { EmployeeType } from '@prisma/client';
 
 export class FetchEmployeesQueryDto {
   @ApiPropertyOptional()
-  id: string;
+  id!: string;
 
   @ApiPropertyOptional()
-  name: string;
+  name!: string;
 
   @ApiPropertyOptional()
-  registration: string;
+  registration!: string;
 
   @ApiPropertyOptional()
-  type: EmployeeType;
+  type!: EmployeeType;
 
   @ApiPropertyOptional()
-  page: number;
+  page!: number;
 
   @ApiPropertyOptional()
-  perPage: number;
+  perPage!: number;
 
   @ApiPropertyOptional()
-  orderBy: string;
+  orderBy!: string;
 
   @ApiPropertyOptional()
-  orderDirection: 'asc' | 'desc';
+  orderDirection!: 'asc' | 'desc';
 }

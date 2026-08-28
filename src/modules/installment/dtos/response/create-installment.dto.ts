@@ -7,13 +7,13 @@ export class CreateInstallmentResponseDto {
   @ApiProperty({
     default: HttpStatus.CREATED,
   })
-  statusCode: string;
+  statusCode!: string;
 
   @ApiProperty({
     default: 'Installment created successfully',
   })
-  message: string;
+  message!: string;
 
   @ApiProperty()
-  result: InstallmentDto;
+  result!: InstallmentDto;
 }

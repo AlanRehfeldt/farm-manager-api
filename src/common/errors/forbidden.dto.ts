@@ -5,15 +5,15 @@ export class ForbiddenDto {
   @ApiProperty({
     default: HttpStatus.FORBIDDEN,
   })
-  statusCode: number;
+  statusCode!: number;
 
   @ApiProperty({
     default: 'Resorce not allowed',
   })
-  message: string;
+  message!: string;
 
   @ApiProperty({
     default: 'Forbidden',
   })
-  error: string;
+  error!: string;
 }

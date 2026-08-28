@@ -4,5 +4,5 @@ export class DeleteEmployeeParamDto {
   @ApiProperty({
     description: "Employee's unique identifier",
   })
-  id: string;
+  id!: string;
 }

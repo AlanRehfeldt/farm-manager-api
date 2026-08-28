@@ -5,10 +5,10 @@ export class UnauthorizedDto {
   @ApiProperty({
     default: HttpStatus.UNAUTHORIZED,
   })
-  statusCode: number;
+  statusCode!: number;
 
   @ApiProperty({
     default: 'Unauthorized',
   })
-  message: string;
+  message!: string;
 }

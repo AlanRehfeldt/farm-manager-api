@@ -6,13 +6,13 @@ export class UpdateCostCenterResponseDto {
   @ApiProperty({
     default: HttpStatus.OK,
   })
-  statusCode: string;
+  statusCode!: string;
 
   @ApiProperty({
     default: 'Cost center updated successfully',
   })
-  message: string;
+  message!: string;
 
   @ApiProperty()
-  result: CostCenterDto;
+  result!: CostCenterDto;
 }

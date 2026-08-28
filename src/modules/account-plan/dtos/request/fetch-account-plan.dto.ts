@@ -3,29 +3,29 @@ import { OrderableAccountPlanField } from '../../repositories/@types';
 
 export class FetchAccountPlansQueryDto {
   @ApiPropertyOptional()
-  id: string;
+  id!: string;
 
   @ApiPropertyOptional()
-  name: string;
+  name!: string;
 
   @ApiPropertyOptional()
-  description: string;
+  description!: string;
 
   @ApiPropertyOptional()
-  code: string;
+  code!: string;
 
   @ApiPropertyOptional()
-  parentId: string;
+  parentId!: string;
 
   @ApiPropertyOptional()
-  page: number;
+  page!: number;
 
   @ApiPropertyOptional()
-  perPage: number;
+  perPage!: number;
 
   @ApiPropertyOptional()
-  orderBy: OrderableAccountPlanField;
+  orderBy!: OrderableAccountPlanField;
 
   @ApiPropertyOptional()
-  orderDirection: 'asc' | 'desc';
+  orderDirection!: 'asc' | 'desc';
 }

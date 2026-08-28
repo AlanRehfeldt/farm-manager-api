@@ -5,15 +5,15 @@ export class ConflictDto {
   @ApiProperty({
     default: HttpStatus.CONFLICT,
   })
-  statusCode: number;
+  statusCode!: number;
 
   @ApiProperty({
     default: 'Conflictuos data provided',
   })
-  message: string;
+  message!: string;
 
   @ApiProperty({
     default: 'Conflict',
   })
-  error: string;
+  error!: string;
 }

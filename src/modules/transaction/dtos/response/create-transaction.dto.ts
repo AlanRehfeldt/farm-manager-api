@@ -7,13 +7,13 @@ export class CreateTransactionResponseDto {
   @ApiProperty({
     default: HttpStatus.CREATED,
   })
-  statusCode: string;
+  statusCode!: string;
 
   @ApiProperty({
     default: 'Transaction created successfully',
   })
-  message: string;
+  message!: string;
 
   @ApiProperty()
-  result: TransactionDto;
+  result!: TransactionDto;
 }

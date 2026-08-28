@@ -6,13 +6,13 @@ export class GetSupplierResponseDto {
   @ApiProperty({
     default: HttpStatus.OK,
   })
-  statusCode: string;
+  statusCode!: string;
 
   @ApiProperty({
     default: 'Supplier retrived successfully',
   })
-  message: string;
+  message!: string;
 
   @ApiProperty()
-  result: SupplierDto;
+  result!: SupplierDto;
 }

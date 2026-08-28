@@ -4,5 +4,5 @@ export class DeleteCostCenterParamDto {
   @ApiProperty({
     description: "Cost center's unique identifier",
   })
-  id: string;
+  id!: string;
 }

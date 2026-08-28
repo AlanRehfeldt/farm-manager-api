@@ -6,44 +6,44 @@ export class UserDto {
     example: 'uuid',
     description: "User's unique identifier",
   })
-  id: string;
+  id!: string;
 
   @ApiProperty({
     example: 'John Doe',
     description: "User's name",
   })
-  name: string;
+  name!: string;
 
   @ApiProperty({
     example: 'john.doe@example.com',
     description: "User's email address",
   })
-  email: string;
+  email!: string;
 
   @ApiProperty({
     example: Role.USER,
     description: "User's role in system",
     enum: Role,
   })
-  role: Role;
+  role!: Role;
 
   @ApiPropertyOptional({
     example: 'uuid',
     description: "User's employee unique identifier",
   })
-  employeeId: string;
+  employeeId!: string;
 
   @ApiProperty({
     example: '2023-01-01T00:00:00.000Z',
     description: "User's creation date",
   })
-  createdAt: Date;
+  createdAt!: Date;
 
   @ApiProperty({
     example: '2023-01-01T00:00:00.000Z',
     description: "User's update date",
   })
-  updatedAt: Date;
+  updatedAt!: Date;
 
   constructor(partial: Partial<UserDto>) {
     Object.assign(this, partial);

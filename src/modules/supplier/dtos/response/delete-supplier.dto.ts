@@ -5,13 +5,13 @@ export class DeleteSupplierResponseDto {
   @ApiProperty({
     default: HttpStatus.OK,
   })
-  statusCode: string;
+  statusCode!: string;
 
   @ApiProperty({
     default: 'Supplier deleted successfully',
   })
-  message: string;
+  message!: string;
 
   @ApiProperty({ default: null, nullable: true, type: 'null' })
-  result: null;
+  result!: null;
 }

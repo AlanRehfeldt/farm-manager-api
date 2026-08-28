@@ -4,5 +4,5 @@ export class GetUserParamDto {
   @ApiProperty({
     description: "User's unique identifier",
   })
-  id: string;
+  id!: string;
 }

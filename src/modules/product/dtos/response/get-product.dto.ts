@@ -6,13 +6,13 @@ export class GetProductResponseDto {
   @ApiProperty({
     default: HttpStatus.OK,
   })
-  statusCode: string;
+  statusCode!: string;
 
   @ApiProperty({
     default: 'Product retrived successfully',
   })
-  message: string;
+  message!: string;
 
   @ApiProperty()
-  result: ProductDto;
+  result!: ProductDto;
 }

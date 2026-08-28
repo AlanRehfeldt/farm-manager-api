@@ -5,24 +5,24 @@ export class CreateCostCenterBodyDto {
     example: 'Research & Development',
     description: "Cost center's name",
   })
-  name: string;
+  name!: string;
 
   @ApiProperty({
     example:
       'Focuses on innovation, product development, and technological advancements',
     description: "Cost center's description",
   })
-  description: string;
+  description!: string;
 
   @ApiProperty({
     example: '01.02.001',
     description: "Cost center's code",
   })
-  code: string;
+  code!: string;
 
   @ApiPropertyOptional({
     example: 'uuid',
     description: "Cost center's parent's unique identifier (if applicable)",
   })
-  parentId: string;
+  parentId!: string;
 }

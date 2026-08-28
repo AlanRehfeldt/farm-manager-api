@@ -4,22 +4,22 @@ export class UpdateUserParamDto {
   @ApiProperty({
     description: "User's unique identifier",
   })
-  id: string;
+  id!: string;
 }
 
 export class UpdateUserBodyDto {
   @ApiPropertyOptional({
     description: "User's name",
   })
-  name: string;
+  name!: string;
 
   @ApiPropertyOptional({
     description: "User's Email address",
   })
-  email: string;
+  email!: string;
 
   @ApiPropertyOptional({
     description: "User's employee unique identifier",
   })
-  employeeId: string;
+  employeeId!: string;
 }

@@ -6,13 +6,13 @@ export class UpdateTransactionResponseDto {
   @ApiProperty({
     default: HttpStatus.OK,
   })
-  statusCode: string;
+  statusCode!: string;
 
   @ApiProperty({
     default: 'Transaction updated successfully',
   })
-  message: string;
+  message!: string;
 
   @ApiProperty()
-  result: TransactionDto;
+  result!: TransactionDto;
 }

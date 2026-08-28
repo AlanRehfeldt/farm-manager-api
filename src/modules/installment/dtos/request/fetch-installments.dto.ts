@@ -3,53 +3,53 @@ import { PaymentForm } from '@prisma/client';
 
 export class FetchInstallmentsQueryDto {
   @ApiPropertyOptional()
-  id: string;
+  id!: string;
 
   @ApiPropertyOptional()
-  valueInCentsFrom: number;
+  valueInCentsFrom!: number;
 
   @ApiPropertyOptional()
-  valueInCentsTo: number;
+  valueInCentsTo!: number;
 
   @ApiPropertyOptional()
-  dueDateFrom: Date;
+  dueDateFrom!: Date;
 
   @ApiPropertyOptional()
-  dueDateTo: Date;
+  dueDateTo!: Date;
 
   @ApiPropertyOptional()
-  paymentDateFrom: Date;
+  paymentDateFrom!: Date;
 
   @ApiPropertyOptional()
-  paymentDateTo: Date;
+  paymentDateTo!: Date;
 
   @ApiPropertyOptional()
-  paymentForm: PaymentForm;
+  paymentForm!: PaymentForm;
 
   @ApiPropertyOptional()
-  transactionId: string;
+  transactionId!: string;
 
   @ApiPropertyOptional()
-  createdAtFrom: Date;
+  createdAtFrom!: Date;
 
   @ApiPropertyOptional()
-  createdAtTo: Date;
+  createdAtTo!: Date;
 
   @ApiPropertyOptional()
-  updatedAtFrom: Date;
+  updatedAtFrom!: Date;
 
   @ApiPropertyOptional()
-  updatedAtTo: Date;
+  updatedAtTo!: Date;
 
   @ApiPropertyOptional()
-  page: number;
+  page!: number;
 
   @ApiPropertyOptional()
-  perPage: number;
+  perPage!: number;
 
   @ApiPropertyOptional()
-  orderBy: string;
+  orderBy!: string;
 
   @ApiPropertyOptional()
-  orderDirection: 'asc' | 'desc';
+  orderDirection!: 'asc' | 'desc';
 }

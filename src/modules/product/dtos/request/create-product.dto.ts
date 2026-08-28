@@ -5,17 +5,17 @@ export class CreateProductBodyDto {
     example: 'John Doe',
     description: "Product's name",
   })
-  name: string;
+  name!: string;
 
   @ApiProperty({
     example: '123456',
     description: "Product's description",
   })
-  description: string;
+  description!: string;
 
   @ApiProperty({
     example: 'uuid',
     description: "Unit of measurement's unique identifier",
   })
-  unitOfMeasurementId: string;
+  unitOfMeasurementId!: string;
 }

@@ -6,13 +6,13 @@ export class GetUnitOfMeasurementResponseDto {
   @ApiProperty({
     default: HttpStatus.OK,
   })
-  statusCode: string;
+  statusCode!: string;
 
   @ApiProperty({
     default: 'Unit of measurement retrived successfully',
   })
-  message: string;
+  message!: string;
 
   @ApiProperty()
-  result: UnitOfMeasurementDto;
+  result!: UnitOfMeasurementDto;
 }

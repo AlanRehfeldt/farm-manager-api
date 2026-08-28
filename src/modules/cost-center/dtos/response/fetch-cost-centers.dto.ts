@@ -5,28 +5,28 @@ export class FetchCostCentersResponseDto {
   @ApiProperty({
     type: [CostCenterDto],
   })
-  results: CostCenterDto[];
+  results!: CostCenterDto[];
 
   @ApiProperty()
-  total: number;
+  total!: number;
 
   @ApiProperty({
     default: 1,
   })
-  page: number;
+  page!: number;
 
   @ApiProperty({
     default: 10,
   })
-  perPage: number;
+  perPage!: number;
 
   @ApiProperty({
     default: 'name',
   })
-  orderBy: number;
+  orderBy!: number;
 
   @ApiProperty({
     default: 'asc',
   })
-  orderDirection: number;
+  orderDirection!: number;
 }

@@ -4,5 +4,5 @@ export class DeleteProductParamDto {
   @ApiProperty({
     description: "Product's unique identifier",
   })
-  id: string;
+  id!: string;
 }

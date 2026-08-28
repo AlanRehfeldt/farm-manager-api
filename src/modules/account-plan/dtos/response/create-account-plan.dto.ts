@@ -7,13 +7,13 @@ export class CreateAccountPlanResponseDto {
   @ApiProperty({
     default: HttpStatus.CREATED,
   })
-  statusCode: string;
+  statusCode!: string;
 
   @ApiProperty({
     default: 'Account plan created successfully',
   })
-  message: string;
+  message!: string;
 
   @ApiProperty()
-  result: AccountPlanDto;
+  result!: AccountPlanDto;
 }

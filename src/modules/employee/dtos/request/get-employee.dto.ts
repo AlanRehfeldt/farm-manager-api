@@ -4,5 +4,5 @@ export class GetEmployeeParamDto {
   @ApiProperty({
     description: "Employee's unique identifier",
   })
-  id: string;
+  id!: string;
 }

@@ -4,22 +4,22 @@ export class UpdateProductParamDto {
   @ApiProperty({
     description: "Product's unique identifier",
   })
-  id: string;
+  id!: string;
 }
 
 export class UpdateProductBodyDto {
   @ApiPropertyOptional({
     description: "Product's name",
   })
-  name: string;
+  name!: string;
 
   @ApiPropertyOptional({
     description: "Product's description",
   })
-  description: string;
+  description!: string;
 
   @ApiPropertyOptional({
     description: "Unit of measurement's unique identifier",
   })
-  unitOfMeasurementId: string;
+  unitOfMeasurementId!: string;
 }

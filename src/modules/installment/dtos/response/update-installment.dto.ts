@@ -6,13 +6,13 @@ export class UpdateInstallmentResponseDto {
   @ApiProperty({
     default: HttpStatus.OK,
   })
-  statusCode: string;
+  statusCode!: string;
 
   @ApiProperty({
     default: 'Installment updated successfully',
   })
-  message: string;
+  message!: string;
 
   @ApiProperty()
-  result: InstallmentDto;
+  result!: InstallmentDto;
 }

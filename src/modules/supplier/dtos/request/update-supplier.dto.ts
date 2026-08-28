@@ -4,27 +4,27 @@ export class UpdateSupplierParamDto {
   @ApiProperty({
     description: "Supplier's unique identifier",
   })
-  id: string;
+  id!: string;
 }
 
 export class UpdateSupplierBodyDto {
   @ApiPropertyOptional({
     description: "Supplier's name",
   })
-  name: string;
+  name!: string;
 
   @ApiPropertyOptional({
     description: "Supplier's cnpj",
   })
-  cnpj: string;
+  cnpj!: string;
 
   @ApiPropertyOptional({
     description: "Supplier's address",
   })
-  address: string;
+  address!: string;
 
   @ApiPropertyOptional({
     description: "Supplier's phone number",
   })
-  phoneNumber: string;
+  phoneNumber!: string;
 }

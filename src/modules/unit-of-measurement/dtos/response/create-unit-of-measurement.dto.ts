@@ -7,13 +7,13 @@ export class CreateUnitOfMeasurementResponseDto {
   @ApiProperty({
     default: HttpStatus.CREATED,
   })
-  statusCode: string;
+  statusCode!: string;
 
   @ApiProperty({
     default: 'Unit of measurement created successfully',
   })
-  message: string;
+  message!: string;
 
   @ApiProperty()
-  result: UnitOfMeasurementDto;
+  result!: UnitOfMeasurementDto;
 }

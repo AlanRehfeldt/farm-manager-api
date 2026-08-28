@@ -7,13 +7,13 @@ export class CreateSupplierResponseDto {
   @ApiProperty({
     default: HttpStatus.CREATED,
   })
-  statusCode: string;
+  statusCode!: string;
 
   @ApiProperty({
     default: 'Supplier created successfully',
   })
-  message: string;
+  message!: string;
 
   @ApiProperty()
-  result: SupplierDto;
+  result!: SupplierDto;
 }

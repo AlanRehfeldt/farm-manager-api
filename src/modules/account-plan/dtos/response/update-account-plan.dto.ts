@@ -6,13 +6,13 @@ export class UpdateAccountPlanResponseDto {
   @ApiProperty({
     default: HttpStatus.OK,
   })
-  statusCode: string;
+  statusCode!: string;
 
   @ApiProperty({
     default: 'Account plan updated successfully',
   })
-  message: string;
+  message!: string;
 
   @ApiProperty()
-  result: AccountPlanDto;
+  result!: AccountPlanDto;
 }

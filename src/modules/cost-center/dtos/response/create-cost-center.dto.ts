@@ -7,13 +7,13 @@ export class CreateCostCenterResponseDto {
   @ApiProperty({
     default: HttpStatus.CREATED,
   })
-  statusCode: string;
+  statusCode!: string;
 
   @ApiProperty({
     default: 'Cost center created successfully',
   })
-  message: string;
+  message!: string;
 
   @ApiProperty()
-  result: CostCenterDto;
+  result!: CostCenterDto;
 }

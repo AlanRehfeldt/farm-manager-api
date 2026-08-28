@@ -7,17 +7,17 @@ export class CreateTransactionBodyDto {
     description: "Transaction's type",
     enum: TransactionType,
   })
-  type: TransactionType;
+  type!: TransactionType;
 
   @ApiProperty({
     example: '2023-01-01T00:00:00.000Z',
     description: "Transaction's date",
   })
-  date: Date;
+  date!: Date;
 
   @ApiPropertyOptional({
     example: 'Observation to the transaction',
     description: "Transaction's note (if applicable).",
   })
-  note: string;
+  note!: string;
 }

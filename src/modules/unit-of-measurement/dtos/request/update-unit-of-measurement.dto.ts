@@ -4,17 +4,17 @@ export class UpdateUnitOfMeasurementParamDto {
   @ApiProperty({
     description: "Unit of measurement's unique identifier",
   })
-  id: string;
+  id!: string;
 }
 
 export class UpdateUnitOfMeasurementBodyDto {
   @ApiPropertyOptional({
     description: "Unit of measurement's name",
   })
-  name: string;
+  name!: string;
 
   @ApiPropertyOptional({
     description: "Unit of measurement's acronym",
   })
-  acronym: string;
+  acronym!: string;
 }

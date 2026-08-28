@@ -6,13 +6,13 @@ export class GetCostCenterResponseDto {
   @ApiProperty({
     default: HttpStatus.OK,
   })
-  statusCode: string;
+  statusCode!: string;
 
   @ApiProperty({
     default: 'Cost center retrived successfully',
   })
-  message: string;
+  message!: string;
 
   @ApiProperty()
-  result: CostCenterDto;
+  result!: CostCenterDto;
 }

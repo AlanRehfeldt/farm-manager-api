@@ -6,13 +6,13 @@ export class GetEmployeeResponseDto {
   @ApiProperty({
     default: HttpStatus.OK,
   })
-  statusCode: string;
+  statusCode!: string;
 
   @ApiProperty({
     default: 'Employee retrived successfully',
   })
-  message: string;
+  message!: string;
 
   @ApiProperty()
-  result: EmployeeDto;
+  result!: EmployeeDto;
 }

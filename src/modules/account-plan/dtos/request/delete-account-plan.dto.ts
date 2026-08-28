@@ -4,5 +4,5 @@ export class DeleteAccountPlanParamDto {
   @ApiProperty({
     description: "Account plan's unique identifier",
   })
-  id: string;
+  id!: string;
 }

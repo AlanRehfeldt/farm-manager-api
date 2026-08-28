@@ -2,26 +2,26 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class FetchProductsQueryDto {
   @ApiPropertyOptional()
-  id: string;
+  id!: string;
 
   @ApiPropertyOptional()
-  name: string;
+  name!: string;
 
   @ApiPropertyOptional()
-  description: string;
+  description!: string;
 
   @ApiPropertyOptional()
-  unitOfMeasurementId: string;
+  unitOfMeasurementId!: string;
 
   @ApiPropertyOptional()
-  page: number;
+  page!: number;
 
   @ApiPropertyOptional()
-  perPage: number;
+  perPage!: number;
 
   @ApiPropertyOptional()
-  orderBy: string;
+  orderBy!: string;
 
   @ApiPropertyOptional()
-  orderDirection: 'asc' | 'desc';
+  orderDirection!: 'asc' | 'desc';
 }

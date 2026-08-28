@@ -7,13 +7,13 @@ export class CreateProductResponseDto {
   @ApiProperty({
     default: HttpStatus.CREATED,
   })
-  statusCode: string;
+  statusCode!: string;
 
   @ApiProperty({
     default: 'Product created successfully',
   })
-  message: string;
+  message!: string;
 
   @ApiProperty()
-  result: ProductDto;
+  result!: ProductDto;
 }

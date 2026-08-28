@@ -3,29 +3,29 @@ import { Role } from '@prisma/client';
 
 export class FetchUsersQueryDto {
   @ApiPropertyOptional()
-  id: string;
+  id!: string;
 
   @ApiPropertyOptional()
-  name: string;
+  name!: string;
 
   @ApiPropertyOptional()
-  email: string;
+  email!: string;
 
   @ApiPropertyOptional()
-  role: Role;
+  role!: Role;
 
   @ApiPropertyOptional()
-  employeeId: string;
+  employeeId!: string;
 
   @ApiPropertyOptional()
-  page: number;
+  page!: number;
 
   @ApiPropertyOptional()
-  perPage: number;
+  perPage!: number;
 
   @ApiPropertyOptional()
-  orderBy: string;
+  orderBy!: string;
 
   @ApiPropertyOptional()
-  orderDirection: 'asc' | 'desc';
+  orderDirection!: 'asc' | 'desc';
 }

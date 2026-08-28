@@ -5,24 +5,24 @@ export class UpdateEmployeeParamDto {
   @ApiProperty({
     description: "Employee's unique identifier",
   })
-  id: string;
+  id!: string;
 }
 
 export class UpdateEmployeeBodyDto {
   @ApiPropertyOptional({
     description: "Employee's name",
   })
-  name: string;
+  name!: string;
 
   @ApiPropertyOptional({
     description: "Employee's registration",
   })
-  registration: string;
+  registration!: string;
 
   @ApiPropertyOptional({
     example: EmployeeType.FARM_MANAGER,
     description: "Employee's role in the farm",
     enum: EmployeeType,
   })
-  type: EmployeeType;
+  type!: EmployeeType;
 }

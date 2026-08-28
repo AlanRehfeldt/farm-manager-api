@@ -7,13 +7,13 @@ export class CreateUserResponseDto {
   @ApiProperty({
     default: HttpStatus.CREATED,
   })
-  statusCode: string;
+  statusCode!: string;
 
   @ApiProperty({
     default: 'User created successfully',
   })
-  message: string;
+  message!: string;
 
   @ApiProperty()
-  result: UserDto;
+  result!: UserDto;
 }
