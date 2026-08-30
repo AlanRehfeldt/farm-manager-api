@@ -4,6 +4,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { PrismaService } from 'src/common/prisma/prisma.service';
+import { assertSelfOrPlatformAdmin } from 'src/common/platform/assert-self-or-platform-admin';
 import {
   USER_REPOSITORY,
   UserRepository,
@@ -21,9 +23,15 @@ export class UpdateUserService {
     private readonly userRepository: UserRepository,
     @Inject(EMPLOYEE_REPOSITORY)
     private readonly employeeRepository: EmployeeRepository,
+    private readonly prisma: PrismaService,
   ) {}
 
-  async execute({ id, name, email, employeeId }: UpdateUserData) {
+  async execute(
+    actorUserId: string,
+    { id, name, email, employeeId }: UpdateUserData,
+  ) {
+    await assertSelfOrPlatformAdmin(this.prisma, actorUserId, id);
+
     const checkIfUserExists = await this.userRepository.findById(id);
     if (!checkIfUserExists) {
       throw new NotFoundException('User does not exist');
@@ -31,7 +39,7 @@ export class UpdateUserService {
 
     if (email) {
       const checkIfEmailExists = await this.userRepository.findByEmail(email);
-      if (checkIfEmailExists) {
+      if (checkIfEmailExists && checkIfEmailExists.id !== id) {
         throw new ConflictException('Email already exists');
       }
     }

@@ -6,6 +6,7 @@ import request from 'supertest';
 import { Prisma } from '@prisma/client';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/common/prisma/prisma.service';
+import { insertUser } from './helpers/insert-user';
 
 type ApiCommandResponse<T> = {
   statusCode: number;
@@ -72,14 +73,11 @@ describe('Tenancy (e2e)', () => {
     server = app.getHttpServer() as Server;
     prisma = app.get(PrismaService);
 
-    await request(server)
-      .post('/users')
-      .send({
-        name: 'Admin Rehfeldt',
-        email: adminEmail,
-        password: adminPassword,
-      })
-      .expect(201);
+    await insertUser(prisma, {
+      name: 'Admin Rehfeldt',
+      email: adminEmail,
+      password: adminPassword,
+    });
 
     const loginAdmin = await request(server)
       .post('/auth/login')
@@ -127,14 +125,11 @@ describe('Tenancy (e2e)', () => {
       .expect(201);
     norteCookies = cookieHeader(loginNorte);
 
-    await request(server)
-      .post('/users')
-      .send({
-        name: 'Outra Org User',
-        email: outsiderEmail,
-        password: outsiderPassword,
-      })
-      .expect(201);
+    await insertUser(prisma, {
+      name: 'Outra Org User',
+      email: outsiderEmail,
+      password: outsiderPassword,
+    });
 
     const loginOutsider = await request(server)
       .post('/auth/login')

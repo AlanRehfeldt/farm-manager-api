@@ -70,7 +70,8 @@ O mapa alvo de contextos e fronteiras está em `farm-manager-docs/04-tecnico/03-
 | Capacidade | No código hoje | Planejado (docs/ADRs) |
 |------------|----------------|-------------------------|
 | Auth JWT cookie | Sim | — |
-| Role enum em `User` | Sim (legado; authz de fazenda = Membership) | ADR-013 permissions |
+| `User.platformRole` + `@PlatformAdmin()` | Sim (PR-05.1) | Namespace `/platform/*`, console vendor (PR-18+) |
+| Role enum em `User` | Sim (legado; authz de fazenda = Membership) | ADR-013 permissions; remoção PR-18 |
 | Tenancy por farm/org | Sim (`@FarmScoped()`, `@FarmId()`, `@OrganizationId()`) | ACL nomeada ADR-013 |
 | CostEntry ledger | Não | ADR-006, ADR-007 |
 | Inventory desacoplado | Parcial (`ProductStockBalance` por farm; sem API de movimento) | ADR-012 |

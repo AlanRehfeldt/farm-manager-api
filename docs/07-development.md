@@ -12,8 +12,10 @@
 cd farm-manager-api
 npm install
 cp .env.example .env
-# Editar .env — DATABASE_URL e JWT_SECRET (mín. 32 chars)
-npx prisma migrate deploy   # ou migrate dev se desenvolvendo schema
+# Configure DATABASE_URL, JWT_SECRET (mín. 32 chars)
+# Para provisionar vendor: PLATFORM_ADMIN_EMAIL, PLATFORM_ADMIN_PASSWORD
+npx prisma migrate deploy
+npm run seed:platform-admin   # opcional — conta do vendor
 npm run dev
 ```
 
@@ -43,6 +45,7 @@ Validação: Zod em boot — app falha cedo se env inválida.
 | `npm run format` | Prettier |
 | `npm test` | Jest unit (`src/**/*.spec.ts`) |
 | `npm run test:e2e` | Jest e2e (`test/`) |
+| `npm run seed:platform-admin` | Bootstrap vendor (`PLATFORM_ADMIN_*` no `.env`) |
 
 **Nota:** README antigo referia `start:dev` — o script correto é `dev`.
 

@@ -12,6 +12,11 @@ enum Role {
   USER
 }
 
+enum PlatformRole {
+  NONE
+  PLATFORM_ADMIN
+}
+
 model Organization {
   id        String   @id @default(uuid())
   name      String
@@ -71,14 +76,15 @@ model Membership {
 }
 
 model User {
-  id         String   @id @default(uuid())
-  name       String
-  email      String   @unique
-  password   String
-  role       Role     @default(USER)
-  employeeId String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id           String       @id @default(uuid())
+  name         String
+  email        String       @unique
+  password     String
+  role         Role         @default(USER)
+  platformRole PlatformRole @default(NONE)
+  employeeId   String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
   employee      Employee?      @relation(fields: [employeeId], references: [id])
   refreshTokens RefreshToken[]

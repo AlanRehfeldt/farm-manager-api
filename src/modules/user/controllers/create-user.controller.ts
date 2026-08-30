@@ -8,6 +8,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import z from 'zod';
+import { PlatformAdmin } from 'src/common/platform/platform-admin.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
 import { CreateUserService } from '../services/create-user.service';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
@@ -15,7 +16,6 @@ import { ConflictDto } from 'src/common/errors/conflict.dto';
 import { CreateUserResponseDto } from '../dtos/response/create-user.dto';
 import { CreateUserBodyDto } from '../dtos/request/create-user.dto';
 import { NotFoundDto } from 'src/common/errors/not-found.dto';
-import { Public } from 'src/modules/auth/decorators/public.decorator';
 
 const createUserBodySchema = z.object({
   name: z
@@ -51,7 +51,7 @@ const createUserBodySchema = z.object({
 export class CreateUserController {
   constructor(private readonly createUserService: CreateUserService) {}
 
-  @Public()
+  @PlatformAdmin()
   @ApiOperation({ summary: 'Create user' })
   @ApiCreatedResponse({
     description: 'User created successfully',
@@ -72,17 +72,12 @@ export class CreateUserController {
   @Post()
   @UsePipes(new ZodValidationPipe(createUserBodySchema))
   async create(@Body() data: CreateUserBodyDto) {
-    try {
-      const { user } = await this.createUserService.execute(data);
+    const { user } = await this.createUserService.execute(data);
 
-      return {
-        statusCode: HttpStatus.CREATED,
-        message: 'User created successfully',
-        result: user,
-      };
-    } catch (error) {
-      console.error('Error creating user', error);
-      throw error;
-    }
+    return {
+      statusCode: HttpStatus.CREATED,
+      message: 'User created successfully',
+      result: user,
+    };
   }
 }

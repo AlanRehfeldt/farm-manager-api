@@ -4,6 +4,8 @@ import cookieParser from 'cookie-parser';
 import { Server } from 'node:http';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
+import { PrismaService } from '../src/common/prisma/prisma.service';
+import { insertUser } from './helpers/insert-user';
 
 type ApiCommandResponse<T> = {
   statusCode: number;
@@ -36,6 +38,7 @@ function cookieHeader(res: request.Response): string {
 describe('Onboarding (e2e)', () => {
   let app: INestApplication;
   let server: Server;
+  let prisma: PrismaService;
 
   const suffix = `${Date.now()}`;
   const ownerEmail = `onboard.owner.${suffix}@example.com`;
@@ -58,15 +61,13 @@ describe('Onboarding (e2e)', () => {
     app.use(cookieParser());
     await app.init();
     server = app.getHttpServer() as Server;
+    prisma = app.get(PrismaService);
 
-    await request(server)
-      .post('/users')
-      .send({
-        name: 'Onboard Owner',
-        email: ownerEmail,
-        password: ownerPassword,
-      })
-      .expect(201);
+    await insertUser(prisma, {
+      name: 'Onboard Owner',
+      email: ownerEmail,
+      password: ownerPassword,
+    });
 
     const ownerLogin = await request(server)
       .post('/auth/login')

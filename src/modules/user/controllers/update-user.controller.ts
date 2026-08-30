@@ -3,14 +3,18 @@ import {
   ApiBadRequestResponse,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiNotFoundResponse,
   ApiOperation,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import z from 'zod';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
 import { ConflictDto } from 'src/common/errors/conflict.dto';
+import { ForbiddenDto } from 'src/common/errors/forbidden.dto';
+import { UnauthorizedDto } from 'src/common/errors/unauthorized.dto';
 import { UpdateUserService } from '../services/update-user.service';
 import { UpdateUserResponseDto } from '../dtos/response/update-user.dto';
 import {
@@ -18,6 +22,10 @@ import {
   UpdateUserParamDto,
 } from '../dtos/request/update-user.dto';
 import { NotFoundDto } from 'src/common/errors/not-found.dto';
+import {
+  AuthenticatedUser,
+  CurrentUser,
+} from 'src/modules/auth/decorators/current-user.decorator';
 
 const updateUserParamSchema = z.object({
   id: z.uuid(),
@@ -43,6 +51,14 @@ export class UpdateUserController {
     description: 'Bad request: Invalid request body',
     type: BadRequestDto,
   })
+  @ApiUnauthorizedResponse({
+    description: 'Missing or invalid authentication',
+    type: UnauthorizedDto,
+  })
+  @ApiForbiddenResponse({
+    description: 'Caller cannot update this user',
+    type: ForbiddenDto,
+  })
   @ApiConflictResponse({
     description: 'Conflict: Email already exists',
     type: ConflictDto,
@@ -53,24 +69,20 @@ export class UpdateUserController {
   })
   @Put(':id')
   async update(
+    @CurrentUser() actor: AuthenticatedUser,
     @Param(new ZodValidationPipe(updateUserParamSchema))
     param: UpdateUserParamDto,
     @Body(new ZodValidationPipe(updateUserSchema)) data: UpdateUserBodyDto,
   ) {
-    try {
-      const { user } = await this.updateUserService.execute({
-        id: param.id,
-        ...data,
-      });
+    const { user } = await this.updateUserService.execute(actor.userId, {
+      id: param.id,
+      ...data,
+    });
 
-      return {
-        statusCode: HttpStatus.OK,
-        message: 'User updated successfully',
-        user,
-      };
-    } catch (error) {
-      console.error('Error updating user', error);
-      throw error;
-    }
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'User updated successfully',
+      user,
+    };
   }
 }

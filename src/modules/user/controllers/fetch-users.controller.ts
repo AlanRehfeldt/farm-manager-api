@@ -6,6 +6,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import z from 'zod';
+import { PlatformAdmin } from 'src/common/platform/platform-admin.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
 import { FetchUsersService } from '../services/fetch-users.service';
@@ -29,6 +30,7 @@ const fetchUsersSchema = z.object({
 export class FetchUsersController {
   constructor(private readonly fetchUsersService: FetchUsersService) {}
 
+  @PlatformAdmin()
   @ApiOperation({ summary: 'List users' })
   @ApiOkResponse({
     description: 'Users retrived successfully',
@@ -41,21 +43,16 @@ export class FetchUsersController {
   @Get()
   @UsePipes(new ZodValidationPipe(fetchUsersSchema))
   async fetch(@Query() query: FetchUsersQueryDto) {
-    try {
-      const { results, total, page, perPage, orderBy, orderDirection } =
-        await this.fetchUsersService.execute(query);
+    const { results, total, page, perPage, orderBy, orderDirection } =
+      await this.fetchUsersService.execute(query);
 
-      return {
-        results,
-        total,
-        page,
-        perPage,
-        orderBy,
-        orderDirection,
-      };
-    } catch (error) {
-      console.error('Error fetching users', error);
-      throw error;
-    }
+    return {
+      results,
+      total,
+      page,
+      perPage,
+      orderBy,
+      orderDirection,
+    };
   }
 }

@@ -46,7 +46,7 @@ Referências úteis:
 
 ## Estado atual vs. ADRs (não inventar)
 
-O código **ainda não implementa** RBAC nomeado (ADR-013), outbox de eventos, CostEntry ledger, soft delete ou exception filter global. Tenancy (Organization, Farm, Membership, `@FarmScoped()`) está em `docs/08-tenancy.md`.
+O código **ainda não implementa** RBAC nomeado (ADR-013), outbox de eventos, CostEntry ledger, soft delete ou exception filter global. Tenancy (Organization, Farm, Membership, `@FarmScoped()`) está em `docs/08-tenancy.md`. **`User.platformRole`** (`NONE` | `PLATFORM_ADMIN`) e `@PlatformAdmin()` existem (PR-05.1, ADR-018); namespace `/platform/*` e console vendor ainda não.
 
 ## Rules do Cursor
 

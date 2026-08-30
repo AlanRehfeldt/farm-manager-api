@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
+import { PlatformRole, Role } from '@prisma/client';
 
 export class UserDto {
   @ApiProperty({
@@ -22,10 +22,20 @@ export class UserDto {
 
   @ApiProperty({
     example: Role.USER,
-    description: "User's role in system",
+    description:
+      'Legacy global role on User (not used for authorization). Tenant access uses Membership.role. Scheduled for removal in PR-18.',
     enum: Role,
+    deprecated: true,
   })
   role!: Role;
+
+  @ApiProperty({
+    example: PlatformRole.NONE,
+    description:
+      'Platform axis (vendor vs client). Orthogonal to Membership.role. Used by @PlatformAdmin().',
+    enum: PlatformRole,
+  })
+  platformRole!: PlatformRole;
 
   @ApiPropertyOptional({
     example: 'uuid',

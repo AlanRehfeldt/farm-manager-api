@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { UserModule } from './modules/user/user.module';
 import { PrismaModule } from './common/prisma/prisma.module';
 import { TenancyModule } from './common/tenancy/tenancy.module';
+import { PlatformModule } from './common/platform/platform.module';
 import { ConfigModule } from '@nestjs/config';
 import { envSchema } from './env';
 import { EmployeeModule } from './modules/employee/employee.module';
@@ -26,6 +27,7 @@ import { OnboardingModule } from './modules/onboarding/onboarding.module';
     }),
     PrismaModule,
     TenancyModule,
+    PlatformModule,
     AuthModule,
     OrganizationModule,
     FarmModule,

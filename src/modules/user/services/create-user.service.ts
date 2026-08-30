@@ -33,7 +33,6 @@ export class CreateUserService {
     if (employeeId) {
       const checkIfEmployeeExists =
         await this.employeeRepository.findById(employeeId);
-      console.log('checkIfEmployeeExists', checkIfEmployeeExists);
       if (!checkIfEmployeeExists) {
         throw new NotFoundException('Employee does not exist');
       }

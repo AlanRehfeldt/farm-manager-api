@@ -11,7 +11,12 @@ export class FetchUsersQueryDto {
   @ApiPropertyOptional()
   email!: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({
+    description:
+      'Filter by legacy User.role (not Membership.role). Scheduled for removal with User.role in PR-18.',
+    enum: Role,
+    deprecated: true,
+  })
   role!: Role;
 
   @ApiPropertyOptional()

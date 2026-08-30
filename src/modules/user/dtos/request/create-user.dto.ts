@@ -22,8 +22,10 @@ export class CreateUserBodyDto {
 
   @ApiPropertyOptional({
     example: Role.USER,
-    description: "User's role in system",
+    description:
+      'Legacy global role (optional). Does not grant tenant permissions — use POST /memberships for org roles. Removal PR-18.',
     enum: Role,
+    deprecated: true,
   })
   role!: Role;
 

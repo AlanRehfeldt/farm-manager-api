@@ -18,12 +18,15 @@ Detalhe: `docs/05-auth.md`
 
 Marcar com `@Public()` — sem isso, guard exige cookie válido.
 
-Públicas hoje: `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`, `POST /users`.
+Públicas hoje: `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`.
+
+**Não há cadastro público.** `POST /users` exige `@PlatformAdmin()`.
 
 ## Decorators
 
 - `@Public()` — `src/modules/auth/decorators/public.decorator.ts`
 - `@CurrentUser()` — retorna `{ userId: string }`
+- `@PlatformAdmin()` — `src/common/platform/platform-admin.decorator.ts`
 
 ## CORS
 
@@ -33,6 +36,7 @@ Públicas hoje: `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`, `
 
 - `@Roles()` / guards de permissão nomeada (ADR-013)
 - Bearer token como fluxo principal
+- Namespace `/platform/*` (PR-18+)
 
 Tenancy de fazenda **não** está no JwtAuthGuard. Rotas de catálogo/lançamentos usam `@FarmScoped()` (`x-farm-id`). Ver `docs/08-tenancy.md` e `.cursor/rules/tenancy.mdc`.
 

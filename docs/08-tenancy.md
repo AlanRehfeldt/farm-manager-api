@@ -8,7 +8,7 @@
 - **Farm** — unidade operacional (header `x-farm-id`). Unique `(organizationId, name)`.
 - **Membership** — `ADMIN` | `USER`. `farmId` null = todas as fazendas da org; preenchido = só aquela.
 
-`User.role` permanece (legado). Autorização de fazenda = Membership. ACL nomeada (ADR-013) **não** está neste PR.
+`User.role` permanece (legado). Autorização de fazenda = Membership. **`User.platformRole`** (`NONE` | `PLATFORM_ADMIN`) é ortogonal ao tenant — ADR-018 em `farm-manager-docs`. ACL nomeada (ADR-013) **não** está neste PR.
 
 ## Contexto HTTP
 
@@ -48,19 +48,22 @@ No create de Product/Supplier/Employee, omitir `farmId` = compartilhado; se envi
 | `POST /memberships` | ADMIN; `userId` existente **ou** name/email/password |
 | `GET /memberships` | ADMIN; inclui `user` (id, name, email) |
 | `GET /auth/me` | inclui `memberships` |
-
-`POST /users` continua `@Public()` para o primeiro usuário.
+| `POST /users` | `@PlatformAdmin()` — vendor provisiona contas (ADR-018) |
+| `GET /users` | `@PlatformAdmin()` |
+| `GET/PUT/DELETE /users/:id` | próprio usuário **ou** `@PlatformAdmin()` (service) |
 
 ## Bootstrap
 
-Fluxo piloto (app PR-05):
+Fluxo piloto (PR-05.1):
 
-`POST /users` → login → `POST /onboarding` (org + primeira farm) → home com `GET /farms` e `x-farm-id` em catálogo/transações.
+1. `npm run seed:platform-admin` — cria vendor (`PLATFORM_ADMIN`) via env
+2. Vendor: `POST /users` (autenticado) → cria conta do cliente
+3. Cliente: login → `POST /onboarding` (org + primeira farm) → home com `GET /farms` e `x-farm-id` em catálogo/transações
 
-Alternativa manual (ainda válida): `POST /organizations` → `POST /farms`.
+Alternativa para usuários dentro da org: ADMIN usa `POST /memberships` (Configurações → Usuários no app).
 
 Settings no app: `GET/PATCH /organizations/:id`, `GET/POST/PATCH /farms`, `GET/POST/DELETE /memberships` (ADMIN).
 
 ## Fora deste recorte
 
-Field/Crop/Season/Machine (PR-06), permissões nomeadas (ADR-013), join table cadastro × N fazendas.
+Field/Crop/Season/Machine (PR-06), permissões nomeadas (ADR-013), join table cadastro × N fazendas, namespace `/platform/*` (PR-18+).
