@@ -36,8 +36,7 @@ export class DeleteCropPlantingController {
     type: NotFoundDto,
   })
   @ApiConflictResponse({
-    description:
-      'Conflict: Active crop season must keep at least one planting',
+    description: 'Conflict: Active crop season must keep at least one planting',
     type: ConflictDto,
   })
   @Delete(':id')

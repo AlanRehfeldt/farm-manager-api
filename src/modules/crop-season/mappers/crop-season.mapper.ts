@@ -1,4 +1,7 @@
-import { CropSeasonWithCrop, CropPlantingWithRelations } from '../repositories/@types';
+import {
+  CropSeasonWithCrop,
+  CropPlantingWithRelations,
+} from '../repositories/@types';
 import { decimalToString } from 'src/common/serialization/decimal';
 import { bigintToNumber } from 'src/common/serialization/money';
 

@@ -12,6 +12,7 @@ Detalhe: `docs/06-persistence.md`
 
 - Schema: `prisma/schema.prisma` — PostgreSQL, `@@map("snake_case")`.
 - Client: `PrismaService` em `src/common/prisma/` — cada módulo importa `PrismaModule`.
+- Seed: `prisma/seed.ts` — TypeScript/ESLint via `prisma/tsconfig.json` (`types: ["node"]`); fora do `include` do `tsconfig.json` raiz (`rootDir: src`).
 - Versão: Prisma 6 (`@prisma/client` ^6).
 
 ## Repositório

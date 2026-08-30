@@ -1,5 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { PrismaModule } from 'src/common/prisma/prisma.module';
+import { CostCategoryModule } from '../cost-category/cost-category.module';
 import { MembershipModule } from '../membership/membership.module';
 import { CreateOrganizationController } from './controllers/create-organization.controller';
 import { FetchOrganizationsController } from './controllers/fetch-organizations.controller';
@@ -13,7 +14,11 @@ import { GetOrganizationService } from './services/get-organization.service';
 import { UpdateOrganizationService } from './services/update-organization.service';
 
 @Module({
-  imports: [PrismaModule, forwardRef(() => MembershipModule)],
+  imports: [
+    PrismaModule,
+    forwardRef(() => MembershipModule),
+    CostCategoryModule,
+  ],
   controllers: [
     CreateOrganizationController,
     FetchOrganizationsController,

@@ -22,6 +22,7 @@ import { FieldModule } from './modules/field/field.module';
 import { CropModule } from './modules/crop/crop.module';
 import { MachineModule } from './modules/machine/machine.module';
 import { CropSeasonModule } from './modules/crop-season/crop-season.module';
+import { CostCategoryModule } from './modules/cost-category/cost-category.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { CropSeasonModule } from './modules/crop-season/crop-season.module';
     CropModule,
     MachineModule,
     CropSeasonModule,
+    CostCategoryModule,
   ],
   controllers: [],
   providers: [],

@@ -1,11 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Field } from '@prisma/client';
 import { PrismaService } from 'src/common/prisma/prisma.service';
-import {
-  CreateFieldData,
-  SearchManyQuery,
-  UpdateFieldData,
-} from './@types';
+import { CreateFieldData, SearchManyQuery, UpdateFieldData } from './@types';
 import { FieldRepository } from './field.repository';
 
 @Injectable()

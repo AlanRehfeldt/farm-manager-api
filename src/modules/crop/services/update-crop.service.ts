@@ -51,11 +51,10 @@ export class UpdateCropService {
     }
 
     if (input.defaultProductionUomId) {
-      const unitOfMeasurement =
-        await this.unitOfMeasurementRepository.findById(
-          input.defaultProductionUomId,
-          input.organizationId,
-        );
+      const unitOfMeasurement = await this.unitOfMeasurementRepository.findById(
+        input.defaultProductionUomId,
+        input.organizationId,
+      );
       if (!unitOfMeasurement) {
         throw new NotFoundException('Unit of measurement does not exist');
       }

@@ -26,6 +26,10 @@ function listResults<T>(res: request.Response): T[] {
   return (res.body as ApiListResponse<T>).results;
 }
 
+function listTotal(res: request.Response): number {
+  return (res.body as ApiListResponse<unknown>).total;
+}
+
 function cookieHeader(res: request.Response): string {
   const setCookie = res.headers['set-cookie'];
   if (!setCookie) {
@@ -188,5 +192,36 @@ describe('Onboarding (e2e)', () => {
     const farms = listResults<{ id: string }>(farmsRes);
     expect(farms).toHaveLength(1);
     expect(farms[0]?.id).toBe(farmId);
+  });
+
+  it('onboarding seeds cost categories for the organization', async () => {
+    const categoriesRes = await request(server)
+      .get('/cost-categories')
+      .set('Cookie', ownerCookies)
+      .set('x-farm-id', farmId)
+      .query({ perPage: 50 })
+      .expect(200);
+
+    const categories = listResults<{ code: string; name: string }>(
+      categoriesRes,
+    );
+
+    expect(listTotal(categoriesRes)).toBe(11);
+    expect(categories).toHaveLength(11);
+
+    const codes = categories.map((item) => item.code).sort();
+    expect(codes).toEqual([
+      'MO_fixa',
+      'MO_temporaria',
+      'combustivel',
+      'defensivo',
+      'energia_irrigacao',
+      'fertilizante',
+      'formacao',
+      'maquina',
+      'muda',
+      'outros',
+      'servicos',
+    ]);
   });
 });

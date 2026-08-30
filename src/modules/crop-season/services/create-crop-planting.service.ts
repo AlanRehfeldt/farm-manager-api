@@ -57,7 +57,9 @@ export class CreateCropPlantingService {
     }
 
     if (cropSeason.status === CropSeasonStatus.CLOSED) {
-      throw new ConflictException('Closed crop season cannot receive plantings');
+      throw new ConflictException(
+        'Closed crop season cannot receive plantings',
+      );
     }
 
     const field = await this.fieldRepository.findById(
@@ -73,7 +75,9 @@ export class CreateCropPlantingService {
       input.fieldId,
     );
     if (duplicate) {
-      throw new ConflictException('Field is already linked to this crop season');
+      throw new ConflictException(
+        'Field is already linked to this crop season',
+      );
     }
 
     if (input.varietyId) {
@@ -108,7 +112,9 @@ export class CreateCropPlantingService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
       ) {
-        throw new ConflictException('Field is already linked to this crop season');
+        throw new ConflictException(
+          'Field is already linked to this crop season',
+        );
       }
       throw error;
     }

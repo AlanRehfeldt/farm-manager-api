@@ -1,4 +1,5 @@
 import { ConflictException, Inject, Injectable } from '@nestjs/common';
+import { SeedCostCategoriesService } from 'src/modules/cost-category/services/seed-cost-categories.service';
 import {
   MEMBERSHIP_REPOSITORY,
   MembershipRepository,
@@ -21,6 +22,7 @@ export class CreateOnboardingService {
     private readonly organizationRepository: OrganizationRepository,
     @Inject(MEMBERSHIP_REPOSITORY)
     private readonly membershipRepository: MembershipRepository,
+    private readonly seedCostCategoriesService: SeedCostCategoriesService,
   ) {}
 
   async execute(userId: string, input: CreateOnboardingInput) {
@@ -37,6 +39,8 @@ export class CreateOnboardingService {
         timezone: input.timezone,
         ownerUserId: userId,
       });
+
+    await this.seedCostCategoriesService.execute(organization.id);
 
     return { organization, farm };
   }

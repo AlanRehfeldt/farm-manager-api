@@ -48,8 +48,7 @@ export class CreateCropPlantingController {
     type: ConflictDto,
   })
   @ApiNotFoundResponse({
-    description:
-      'Not found: Crop season, field, or variety does not exist',
+    description: 'Not found: Crop season, field, or variety does not exist',
     type: NotFoundDto,
   })
   @Post()

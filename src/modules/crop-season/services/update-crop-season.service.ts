@@ -64,7 +64,9 @@ export class UpdateCropSeasonService {
     const endDate =
       input.endDate !== undefined ? input.endDate : existing.endDate;
     if (endDate && endDate < startDate) {
-      throw new BadRequestException('endDate must be greater than or equal to startDate');
+      throw new BadRequestException(
+        'endDate must be greater than or equal to startDate',
+      );
     }
 
     const cropSeason = await this.cropSeasonRepository.update({

@@ -36,7 +36,10 @@ export class GetCropController {
     @OrganizationId() organizationId: string,
     @Param(new ZodValidationPipe(getCropParamSchema)) param: GetCropParamDto,
   ) {
-    const { crop } = await this.getCropService.execute(param.id, organizationId);
+    const { crop } = await this.getCropService.execute(
+      param.id,
+      organizationId,
+    );
 
     return {
       statusCode: HttpStatus.OK,

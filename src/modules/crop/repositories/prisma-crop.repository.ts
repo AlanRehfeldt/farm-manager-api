@@ -1,11 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Crop } from '@prisma/client';
 import { PrismaService } from 'src/common/prisma/prisma.service';
-import {
-  CreateCropData,
-  SearchManyCropsQuery,
-  UpdateCropData,
-} from './@types';
+import { CreateCropData, SearchManyCropsQuery, UpdateCropData } from './@types';
 import { CropRepository } from './crop.repository';
 
 @Injectable()
@@ -34,10 +30,7 @@ export class PrismaCropRepository implements CropRepository {
     });
   }
 
-  async findByName(
-    organizationId: string,
-    name: string,
-  ): Promise<Crop | null> {
+  async findByName(organizationId: string, name: string): Promise<Crop | null> {
     return await this.prisma.crop.findFirst({
       where: { organizationId, name },
     });

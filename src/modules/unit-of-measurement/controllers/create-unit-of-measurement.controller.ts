@@ -19,7 +19,7 @@ import { CreateUnitOfMeasurementService } from '../services/create-unit-of-measu
 const createUnitOfMeasurementBodySchema = z.object({
   name: z
     .string()
-    .min(5, { message: 'Name must be at least 5 characters long.' })
+    .min(1, { message: 'Name must be at least 1 character long.' })
     .max(150, { message: 'Name must be at most 150 characters long.' }),
   acronym: z
     .string()

@@ -1,0 +1,16 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "rootDir": "..",
+    "noEmit": true,
+    "paths": {
+      "src/*": ["../src/*"]
+    }
+  },
+  "include": [
+    "seed.ts",
+    "../src/modules/cost-category/constants/cost-category-seed.ts"
+  ],
+  "exclude": ["node_modules", "dist"]
+}

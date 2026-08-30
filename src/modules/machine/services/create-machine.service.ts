@@ -1,8 +1,4 @@
-import {
-  ConflictException,
-  Inject,
-  Injectable,
-} from '@nestjs/common';
+import { ConflictException, Inject, Injectable } from '@nestjs/common';
 import { numberToBigint } from 'src/common/serialization/money';
 import { toMachineResponse } from '../mappers/machine.mapper';
 import {

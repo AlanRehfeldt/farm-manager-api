@@ -33,7 +33,10 @@ export class UpdateFieldService {
   ) {}
 
   async execute(input: UpdateFieldInput) {
-    const existing = await this.fieldRepository.findById(input.id, input.farmId);
+    const existing = await this.fieldRepository.findById(
+      input.id,
+      input.farmId,
+    );
     if (!existing) {
       throw new NotFoundException('Field does not exist');
     }

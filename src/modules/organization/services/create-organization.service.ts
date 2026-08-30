@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { SeedCostCategoriesService } from 'src/modules/cost-category/services/seed-cost-categories.service';
 import {
   ORGANIZATION_REPOSITORY,
   OrganizationRepository,
@@ -9,6 +10,7 @@ export class CreateOrganizationService {
   constructor(
     @Inject(ORGANIZATION_REPOSITORY)
     private readonly organizationRepository: OrganizationRepository,
+    private readonly seedCostCategoriesService: SeedCostCategoriesService,
   ) {}
 
   async execute(userId: string, name: string) {
@@ -16,6 +18,8 @@ export class CreateOrganizationService {
       name,
       ownerUserId: userId,
     });
+
+    await this.seedCostCategoriesService.execute(organization.id);
 
     return { organization };
   }

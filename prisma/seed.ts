@@ -1,7 +1,29 @@
 import { PlatformRole, PrismaClient, Role } from '@prisma/client';
 import { hash } from 'bcryptjs';
+import { COST_CATEGORY_SEED } from '../src/modules/cost-category/constants/cost-category-seed';
 
 const prisma = new PrismaClient();
+
+async function seedCostCategoriesForOrganization(organizationId: string) {
+  for (const entry of COST_CATEGORY_SEED) {
+    await prisma.costCategory.upsert({
+      where: {
+        organizationId_code: {
+          organizationId,
+          code: entry.code,
+        },
+      },
+      create: {
+        organizationId,
+        code: entry.code,
+        name: entry.name,
+      },
+      update: {
+        name: entry.name,
+      },
+    });
+  }
+}
 
 async function main() {
   const email = process.env.PLATFORM_ADMIN_EMAIL;
@@ -35,6 +57,17 @@ async function main() {
   });
 
   console.log(`Platform admin upserted: ${user.email} (${user.id})`);
+
+  const organizations = await prisma.organization.findMany({
+    select: { id: true, name: true },
+  });
+
+  for (const organization of organizations) {
+    await seedCostCategoriesForOrganization(organization.id);
+    console.log(
+      `Cost categories seeded for organization: ${organization.name}`,
+    );
+  }
 }
 
 main()
@@ -42,6 +75,6 @@ main()
     console.error(error);
     process.exit(1);
   })
-  .finally(async () => {
-    await prisma.$disconnect();
+  .finally(() => {
+    void prisma.$disconnect();
   });

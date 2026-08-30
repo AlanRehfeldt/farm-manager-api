@@ -41,4 +41,14 @@ export default tseslint.config(
       },
     },
   },
+  {
+    files: ['prisma/**/*.ts'],
+    languageOptions: {
+      parserOptions: {
+        project: './prisma/tsconfig.json',
+        projectService: false,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+  },
 );

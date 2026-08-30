@@ -1,5 +1,9 @@
 import { Machine } from '@prisma/client';
-import { CreateMachineData, SearchManyQuery, UpdateMachineData } from './@types';
+import {
+  CreateMachineData,
+  SearchManyQuery,
+  UpdateMachineData,
+} from './@types';
 
 export interface MachineRepository {
   create(data: CreateMachineData): Promise<Machine>;

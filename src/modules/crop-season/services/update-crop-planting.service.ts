@@ -58,7 +58,9 @@ export class UpdateCropPlantingService {
     }
 
     if (cropSeason.status === CropSeasonStatus.CLOSED) {
-      throw new ConflictException('Closed crop season plantings cannot be updated');
+      throw new ConflictException(
+        'Closed crop season plantings cannot be updated',
+      );
     }
 
     if (input.varietyId) {
