@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { Membership, Role } from '@prisma/client';
 import { PrismaService } from 'src/common/prisma/prisma.service';
-import { CreateMembershipData, SearchManyQuery } from './@types';
+import {
+  CreateMembershipData,
+  MembershipWithUser,
+  SearchManyQuery,
+} from './@types';
 import { MembershipRepository } from './membership.repository';
 
 @Injectable()
@@ -61,13 +65,22 @@ export class PrismaMembershipRepository implements MembershipRepository {
     });
   }
 
-  async searchMany(query: SearchManyQuery): Promise<Membership[]> {
+  async searchMany(query: SearchManyQuery): Promise<MembershipWithUser[]> {
     return this.prisma.membership.findMany({
       where: {
         organizationId: query.organizationId,
         farmId: query.farmId,
         userId: query.userId,
         role: query.role,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
       },
       skip: (query.page - 1) * query.perPage,
       take: query.perPage,

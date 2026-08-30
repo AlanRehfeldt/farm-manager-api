@@ -4,6 +4,8 @@ import { PrismaService } from 'src/common/prisma/prisma.service';
 import { OrganizationRepository } from './organization.repository';
 import {
   CreateOrganizationData,
+  CreateOrganizationWithFirstFarmData,
+  OrganizationWithFirstFarmResult,
   SearchManyQuery,
   UpdateOrganizationData,
 } from './@types';
@@ -28,6 +30,35 @@ export class PrismaOrganizationRepository implements OrganizationRepository {
       });
 
       return organization;
+    });
+  }
+
+  async createWithOwnerAndFirstFarm(
+    data: CreateOrganizationWithFirstFarmData,
+  ): Promise<OrganizationWithFirstFarmResult> {
+    return this.prisma.$transaction(async (tx) => {
+      const organization = await tx.organization.create({
+        data: { name: data.organizationName },
+      });
+
+      await tx.membership.create({
+        data: {
+          userId: data.ownerUserId,
+          organizationId: organization.id,
+          farmId: null,
+          role: Role.ADMIN,
+        },
+      });
+
+      const farm = await tx.farm.create({
+        data: {
+          organizationId: organization.id,
+          name: data.farmName,
+          timezone: data.timezone,
+        },
+      });
+
+      return { organization, farm };
     });
   }
 

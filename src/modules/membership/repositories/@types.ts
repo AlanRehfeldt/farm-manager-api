@@ -19,3 +19,13 @@ export interface SearchManyQuery {
 }
 
 export type MembershipRecord = Membership;
+
+export type MembershipUserSummary = {
+  id: string;
+  name: string;
+  email: string;
+};
+
+export type MembershipWithUser = Membership & {
+  user: MembershipUserSummary;
+};

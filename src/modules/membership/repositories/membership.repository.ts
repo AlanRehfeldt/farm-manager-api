@@ -1,5 +1,9 @@
 import { Membership } from '@prisma/client';
-import { CreateMembershipData, SearchManyQuery } from './@types';
+import {
+  CreateMembershipData,
+  MembershipWithUser,
+  SearchManyQuery,
+} from './@types';
 
 export interface MembershipRepository {
   create(data: CreateMembershipData): Promise<Membership>;
@@ -15,7 +19,7 @@ export interface MembershipRepository {
     farmId: string | null,
   ): Promise<Membership | null>;
   findManyByUser(userId: string): Promise<Membership[]>;
-  searchMany(query: SearchManyQuery): Promise<Membership[]>;
+  searchMany(query: SearchManyQuery): Promise<MembershipWithUser[]>;
   count(query: SearchManyQuery): Promise<number>;
   countOrgAdmins(organizationId: string): Promise<number>;
 }

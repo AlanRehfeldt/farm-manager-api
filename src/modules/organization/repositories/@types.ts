@@ -5,6 +5,25 @@ export type CreateOrganizationData = {
   ownerUserId: string;
 };
 
+export type CreateOrganizationWithFirstFarmData = {
+  organizationName: string;
+  farmName: string;
+  timezone?: string;
+  ownerUserId: string;
+};
+
+export type OrganizationWithFirstFarmResult = {
+  organization: Organization;
+  farm: {
+    id: string;
+    organizationId: string;
+    name: string;
+    timezone: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+  };
+};
+
 export interface UpdateOrganizationData {
   id: string;
   name?: string;

@@ -1,6 +1,21 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 
+export class MembershipUserDto {
+  @ApiProperty({ example: 'uuid' })
+  id!: string;
+
+  @ApiProperty({ example: 'Bruna Silva' })
+  name!: string;
+
+  @ApiProperty({ example: 'bruna@example.com' })
+  email!: string;
+
+  constructor(partial: Partial<MembershipUserDto>) {
+    Object.assign(this, partial);
+  }
+}
+
 export class MembershipDto {
   @ApiProperty({ example: 'uuid' })
   id!: string;
@@ -22,6 +37,9 @@ export class MembershipDto {
 
   @ApiProperty({ example: '2023-01-01T00:00:00.000Z' })
   updatedAt!: Date;
+
+  @ApiPropertyOptional({ type: MembershipUserDto })
+  user?: MembershipUserDto;
 
   constructor(partial: Partial<MembershipDto>) {
     Object.assign(this, partial);

@@ -16,6 +16,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { OrganizationModule } from './modules/organization/organization.module';
 import { FarmModule } from './modules/farm/farm.module';
 import { MembershipModule } from './modules/membership/membership.module';
+import { OnboardingModule } from './modules/onboarding/onboarding.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { MembershipModule } from './modules/membership/membership.module';
     OrganizationModule,
     FarmModule,
     MembershipModule,
+    OnboardingModule,
     UserModule,
     EmployeeModule,
     SupplierModule,

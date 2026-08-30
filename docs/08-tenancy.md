@@ -1,6 +1,6 @@
 # Tenancy (Organization + Farm)
 
-**Status:** Implementado (PR-03). Decisão de produto: `farm-manager-docs/04-tecnico/adr/005-organization-farm-tenancy.md`.
+**Status:** Implementado (PR-03, PR-05). Decisão de produto: `farm-manager-docs/04-tecnico/adr/005-organization-farm-tenancy.md`.
 
 ## Modelo
 
@@ -42,17 +42,25 @@ No create de Product/Supplier/Employee, omitir `farmId` = compartilhado; se envi
 
 | Recurso | Auth extra |
 |---------|------------|
+| `POST /onboarding` | autenticado sem membership; cria org + primeira farm + ADMIN org-wide |
 | `POST /organizations` | usuário autenticado torna-se ADMIN org-wide |
 | `POST /farms` | ADMIN da org (service) |
 | `POST /memberships` | ADMIN; `userId` existente **ou** name/email/password |
+| `GET /memberships` | ADMIN; inclui `user` (id, name, email) |
 | `GET /auth/me` | inclui `memberships` |
 
 `POST /users` continua `@Public()` para o primeiro usuário.
 
 ## Bootstrap
 
-`POST /users` → login → `POST /organizations` → `POST /farms` → catálogo/transações com `x-farm-id`.
+Fluxo piloto (app PR-05):
+
+`POST /users` → login → `POST /onboarding` (org + primeira farm) → home com `GET /farms` e `x-farm-id` em catálogo/transações.
+
+Alternativa manual (ainda válida): `POST /organizations` → `POST /farms`.
+
+Settings no app: `GET/PATCH /organizations/:id`, `GET/POST/PATCH /farms`, `GET/POST/DELETE /memberships` (ADMIN).
 
 ## Fora deste recorte
 
-Onboarding unificado (PR-05), app (PR-04), Field/Crop/Season/Machine (PR-06), permissões nomeadas, join table cadastro × N fazendas.
+Field/Crop/Season/Machine (PR-06), permissões nomeadas (ADR-013), join table cadastro × N fazendas.
