@@ -31,6 +31,20 @@ export class PrismaCostCategoryRepository implements CostCategoryRepository {
     });
   }
 
+  async findByCode(
+    organizationId: string,
+    code: string,
+  ): Promise<CostCategory | null> {
+    return this.prisma.costCategory.findUnique({
+      where: {
+        organizationId_code: {
+          organizationId,
+          code,
+        },
+      },
+    });
+  }
+
   async searchMany(query: SearchManyQuery): Promise<CostCategory[]> {
     return this.prisma.costCategory.findMany({
       where: {

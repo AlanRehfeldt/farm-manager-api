@@ -7,6 +7,10 @@ export interface CostCategoryRepository {
     code: string,
     name: string,
   ): Promise<CostCategory>;
+  findByCode(
+    organizationId: string,
+    code: string,
+  ): Promise<CostCategory | null>;
   searchMany(query: SearchManyQuery): Promise<CostCategory[]>;
   count(query: SearchManyQuery): Promise<number>;
 }

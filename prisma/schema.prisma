@@ -62,6 +62,8 @@ model Farm {
   fields         Field[]
   machines       Machine[]
   cropSeasons    CropSeason[]
+  activities     Activity[]
+  costEntries    CostEntry[]
 
   @@unique([organizationId, name])
   @@index([organizationId])
@@ -100,6 +102,7 @@ model User {
   employee      Employee?      @relation(fields: [employeeId], references: [id])
   refreshTokens RefreshToken[]
   memberships   Membership[]
+  activities    Activity[]
 
   @@map("users")
 }
@@ -238,6 +241,7 @@ model CostCategory {
 
   parent   CostCategory?  @relation("Children", fields: [parentId], references: [id])
   children CostCategory[] @relation("Children")
+  costEntries CostEntry[]
 
   @@unique([organizationId, code])
   @@index([organizationId])
@@ -302,6 +306,7 @@ model UnitOfMeasurement {
   products                  Product[]
   cropsDefaultProduction    Crop[]       @relation("CropDefaultProductionUom")
   cropSeasonsProduction     CropSeason[] @relation("CropSeasonProductionUom")
+  costEntries               CostEntry[]
 
   @@unique([organizationId, acronym])
   @@index([organizationId])
@@ -325,6 +330,7 @@ model Product {
   purchaseTransactionProducts PurchaseTransactionProduct[]
   stockMovements              StockMovement[]
   stockBalances               ProductStockBalance[]
+  activityInputs              ActivityInput[]
 
   @@index([organizationId])
   @@index([farmId])
@@ -499,8 +505,10 @@ model Field {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  farm       Farm           @relation(fields: [farmId], references: [id])
-  plantings  CropPlanting[]
+  farm        Farm           @relation(fields: [farmId], references: [id])
+  plantings   CropPlanting[]
+  activities  Activity[]
+  costEntries CostEntry[]
 
   @@unique([farmId, name])
   @@index([farmId])
@@ -559,6 +567,8 @@ model CropSeason {
   crop          Crop             @relation(fields: [cropId], references: [id])
   productionUom UnitOfMeasurement @relation("CropSeasonProductionUom", fields: [productionUomId], references: [id])
   plantings     CropPlanting[]
+  activities    Activity[]
+  costEntries   CostEntry[]
 
   @@index([farmId])
   @@index([cropId])
@@ -599,4 +609,95 @@ model Machine {
   @@unique([farmId, name])
   @@index([farmId])
   @@map("machines")
+}
+
+enum ActivityType {
+  PREPARATION
+  FERTILIZATION
+  PHYTOSANITARY
+  IRRIGATION
+  MANAGEMENT
+  HARVEST
+  OTHER
+}
+
+enum CostEntrySourceType {
+  ACTIVITY_INPUT
+  ACTIVITY_LABOR
+  ACTIVITY_MACHINE
+  ALLOCATION
+  REVERSAL
+}
+
+model Activity {
+  id              String       @id @default(uuid())
+  farmId          String
+  cropSeasonId    String
+  fieldId         String
+  activityType    ActivityType
+  date            DateTime
+  note            String?
+  createdByUserId String
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  farm        Farm            @relation(fields: [farmId], references: [id])
+  cropSeason  CropSeason      @relation(fields: [cropSeasonId], references: [id])
+  field       Field           @relation(fields: [fieldId], references: [id])
+  createdBy   User            @relation(fields: [createdByUserId], references: [id])
+  inputs      ActivityInput[]
+  costEntries CostEntry[]
+
+  @@index([farmId])
+  @@index([cropSeasonId, date])
+  @@map("activities")
+}
+
+model ActivityInput {
+  id               String   @id @default(uuid())
+  activityId       String
+  productId        String
+  quantity         Decimal  @db.Decimal(18, 6)
+  unitCostSnapshot Decimal  @db.Decimal(18, 8)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id])
+
+  @@index([activityId])
+  @@map("activity_inputs")
+}
+
+model CostEntry {
+  id             String              @id @default(uuid())
+  farmId         String
+  cropSeasonId   String
+  fieldId        String?
+  activityId     String?
+  sourceType     CostEntrySourceType
+  sourceId       String
+  costCategoryId String
+  amountInCents  BigInt
+  quantity       Decimal?            @db.Decimal(18, 6)
+  uomId          String?
+  date           DateTime
+  reversedAt     DateTime?
+  reversalOfId   String?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  farm         Farm               @relation(fields: [farmId], references: [id])
+  cropSeason   CropSeason         @relation(fields: [cropSeasonId], references: [id])
+  field        Field?             @relation(fields: [fieldId], references: [id])
+  activity     Activity?          @relation(fields: [activityId], references: [id])
+  costCategory CostCategory       @relation(fields: [costCategoryId], references: [id])
+  uom          UnitOfMeasurement? @relation(fields: [uomId], references: [id])
+  reversalOf   CostEntry?         @relation("CostEntryReversal", fields: [reversalOfId], references: [id])
+  reversals    CostEntry[]        @relation("CostEntryReversal")
+
+  @@index([cropSeasonId])
+  @@index([farmId, date])
+  @@index([sourceType, sourceId])
+  @@map("cost_entries")
 }

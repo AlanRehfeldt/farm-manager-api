@@ -17,6 +17,6 @@ import { SeedCostCategoriesService } from './services/seed-cost-categories.servi
     FetchCostCategoriesService,
     SeedCostCategoriesService,
   ],
-  exports: [SeedCostCategoriesService],
+  exports: [SeedCostCategoriesService, COST_CATEGORY_REPOSITORY],
 })
 export class CostCategoryModule {}

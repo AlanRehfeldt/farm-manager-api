@@ -62,12 +62,15 @@ Em `src/app.module.ts`:
 | `CropModule` | Farm Structure — culturas e variedades |
 | `MachineModule` | Farm Structure — máquinas |
 | `CropSeasonModule` | Season — safras, plantings, activate/close stub |
+| `PurchaseModule` | Finance + Inventory IN — compras atômicas |
+| `InventoryModule` | Inventory — saldos (`GET /stock-balances`) |
+| `ActivityModule` | Operations — atividades, OUT + CostEntry path A |
 
 `src/common/`: `PrismaModule`, `TenancyModule` (global), `ZodValidationPipe`, DTOs de erro para Swagger.
 
 ## Alinhamento com bounded contexts
 
-O mapa alvo de contextos e fronteiras está em `farm-manager-docs/04-tecnico/03-api-boundaries.md`. Os módulos Nest atuais são um **subconjunto** do catálogo — Inventory HTTP de leitura (`GET /stock-balances`) e compras (`POST/GET /purchases`); sem Operations, Harvest ou Costing completo.
+O mapa alvo de contextos e fronteiras está em `farm-manager-docs/04-tecnico/03-api-boundaries.md`. Os módulos Nest atuais são um **subconjunto** do catálogo — Inventory IN/OUT parcial; CostEntry writer em atividade; sem Harvest nem Costing report.
 
 ## Implementado vs. planejado (ADRs)
 
@@ -78,15 +81,15 @@ O mapa alvo de contextos e fronteiras está em `farm-manager-docs/04-tecnico/03-
 | Role enum em `User` | Sim (legado; authz de fazenda = Membership) | ADR-013 permissions; remoção PR-18 |
 | Tenancy por farm/org | Sim (`@FarmScoped()`, `@FarmId()`, `@OrganizationId()`) | ACL nomeada ADR-013 |
 | Field, Crop, Variety, Machine, CropSeason, CropPlanting | Sim (PR-06) | — |
-| CostEntry ledger | Não | ADR-006, ADR-007 |
-| Inventory desacoplado | Parcial (`ProductStockBalance`, `GET /stock-balances`, IN via `POST /purchases`) | ADR-012 |
+| CostEntry ledger | Parcial (writer path A via `POST /activities`) | ADR-006, ADR-007 — relatório PR-13 |
+| Inventory desacoplado | Parcial (IN via compra, OUT via atividade, `GET /stock-balances`) | ADR-012 |
 | Domain event outbox | Não | ADR-015 |
 | Ports entre módulos | Parcial (token de repo exportado) | ADR-016 — ports formais |
 | Soft delete | Não | — |
 | Exception filter global | Não | Erros de domínio estruturados |
 | Boundary lint (imports) | Não | `04-architecture-overview.md` |
 
-**Não implementar** RBAC nomeado, outbox ou CostEntry em código novo sem PR/ADR explícito — documentar drift se necessário.
+**Não implementar** RBAC nomeado, outbox ou relatório de custeio em código novo sem PR/ADR explícito — documentar drift se necessário.
 
 ## Infra transversal
 

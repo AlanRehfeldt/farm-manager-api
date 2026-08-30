@@ -25,6 +25,7 @@ import { CropSeasonModule } from './modules/crop-season/crop-season.module';
 import { CostCategoryModule } from './modules/cost-category/cost-category.module';
 import { PurchaseModule } from './modules/purchase/purchase.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
+import { ActivityModule } from './modules/activity/activity.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { InventoryModule } from './modules/inventory/inventory.module';
     CostCategoryModule,
     PurchaseModule,
     InventoryModule,
+    ActivityModule,
   ],
   controllers: [],
   providers: [],
