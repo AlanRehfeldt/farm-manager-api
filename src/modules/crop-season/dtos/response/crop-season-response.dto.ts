@@ -42,7 +42,7 @@ export class DeleteCropSeasonResponseDto {
   @ApiProperty({ default: 'Crop season deleted successfully' })
   message!: string;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ default: null, nullable: true, type: 'null' })
   result!: null;
 }
 
@@ -117,7 +117,7 @@ export class DeleteCropPlantingResponseDto {
   @ApiProperty({ default: 'Crop planting deleted successfully' })
   message!: string;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ default: null, nullable: true, type: 'null' })
   result!: null;
 }
 

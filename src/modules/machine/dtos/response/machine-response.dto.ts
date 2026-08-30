@@ -42,7 +42,7 @@ export class DeleteMachineResponseDto {
   @ApiProperty({ default: 'Machine deleted successfully' })
   message!: string;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ default: null, nullable: true, type: 'null' })
   result!: null;
 }
 
