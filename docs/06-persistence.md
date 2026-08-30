@@ -9,6 +9,19 @@
 
 O schema reflete o estado **implementado** — pode divergir do modelo conceitual em `farm-manager-docs/04-tecnico/02-proposed-data-model.md` até as migrações de domínio.
 
+### Entidades agrícolas (PR-06)
+
+| Model | Escopo | Notas |
+|-------|--------|-------|
+| `Field` | farm | `areaHa` Decimal(18,6); unique `(farmId, name)` |
+| `Crop` | org | `defaultProductionUomId?`; unique `(organizationId, name)` |
+| `Variety` | crop | unique `(cropId, name)` |
+| `CropSeason` | farm | `cropId` obrigatório (ADR-010); status `PLANNED \| ACTIVE \| CLOSED` |
+| `CropPlanting` | season × field | unique `(cropSeasonId, fieldId)` |
+| `Machine` | farm | `hourlyCostInCents` BigInt; `fuelIncludedInHourlyCost` default true |
+
+Serialização: Decimals como string na API; centavos como number no JSON (BigInt no banco).
+
 ## PrismaService
 
 ```typescript

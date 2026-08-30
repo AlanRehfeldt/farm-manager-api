@@ -18,6 +18,10 @@ import { OrganizationModule } from './modules/organization/organization.module';
 import { FarmModule } from './modules/farm/farm.module';
 import { MembershipModule } from './modules/membership/membership.module';
 import { OnboardingModule } from './modules/onboarding/onboarding.module';
+import { FieldModule } from './modules/field/field.module';
+import { CropModule } from './modules/crop/crop.module';
+import { MachineModule } from './modules/machine/machine.module';
+import { CropSeasonModule } from './modules/crop-season/crop-season.module';
 
 @Module({
   imports: [
@@ -42,6 +46,10 @@ import { OnboardingModule } from './modules/onboarding/onboarding.module';
     TransactionModule,
     UnitOfMeasurementModule,
     ProductModule,
+    FieldModule,
+    CropModule,
+    MachineModule,
+    CropSeasonModule,
   ],
   controllers: [],
   providers: [],

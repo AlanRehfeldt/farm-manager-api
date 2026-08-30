@@ -28,9 +28,10 @@ Decorators: `@FarmId()`, `@OrganizationId()` em `src/common/tenancy/`.
 
 | Camada | Entidades | Persistência | Listagem |
 |--------|-----------|--------------|----------|
-| Sempre org | `UnitOfMeasurement`, `CostCenter`, `AccountPlan` | `organizationId` obrigatório, sem `farmId` | só `organizationId` |
+| Sempre org | `UnitOfMeasurement`, `CostCenter`, `AccountPlan`, `Crop` | `organizationId` obrigatório, sem `farmId` | só `organizationId` |
 | Org + visibilidade | `Product`, `Supplier`, `Employee` | `organizationId` + `farmId` opcional | org **e** (`farmId` IS NULL OR `farmId` = farm ativa) |
-| Sempre farm | `Transaction`, `StockMovement`, `ProductStockBalance` | `farmId` obrigatório | `farmId` do header |
+| Sempre farm | `Transaction`, `StockMovement`, `ProductStockBalance`, `Field`, `Machine`, `CropSeason` | `farmId` obrigatório | `farmId` do header |
+| Farm via season | `CropPlanting` | via `cropSeason.farmId` | farm da safra no header |
 
 Installment / Purchase / Salary isolados via `transaction.farmId`.
 
@@ -66,4 +67,4 @@ Settings no app: `GET/PATCH /organizations/:id`, `GET/POST/PATCH /farms`, `GET/P
 
 ## Fora deste recorte
 
-Field/Crop/Season/Machine (PR-06), permissões nomeadas (ADR-013), join table cadastro × N fazendas, namespace `/platform/*` (PR-18+).
+Permissões nomeadas (ADR-013), join table cadastro × N fazendas, namespace `/platform/*` (PR-18+), fechamento completo de safra com snapshot (PR-13).

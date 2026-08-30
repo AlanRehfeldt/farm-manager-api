@@ -17,6 +17,12 @@ enum PlatformRole {
   PLATFORM_ADMIN
 }
 
+enum CropSeasonStatus {
+  PLANNED
+  ACTIVE
+  CLOSED
+}
+
 model Organization {
   id        String   @id @default(uuid())
   name      String
@@ -31,6 +37,7 @@ model Organization {
   accountPlans        AccountPlan[]
   unitsOfMeasurement  UnitOfMeasurement[]
   products            Product[]
+  crops               Crop[]
 
   @@map("organizations")
 }
@@ -51,6 +58,9 @@ model Farm {
   transactions   Transaction[]
   stockMovements StockMovement[]
   stockBalances  ProductStockBalance[]
+  fields         Field[]
+  machines       Machine[]
+  cropSeasons    CropSeason[]
 
   @@unique([organizationId, name])
   @@index([organizationId])
@@ -264,8 +274,10 @@ model UnitOfMeasurement {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id])
-  products     Product[]
+  organization              Organization @relation(fields: [organizationId], references: [id])
+  products                  Product[]
+  cropsDefaultProduction    Crop[]       @relation("CropDefaultProductionUom")
+  cropSeasonsProduction     CropSeason[] @relation("CropSeasonProductionUom")
 
   @@unique([organizationId, acronym])
   @@index([organizationId])
@@ -448,4 +460,119 @@ model ProductStockBalance {
   @@unique([farmId, productId])
   @@index([farmId])
   @@map("product_stock_balances")
+}
+
+model Field {
+  id           String   @id @default(uuid())
+  farmId       String
+  name         String
+  areaHa       Decimal  @db.Decimal(18, 6)
+  active       Boolean  @default(true)
+  plantsPerHa  Decimal? @db.Decimal(18, 6)
+  plantedYear  Int?
+  spacingNote  String?
+  externalRef  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  farm       Farm           @relation(fields: [farmId], references: [id])
+  plantings  CropPlanting[]
+
+  @@unique([farmId, name])
+  @@index([farmId])
+  @@map("fields")
+}
+
+model Crop {
+  id                      String   @id @default(uuid())
+  organizationId          String
+  name                    String
+  defaultProductionUomId  String?
+  externalRef             String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  organization         Organization @relation(fields: [organizationId], references: [id])
+  defaultProductionUom UnitOfMeasurement? @relation("CropDefaultProductionUom", fields: [defaultProductionUomId], references: [id])
+  varieties            Variety[]
+  cropSeasons          CropSeason[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@map("crops")
+}
+
+model Variety {
+  id          String   @id @default(uuid())
+  cropId      String
+  name        String
+  externalRef String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  crop      Crop           @relation(fields: [cropId], references: [id])
+  plantings CropPlanting[]
+
+  @@unique([cropId, name])
+  @@index([cropId])
+  @@map("varieties")
+}
+
+model CropSeason {
+  id                          String           @id @default(uuid())
+  farmId                      String
+  cropId                      String
+  name                        String
+  startDate                   DateTime
+  endDate                     DateTime?
+  status                      CropSeasonStatus @default(PLANNED)
+  productionUomId             String
+  referenceSalePriceInCents   BigInt?
+  createdAt                   DateTime         @default(now())
+  updatedAt                   DateTime         @updatedAt
+
+  farm          Farm             @relation(fields: [farmId], references: [id])
+  crop          Crop             @relation(fields: [cropId], references: [id])
+  productionUom UnitOfMeasurement @relation("CropSeasonProductionUom", fields: [productionUomId], references: [id])
+  plantings     CropPlanting[]
+
+  @@index([farmId])
+  @@index([cropId])
+  @@map("crop_seasons")
+}
+
+model CropPlanting {
+  id            String   @id @default(uuid())
+  cropSeasonId  String
+  fieldId       String
+  varietyId     String?
+  plantedAreaHa Decimal? @db.Decimal(18, 6)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  cropSeason CropSeason @relation(fields: [cropSeasonId], references: [id], onDelete: Cascade)
+  field      Field      @relation(fields: [fieldId], references: [id], onDelete: Restrict)
+  variety    Variety?   @relation(fields: [varietyId], references: [id], onDelete: SetNull)
+
+  @@unique([cropSeasonId, fieldId])
+  @@index([cropSeasonId])
+  @@index([fieldId])
+  @@map("crop_plantings")
+}
+
+model Machine {
+  id                        String   @id @default(uuid())
+  farmId                    String
+  name                      String
+  hourlyCostInCents         BigInt
+  fuelIncludedInHourlyCost  Boolean  @default(true)
+  active                    Boolean  @default(true)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  farm Farm @relation(fields: [farmId], references: [id])
+
+  @@unique([farmId, name])
+  @@index([farmId])
+  @@map("machines")
 }

@@ -58,12 +58,16 @@ Em `src/app.module.ts`:
 | `AccountPlanModule` | Finance |
 | `TransactionModule` | Finance |
 | `InstallmentModule` | Finance |
+| `FieldModule` | Farm Structure — talhões |
+| `CropModule` | Farm Structure — culturas e variedades |
+| `MachineModule` | Farm Structure — máquinas |
+| `CropSeasonModule` | Season — safras, plantings, activate/close stub |
 
 `src/common/`: `PrismaModule`, `TenancyModule` (global), `ZodValidationPipe`, DTOs de erro para Swagger.
 
 ## Alinhamento com bounded contexts
 
-O mapa alvo de contextos e fronteiras está em `farm-manager-docs/04-tecnico/03-api-boundaries.md`. Os módulos Nest atuais são um **subconjunto** do catálogo — sem Season, Inventory HTTP, Operations, Harvest ou Costing.
+O mapa alvo de contextos e fronteiras está em `farm-manager-docs/04-tecnico/03-api-boundaries.md`. Os módulos Nest atuais são um **subconjunto** do catálogo — sem Inventory HTTP, Operations, Harvest ou Costing completo.
 
 ## Implementado vs. planejado (ADRs)
 
@@ -73,6 +77,7 @@ O mapa alvo de contextos e fronteiras está em `farm-manager-docs/04-tecnico/03-
 | `User.platformRole` + `@PlatformAdmin()` | Sim (PR-05.1) | Namespace `/platform/*`, console vendor (PR-18+) |
 | Role enum em `User` | Sim (legado; authz de fazenda = Membership) | ADR-013 permissions; remoção PR-18 |
 | Tenancy por farm/org | Sim (`@FarmScoped()`, `@FarmId()`, `@OrganizationId()`) | ACL nomeada ADR-013 |
+| Field, Crop, Variety, Machine, CropSeason, CropPlanting | Sim (PR-06) | — |
 | CostEntry ledger | Não | ADR-006, ADR-007 |
 | Inventory desacoplado | Parcial (`ProductStockBalance` por farm; sem API de movimento) | ADR-012 |
 | Domain event outbox | Não | ADR-015 |

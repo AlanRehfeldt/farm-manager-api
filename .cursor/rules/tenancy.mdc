@@ -1,6 +1,6 @@
 ---
 description: Tenancy Organization/Farm e header x-farm-id
-globs: src/common/tenancy/**,src/modules/organization/**,src/modules/farm/**,src/modules/membership/**,src/modules/product/**,src/modules/supplier/**,src/modules/employee/**,src/modules/unit-of-measurement/**,src/modules/cost-center/**,src/modules/account-plan/**,src/modules/transaction/**,src/modules/installment/**
+globs: src/common/tenancy/**,src/modules/organization/**,src/modules/farm/**,src/modules/membership/**,src/modules/product/**,src/modules/supplier/**,src/modules/employee/**,src/modules/unit-of-measurement/**,src/modules/cost-center/**,src/modules/account-plan/**,src/modules/transaction/**,src/modules/installment/**,src/modules/field/**,src/modules/crop/**,src/modules/machine/**,src/modules/crop-season/**
 alwaysApply: false
 ---
 
@@ -19,9 +19,10 @@ Detalhe: `docs/08-tenancy.md`. ADR-005 em `farm-manager-docs`.
 
 | Camada | Entidades | Filtro |
 |--------|-----------|--------|
-| Sempre org | UoM, CostCenter, AccountPlan | `organizationId` |
+| Sempre org | UoM, CostCenter, AccountPlan, Crop | `organizationId` |
 | Org + visibilidade | Product, Supplier, Employee | org + (`farmId` null **ou** farm ativa) |
-| Sempre farm | Transaction, StockMovement, ProductStockBalance | `farmId` do header |
+| Sempre farm | Transaction, StockMovement, ProductStockBalance, Field, Machine, CropSeason | `farmId` do header |
+| Farm via season | CropPlanting | via `cropSeason.farmId` |
 
 `farmId` null em Product/Supplier/Employee/Membership = todas as fazendas da org. Se enviado no create, tem de igualar o header.
 
