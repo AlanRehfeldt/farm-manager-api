@@ -23,6 +23,8 @@ import { CropModule } from './modules/crop/crop.module';
 import { MachineModule } from './modules/machine/machine.module';
 import { CropSeasonModule } from './modules/crop-season/crop-season.module';
 import { CostCategoryModule } from './modules/cost-category/cost-category.module';
+import { PurchaseModule } from './modules/purchase/purchase.module';
+import { InventoryModule } from './modules/inventory/inventory.module';
 
 @Module({
   imports: [
@@ -52,6 +54,8 @@ import { CostCategoryModule } from './modules/cost-category/cost-category.module
     MachineModule,
     CropSeasonModule,
     CostCategoryModule,
+    PurchaseModule,
+    InventoryModule,
   ],
   controllers: [],
   providers: [],

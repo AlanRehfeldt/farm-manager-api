@@ -67,7 +67,7 @@ Em `src/app.module.ts`:
 
 ## Alinhamento com bounded contexts
 
-O mapa alvo de contextos e fronteiras está em `farm-manager-docs/04-tecnico/03-api-boundaries.md`. Os módulos Nest atuais são um **subconjunto** do catálogo — sem Inventory HTTP, Operations, Harvest ou Costing completo.
+O mapa alvo de contextos e fronteiras está em `farm-manager-docs/04-tecnico/03-api-boundaries.md`. Os módulos Nest atuais são um **subconjunto** do catálogo — Inventory HTTP de leitura (`GET /stock-balances`) e compras (`POST/GET /purchases`); sem Operations, Harvest ou Costing completo.
 
 ## Implementado vs. planejado (ADRs)
 
@@ -79,7 +79,7 @@ O mapa alvo de contextos e fronteiras está em `farm-manager-docs/04-tecnico/03-
 | Tenancy por farm/org | Sim (`@FarmScoped()`, `@FarmId()`, `@OrganizationId()`) | ACL nomeada ADR-013 |
 | Field, Crop, Variety, Machine, CropSeason, CropPlanting | Sim (PR-06) | — |
 | CostEntry ledger | Não | ADR-006, ADR-007 |
-| Inventory desacoplado | Parcial (`ProductStockBalance` por farm; sem API de movimento) | ADR-012 |
+| Inventory desacoplado | Parcial (`ProductStockBalance`, `GET /stock-balances`, IN via `POST /purchases`) | ADR-012 |
 | Domain event outbox | Não | ADR-015 |
 | Ports entre módulos | Parcial (token de repo exportado) | ADR-016 — ports formais |
 | Soft delete | Não | — |

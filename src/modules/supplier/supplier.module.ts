@@ -33,6 +33,6 @@ import { FetchSuppliersService } from './services/fetch-supplier.service';
     GetSupplierService,
     FetchSuppliersService,
   ],
-  exports: [],
+  exports: [SUPPLIER_REPOSITORY],
 })
 export class SupplierModule {}
