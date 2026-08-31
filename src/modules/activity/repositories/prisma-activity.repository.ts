@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import {
   CostEntrySourceType,
   StockMovementSourceType,
@@ -8,6 +8,7 @@ import { Decimal } from '@prisma/client/runtime/library';
 import { parseDecimal } from 'src/common/serialization/decimal';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { computeConsumptionAmountInCents } from '../domain/consumption-cost';
+import { computeHourlyAmountInCents } from '../domain/hourly-cost';
 import { applyStockOut } from 'src/modules/inventory/domain/stock-out';
 import {
   ActivityStockEffect,
@@ -45,6 +46,26 @@ const activityInclude = {
               acronym: true,
             },
           },
+        },
+      },
+    },
+  },
+  labor: {
+    include: {
+      employee: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
+  },
+  machineHours: {
+    include: {
+      machine: {
+        select: {
+          id: true,
+          name: true,
         },
       },
     },
@@ -88,7 +109,12 @@ export class PrismaActivityRepository implements ActivityRepository {
         const quantityBefore =
           existingBalance?.quantityOnHand ?? new Decimal(0);
         const unitCostSnapshot = existingBalance?.avgCost ?? new Decimal(0);
-        const insufficient = quantity.gt(quantityBefore);
+
+        if (quantity.gt(quantityBefore)) {
+          throw new ConflictException(
+            `Insufficient stock for ${meta.name}: available ${quantityBefore.toString()}, requested ${quantity.toString()}`,
+          );
+        }
 
         const activityInput = await tx.activityInput.create({
           data: {
@@ -147,7 +173,7 @@ export class PrismaActivityRepository implements ActivityRepository {
             activityId: activity.id,
             sourceType: CostEntrySourceType.ACTIVITY_INPUT,
             sourceId: activityInput.id,
-            costCategoryId: data.defaultCostCategoryId,
+            costCategoryId: data.costCategoryIds.defaultInput,
             amountInCents,
             quantity,
             uomId: meta.uomId,
@@ -161,7 +187,74 @@ export class PrismaActivityRepository implements ActivityRepository {
           uomAcronym: meta.uomAcronym,
           quantityRemaining: quantityOnHand.toString(),
           amountInCents: Number(amountInCents),
-          insufficient,
+        });
+      }
+
+      for (const item of data.labor) {
+        const costCategoryId = item.employeeId
+          ? data.costCategoryIds.moFixa
+          : data.costCategoryIds.moTemporaria;
+
+        const activityLabor = await tx.activityLabor.create({
+          data: {
+            activityId: activity.id,
+            employeeId: item.employeeId ?? null,
+            contractorName: item.contractorName ?? null,
+            payBasis: item.payBasis,
+            hours: item.hours ? parseDecimal(item.hours) : null,
+            days: item.days ? parseDecimal(item.days) : null,
+            outputQty: item.outputQty ? parseDecimal(item.outputQty) : null,
+            costInCents: BigInt(item.costInCents),
+          },
+        });
+
+        await tx.costEntry.create({
+          data: {
+            farmId: data.farmId,
+            cropSeasonId: data.cropSeasonId,
+            fieldId: data.fieldId,
+            activityId: activity.id,
+            sourceType: CostEntrySourceType.ACTIVITY_LABOR,
+            sourceId: activityLabor.id,
+            costCategoryId,
+            amountInCents: BigInt(item.costInCents),
+            date: data.date,
+          },
+        });
+      }
+
+      for (const item of data.machineHours) {
+        const meta = data.machineMeta[item.machineId];
+        const hours = parseDecimal(item.hours);
+        const hourlyCostSnapshot = meta.hourlyCostInCents;
+        const costInCents = computeHourlyAmountInCents(
+          hours,
+          hourlyCostSnapshot,
+        );
+
+        const activityMachineHour = await tx.activityMachineHour.create({
+          data: {
+            activityId: activity.id,
+            machineId: item.machineId,
+            hours,
+            hourlyCostSnapshot,
+            costInCents,
+          },
+        });
+
+        await tx.costEntry.create({
+          data: {
+            farmId: data.farmId,
+            cropSeasonId: data.cropSeasonId,
+            fieldId: data.fieldId,
+            activityId: activity.id,
+            sourceType: CostEntrySourceType.ACTIVITY_MACHINE,
+            sourceId: activityMachineHour.id,
+            costCategoryId: data.costCategoryIds.maquina,
+            amountInCents: costInCents,
+            quantity: hours,
+            date: data.date,
+          },
         });
       }
 
@@ -184,28 +277,41 @@ export class PrismaActivityRepository implements ActivityRepository {
     });
   }
 
+  private buildWhereClause(query: SearchManyActivitiesQuery) {
+    return {
+      farmId: query.farmId,
+      cropSeasonId: query.cropSeasonId,
+      ...(query.activityType ? { activityType: query.activityType } : {}),
+      ...(query.dateFrom || query.dateTo
+        ? {
+            date: {
+              ...(query.dateFrom ? { gte: query.dateFrom } : {}),
+              ...(query.dateTo ? { lte: query.dateTo } : {}),
+            },
+          }
+        : {}),
+      ...(query.name
+        ? {
+            OR: [
+              {
+                note: { contains: query.name, mode: 'insensitive' as const },
+              },
+              {
+                field: {
+                  name: { contains: query.name, mode: 'insensitive' as const },
+                },
+              },
+            ],
+          }
+        : {}),
+    };
+  }
+
   async searchMany(
     query: SearchManyActivitiesQuery,
   ): Promise<ActivityWithRelations[]> {
     return await this.prisma.activity.findMany({
-      where: {
-        farmId: query.farmId,
-        cropSeasonId: query.cropSeasonId,
-        ...(query.name
-          ? {
-              OR: [
-                {
-                  note: { contains: query.name, mode: 'insensitive' },
-                },
-                {
-                  field: {
-                    name: { contains: query.name, mode: 'insensitive' },
-                  },
-                },
-              ],
-            }
-          : {}),
-      },
+      where: this.buildWhereClause(query),
       include: activityInclude,
       skip: (query.page - 1) * query.perPage,
       take: query.perPage,
@@ -215,24 +321,7 @@ export class PrismaActivityRepository implements ActivityRepository {
 
   async count(query: SearchManyActivitiesQuery): Promise<number> {
     return await this.prisma.activity.count({
-      where: {
-        farmId: query.farmId,
-        cropSeasonId: query.cropSeasonId,
-        ...(query.name
-          ? {
-              OR: [
-                {
-                  note: { contains: query.name, mode: 'insensitive' },
-                },
-                {
-                  field: {
-                    name: { contains: query.name, mode: 'insensitive' },
-                  },
-                },
-              ],
-            }
-          : {}),
-      },
+      where: this.buildWhereClause(query),
     });
   }
 }

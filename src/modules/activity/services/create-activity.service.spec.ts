@@ -12,6 +12,8 @@ import { FieldRepository } from 'src/modules/field/repositories/field.repository
 import { ProductRepository } from 'src/modules/product/repositories/product.repository';
 import { UnitOfMeasurementRepository } from 'src/modules/unit-of-measurement/repositories/unit-of-measurement.repository';
 import { CostCategoryRepository } from 'src/modules/cost-category/repositories/cost-category.repository';
+import { EmployeeRepository } from 'src/modules/employee/repositories/employee.repository';
+import { MachineRepository } from 'src/modules/machine/repositories/machine.repository';
 
 describe('CreateActivityService', () => {
   const createActivity = jest.fn();
@@ -86,6 +88,26 @@ describe('CreateActivityService', () => {
     count: jest.fn(),
   };
 
+  const employeeRepository: jest.Mocked<EmployeeRepository> = {
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+    findById: jest.fn(),
+    findByRegistration: jest.fn(),
+    searchMany: jest.fn(),
+    count: jest.fn(),
+  };
+
+  const machineRepository: jest.Mocked<MachineRepository> = {
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+    findById: jest.fn(),
+    findByName: jest.fn(),
+    searchMany: jest.fn(),
+    count: jest.fn(),
+  };
+
   const service = new CreateActivityService(
     activityRepository,
     cropSeasonRepository,
@@ -94,6 +116,8 @@ describe('CreateActivityService', () => {
     productRepository,
     unitOfMeasurementRepository,
     costCategoryRepository,
+    employeeRepository,
+    machineRepository,
   );
 
   const farmId = 'farm-id';
@@ -101,21 +125,23 @@ describe('CreateActivityService', () => {
   const cropSeasonId = 'season-id';
   const fieldId = 'field-id';
   const productId = 'product-id';
+  const employeeId = 'employee-id';
+  const machineId = 'machine-id';
   const uomId = 'uom-id';
   const userId = 'user-id';
   const categoryId = 'category-id';
 
-  const defaultCostCategory: CostCategory = {
-    id: categoryId,
+  const makeCategory = (code: string, id: string): CostCategory => ({
+    id,
     organizationId,
-    code: 'outros',
-    name: 'Outros',
+    code,
+    name: code,
     parentId: null,
     accountPlanId: null,
     externalRef: null,
     createdAt: new Date(),
     updatedAt: new Date(),
-  };
+  });
 
   const baseInput = {
     farmId,
@@ -126,6 +152,48 @@ describe('CreateActivityService', () => {
     date: new Date('2025-08-01'),
     createdByUserId: userId,
     inputs: [] as Array<{ productId: string; quantity: string }>,
+    labor: [] as Array<{
+      employeeId?: string;
+      contractorName?: string;
+      payBasis: 'HOUR' | 'DAY' | 'OUTPUT';
+      hours?: string;
+      days?: string;
+      outputQty?: string;
+      costInCents: number;
+    }>,
+    machineHours: [] as Array<{ machineId: string; hours: string }>,
+  };
+
+  const emptyActivity = {
+    id: 'activity-id',
+    farmId,
+    cropSeasonId,
+    fieldId,
+    activityType: 'FERTILIZATION',
+    date: baseInput.date,
+    note: null,
+    createdByUserId: userId,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    field: { id: fieldId, name: 'T1' },
+    cropSeason: {
+      id: cropSeasonId,
+      farmId,
+      cropId: 'crop-id',
+      name: 'Manga 25/26',
+      startDate: new Date(),
+      endDate: null,
+      status: CropSeasonStatus.ACTIVE,
+      productionUomId: uomId,
+      referenceSalePriceInCents: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      crop: { id: 'crop-id', name: 'Manga' },
+    },
+    inputs: [],
+    labor: [],
+    machineHours: [],
+    costEntries: [],
   };
 
   beforeEach(() => {
@@ -180,7 +248,16 @@ describe('CreateActivityService', () => {
       },
       variety: null,
     });
-    findByCode.mockResolvedValue(defaultCostCategory);
+    findByCode.mockImplementation((_orgId, code) => {
+      const map: Record<string, string> = {
+        outros: categoryId,
+        MO_fixa: 'mo-fixa-id',
+        MO_temporaria: 'mo-temp-id',
+        maquina: 'maquina-id',
+      };
+      const id = map[code];
+      return Promise.resolve(id ? makeCategory(code, id) : null);
+    });
   });
 
   it('throws NotFoundException when crop season does not exist', async () => {
@@ -233,35 +310,7 @@ describe('CreateActivityService', () => {
 
   it('creates activity without inputs', async () => {
     createActivity.mockResolvedValue({
-      activity: {
-        id: 'activity-id',
-        farmId,
-        cropSeasonId,
-        fieldId,
-        activityType: 'FERTILIZATION',
-        date: baseInput.date,
-        note: null,
-        createdByUserId: userId,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        field: { id: fieldId, name: 'T1' },
-        cropSeason: {
-          id: cropSeasonId,
-          farmId,
-          cropId: 'crop-id',
-          name: 'Manga 25/26',
-          startDate: new Date(),
-          endDate: null,
-          status: CropSeasonStatus.ACTIVE,
-          productionUomId: uomId,
-          referenceSalePriceInCents: null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          crop: { id: 'crop-id', name: 'Manga' },
-        },
-        inputs: [],
-        costEntries: [],
-      },
+      activity: emptyActivity,
       stockEffects: [],
     });
 
@@ -273,7 +322,14 @@ describe('CreateActivityService', () => {
         cropSeasonId,
         fieldId,
         inputs: [],
-        defaultCostCategoryId: categoryId,
+        labor: [],
+        machineHours: [],
+        costCategoryIds: {
+          defaultInput: categoryId,
+          moFixa: 'mo-fixa-id',
+          moTemporaria: 'mo-temp-id',
+          maquina: 'maquina-id',
+        },
       }),
     );
     expect(result.activity.id).toBe('activity-id');
@@ -302,31 +358,7 @@ describe('CreateActivityService', () => {
 
     createActivity.mockResolvedValue({
       activity: {
-        id: 'activity-id',
-        farmId,
-        cropSeasonId,
-        fieldId,
-        activityType: 'FERTILIZATION',
-        date: baseInput.date,
-        note: null,
-        createdByUserId: userId,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        field: { id: fieldId, name: 'T1' },
-        cropSeason: {
-          id: cropSeasonId,
-          farmId,
-          cropId: 'crop-id',
-          name: 'Manga 25/26',
-          startDate: new Date(),
-          endDate: null,
-          status: CropSeasonStatus.ACTIVE,
-          productionUomId: uomId,
-          referenceSalePriceInCents: null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          crop: { id: 'crop-id', name: 'Manga' },
-        },
+        ...emptyActivity,
         inputs: [
           {
             id: 'input-id',
@@ -369,9 +401,8 @@ describe('CreateActivityService', () => {
           productName: 'Ureia',
           quantity: '100',
           uomAcronym: 'kg',
-          quantityRemaining: '-50',
+          quantityRemaining: '50',
           amountInCents: 35000,
-          insufficient: true,
         },
       ],
     });
@@ -382,7 +413,158 @@ describe('CreateActivityService', () => {
     });
 
     expect(result.activity.stockEffects).toHaveLength(1);
-    expect(result.activity.stockEffects[0].insufficient).toBe(true);
     expect(result.activity.totalCostInCents).toBe(35000);
+  });
+
+  it('creates activity with labor line', async () => {
+    employeeRepository.findById.mockResolvedValue({
+      id: employeeId,
+      organizationId,
+      farmId,
+      name: 'João',
+      registration: '001',
+      type: 'FIELD_WORKER',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    createActivity.mockResolvedValue({
+      activity: {
+        ...emptyActivity,
+        labor: [
+          {
+            id: 'labor-id',
+            activityId: 'activity-id',
+            employeeId,
+            contractorName: null,
+            payBasis: 'HOUR',
+            hours: { toString: () => '4' } as never,
+            days: null,
+            outputQty: null,
+            costInCents: 20000n,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            employee: { id: employeeId, name: 'João' },
+          },
+        ],
+        costEntries: [
+          {
+            id: 'ce-labor',
+            farmId,
+            cropSeasonId,
+            fieldId,
+            activityId: 'activity-id',
+            sourceType: 'ACTIVITY_LABOR',
+            sourceId: 'labor-id',
+            costCategoryId: 'mo-fixa-id',
+            amountInCents: 20000n,
+            quantity: null,
+            uomId: null,
+            date: baseInput.date,
+            reversedAt: null,
+            reversalOfId: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        ],
+      },
+      stockEffects: [],
+    });
+
+    const result = await service.execute({
+      ...baseInput,
+      labor: [
+        {
+          employeeId,
+          payBasis: 'HOUR',
+          hours: '4',
+          costInCents: 20000,
+        },
+      ],
+    });
+
+    expect(result.activity.labor).toHaveLength(1);
+    expect(result.activity.totalCostInCents).toBe(20000);
+  });
+
+  it('creates activity with machine hours', async () => {
+    machineRepository.findById.mockResolvedValue({
+      id: machineId,
+      farmId,
+      name: 'Trator',
+      hourlyCostInCents: 5000n,
+      fuelIncludedInHourlyCost: true,
+      active: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    createActivity.mockResolvedValue({
+      activity: {
+        ...emptyActivity,
+        machineHours: [
+          {
+            id: 'machine-hour-id',
+            activityId: 'activity-id',
+            machineId,
+            hours: { toString: () => '3' } as never,
+            hourlyCostSnapshot: 5000n,
+            costInCents: 15000n,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            machine: { id: machineId, name: 'Trator' },
+          },
+        ],
+        costEntries: [
+          {
+            id: 'ce-machine',
+            farmId,
+            cropSeasonId,
+            fieldId,
+            activityId: 'activity-id',
+            sourceType: 'ACTIVITY_MACHINE',
+            sourceId: 'machine-hour-id',
+            costCategoryId: 'maquina-id',
+            amountInCents: 15000n,
+            quantity: { toString: () => '3' } as never,
+            uomId: null,
+            date: baseInput.date,
+            reversedAt: null,
+            reversalOfId: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        ],
+      },
+      stockEffects: [],
+    });
+
+    const result = await service.execute({
+      ...baseInput,
+      machineHours: [{ machineId, hours: '3' }],
+    });
+
+    expect(result.activity.machineHours).toHaveLength(1);
+    expect(result.activity.totalCostInCents).toBe(15000);
+  });
+
+  it('throws BadRequestException when machine is inactive', async () => {
+    machineRepository.findById.mockResolvedValue({
+      id: machineId,
+      farmId,
+      name: 'Trator',
+      hourlyCostInCents: 5000n,
+      fuelIncludedInHourlyCost: true,
+      active: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    await expect(
+      service.execute({
+        ...baseInput,
+        machineHours: [{ machineId, hours: '3' }],
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 });

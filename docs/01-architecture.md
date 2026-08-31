@@ -37,7 +37,7 @@ flowchart TB
 
 Fluxo: **Controller → Service (`execute`) → Repository → Prisma**.
 
-Não há camada `domain/` explícita nem use-case classes separadas — o service é o use case.
+Não há camada `domain/` global — funções puras em `activity/domain/` e `inventory/domain/`; o service é o use case.
 
 ## Módulos registrados hoje
 
@@ -63,14 +63,14 @@ Em `src/app.module.ts`:
 | `MachineModule` | Farm Structure — máquinas |
 | `CropSeasonModule` | Season — safras, plantings, activate/close stub |
 | `PurchaseModule` | Finance + Inventory IN — compras atômicas |
-| `InventoryModule` | Inventory — saldos (`GET /stock-balances`) |
-| `ActivityModule` | Operations — atividades, OUT + CostEntry path A |
+| `InventoryModule` | Inventory — saldos (`GET /stock-balances`), ajustes (`POST /stock-adjustments`) |
+| `ActivityModule` | Operations — atividades, OUT + MO + máquina + CostEntry path A |
 
 `src/common/`: `PrismaModule`, `TenancyModule` (global), `ZodValidationPipe`, DTOs de erro para Swagger.
 
 ## Alinhamento com bounded contexts
 
-O mapa alvo de contextos e fronteiras está em `farm-manager-docs/04-tecnico/03-api-boundaries.md`. Os módulos Nest atuais são um **subconjunto** do catálogo — Inventory IN/OUT parcial; CostEntry writer em atividade; sem Harvest nem Costing report.
+O mapa alvo de contextos e fronteiras está em `farm-manager-docs/04-tecnico/03-api-boundaries.md`. Os módulos Nest atuais são um **subconjunto** do catálogo — Inventory IN/OUT/ADJUSTMENT; CostEntry writers em atividade (insumo, MO, máquina); sem Harvest nem Costing report.
 
 ## Implementado vs. planejado (ADRs)
 
@@ -81,8 +81,8 @@ O mapa alvo de contextos e fronteiras está em `farm-manager-docs/04-tecnico/03-
 | Role enum em `User` | Sim (legado; authz de fazenda = Membership) | ADR-013 permissions; remoção PR-18 |
 | Tenancy por farm/org | Sim (`@FarmScoped()`, `@FarmId()`, `@OrganizationId()`) | ACL nomeada ADR-013 |
 | Field, Crop, Variety, Machine, CropSeason, CropPlanting | Sim (PR-06) | — |
-| CostEntry ledger | Parcial (writer path A via `POST /activities`) | ADR-006, ADR-007 — relatório PR-13 |
-| Inventory desacoplado | Parcial (IN via compra, OUT via atividade, `GET /stock-balances`) | ADR-012 |
+| CostEntry ledger | Parcial (writers path A: insumo, MO, máquina via `POST /activities`) | ADR-006, ADR-007 — relatório PR-13 |
+| Inventory desacoplado | Parcial (IN compra, OUT atividade, ADJUSTMENT, `GET /stock-balances`) | ADR-012 |
 | Domain event outbox | Não | ADR-015 |
 | Ports entre módulos | Parcial (token de repo exportado) | ADR-016 — ports formais |
 | Soft delete | Não | — |

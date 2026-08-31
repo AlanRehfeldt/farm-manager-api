@@ -7,7 +7,7 @@ describe('applyStockOut', () => {
     expect(result.toString()).toBe('70');
   });
 
-  it('allows negative balance (PR-10 soft policy)', () => {
+  it('computes negative result when out exceeds on hand (blocked at repository)', () => {
     const result = applyStockOut(new Decimal('50'), new Decimal('100'));
     expect(result.toString()).toBe('-50');
   });

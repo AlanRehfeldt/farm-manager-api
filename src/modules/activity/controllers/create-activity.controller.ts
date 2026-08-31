@@ -29,6 +29,59 @@ const activityTypeSchema = z.enum([
   'OTHER',
 ]);
 
+const payBasisSchema = z.enum(['HOUR', 'DAY', 'OUTPUT']);
+
+const positiveDecimalString = z
+  .string()
+  .min(1)
+  .refine((value) => !Number.isNaN(Number(value)) && Number(value) > 0, {
+    message: 'Value must be greater than zero',
+  });
+
+const laborLineSchema = z
+  .object({
+    employeeId: z.uuid().optional(),
+    contractorName: z.string().min(1).optional(),
+    payBasis: payBasisSchema,
+    hours: z.string().optional(),
+    days: z.string().optional(),
+    outputQty: z.string().optional(),
+    costInCents: z.number().int().positive(),
+  })
+  .superRefine((data, ctx) => {
+    const hasEmployee = Boolean(data.employeeId);
+    const hasContractor = Boolean(data.contractorName);
+
+    if (hasEmployee === hasContractor) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Exactly one of employeeId or contractorName is required',
+      });
+    }
+
+    if (data.payBasis === 'HOUR' && !data.hours) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'hours is required for HOUR pay basis',
+        path: ['hours'],
+      });
+    }
+    if (data.payBasis === 'DAY' && !data.days) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'days is required for DAY pay basis',
+        path: ['days'],
+      });
+    }
+    if (data.payBasis === 'OUTPUT' && !data.outputQty) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'outputQty is required for OUTPUT pay basis',
+        path: ['outputQty'],
+      });
+    }
+  });
+
 const createActivityBodySchema = z.object({
   cropSeasonId: z.uuid(),
   fieldId: z.uuid(),
@@ -39,15 +92,16 @@ const createActivityBodySchema = z.object({
     .array(
       z.object({
         productId: z.uuid(),
-        quantity: z
-          .string()
-          .min(1)
-          .refine(
-            (value) => !Number.isNaN(Number(value)) && Number(value) > 0,
-            {
-              message: 'Quantity must be greater than zero',
-            },
-          ),
+        quantity: positiveDecimalString,
+      }),
+    )
+    .default([]),
+  labor: z.array(laborLineSchema).default([]),
+  machineHours: z
+    .array(
+      z.object({
+        machineId: z.uuid(),
+        hours: positiveDecimalString,
       }),
     )
     .default([]),
@@ -73,7 +127,7 @@ export class CreateActivityController {
     type: NotFoundDto,
   })
   @ApiConflictResponse({
-    description: 'Conflict: Crop season is not active',
+    description: 'Conflict: Crop season is not active or insufficient stock',
   })
   @Post()
   async create(

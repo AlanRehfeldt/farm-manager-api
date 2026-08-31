@@ -24,6 +24,55 @@ export class ActivityInputDto {
   amountInCents!: number;
 }
 
+export class ActivityLaborDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty({ nullable: true })
+  employeeId!: string | null;
+
+  @ApiProperty({ nullable: true })
+  employeeName!: string | null;
+
+  @ApiProperty({ nullable: true })
+  contractorName!: string | null;
+
+  @ApiProperty()
+  payBasis!: string;
+
+  @ApiProperty({ nullable: true })
+  hours!: string | null;
+
+  @ApiProperty({ nullable: true })
+  days!: string | null;
+
+  @ApiProperty({ nullable: true })
+  outputQty!: string | null;
+
+  @ApiProperty()
+  costInCents!: number;
+}
+
+export class ActivityMachineHourDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  machineId!: string;
+
+  @ApiProperty()
+  machineName!: string;
+
+  @ApiProperty()
+  hours!: string;
+
+  @ApiProperty()
+  hourlyCostSnapshot!: number;
+
+  @ApiProperty()
+  costInCents!: number;
+}
+
 export class ActivityStockEffectDto {
   @ApiProperty()
   productName!: string;
@@ -39,9 +88,6 @@ export class ActivityStockEffectDto {
 
   @ApiProperty()
   amountInCents!: number;
-
-  @ApiProperty()
-  insufficient!: boolean;
 }
 
 export class ActivityDto {
@@ -77,6 +123,12 @@ export class ActivityDto {
 
   @ApiProperty({ type: [ActivityInputDto] })
   inputs!: ActivityInputDto[];
+
+  @ApiProperty({ type: [ActivityLaborDto] })
+  labor!: ActivityLaborDto[];
+
+  @ApiProperty({ type: [ActivityMachineHourDto] })
+  machineHours!: ActivityMachineHourDto[];
 
   @ApiProperty()
   totalCostInCents!: number;

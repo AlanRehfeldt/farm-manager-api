@@ -14,9 +14,22 @@ import { FetchActivitiesQueryDto } from '../dtos/request/activity.dto';
 import { FetchActivitiesResponseDto } from '../dtos/response/activity-response.dto';
 import { FetchActivitiesService } from '../services/fetch-activities.service';
 
+const activityTypeSchema = z.enum([
+  'PREPARATION',
+  'FERTILIZATION',
+  'PHYTOSANITARY',
+  'IRRIGATION',
+  'MANAGEMENT',
+  'HARVEST',
+  'OTHER',
+]);
+
 const fetchActivitiesSchema = z.object({
   cropSeasonId: z.uuid(),
   name: z.string().optional(),
+  activityType: activityTypeSchema.optional(),
+  dateFrom: z.coerce.date().optional(),
+  dateTo: z.coerce.date().optional(),
   page: z.coerce.number().optional().default(1),
   perPage: z.coerce.number().optional().default(10),
   orderBy: z.string().optional().default('date'),
@@ -50,6 +63,9 @@ export class FetchActivitiesController {
       farmId,
       cropSeasonId: query.cropSeasonId,
       name: query.name,
+      activityType: query.activityType,
+      dateFrom: query.dateFrom,
+      dateTo: query.dateTo,
       page: query.page ?? 1,
       perPage: query.perPage ?? 10,
       orderBy: query.orderBy ?? 'date',

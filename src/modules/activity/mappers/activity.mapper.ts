@@ -16,6 +16,27 @@ export type ActivityInputResponse = {
   amountInCents: number;
 };
 
+export type ActivityLaborResponse = {
+  id: string;
+  employeeId: string | null;
+  employeeName: string | null;
+  contractorName: string | null;
+  payBasis: string;
+  hours: string | null;
+  days: string | null;
+  outputQty: string | null;
+  costInCents: number;
+};
+
+export type ActivityMachineHourResponse = {
+  id: string;
+  machineId: string;
+  machineName: string;
+  hours: string;
+  hourlyCostSnapshot: number;
+  costInCents: number;
+};
+
 export type ActivityResponse = {
   id: string;
   farmId: string;
@@ -28,6 +49,8 @@ export type ActivityResponse = {
   date: Date;
   note: string | null;
   inputs: ActivityInputResponse[];
+  labor: ActivityLaborResponse[];
+  machineHours: ActivityMachineHourResponse[];
   totalCostInCents: number;
   createdAt: Date;
   updatedAt: Date;
@@ -37,14 +60,13 @@ export type CreateActivityResponse = ActivityResponse & {
   stockEffects: ActivityStockEffect[];
 };
 
-function findInputCostEntry(
+function findCostEntryAmount(
   activity: ActivityWithRelations,
-  inputId: string,
+  sourceType: CostEntrySourceType,
+  sourceId: string,
 ): number {
   const entry = activity.costEntries.find(
-    (ce) =>
-      ce.sourceType === CostEntrySourceType.ACTIVITY_INPUT &&
-      ce.sourceId === inputId,
+    (ce) => ce.sourceType === sourceType && ce.sourceId === sourceId,
   );
 
   return entry ? bigintToNumber(entry.amountInCents)! : 0;
@@ -60,11 +82,44 @@ export function toActivityResponse(
     uomAcronym: input.product.unitOfMeasurement.acronym,
     quantity: decimalToString(input.quantity)!,
     unitCostSnapshot: decimalToString(input.unitCostSnapshot)!,
-    amountInCents: findInputCostEntry(activity, input.id),
+    amountInCents: findCostEntryAmount(
+      activity,
+      CostEntrySourceType.ACTIVITY_INPUT,
+      input.id,
+    ),
   }));
 
-  const totalCostInCents = inputs.reduce(
-    (sum, input) => sum + input.amountInCents,
+  const labor = activity.labor.map((line) => ({
+    id: line.id,
+    employeeId: line.employeeId,
+    employeeName: line.employee?.name ?? null,
+    contractorName: line.contractorName,
+    payBasis: line.payBasis,
+    hours: decimalToString(line.hours),
+    days: decimalToString(line.days),
+    outputQty: decimalToString(line.outputQty),
+    costInCents: findCostEntryAmount(
+      activity,
+      CostEntrySourceType.ACTIVITY_LABOR,
+      line.id,
+    ),
+  }));
+
+  const machineHours = activity.machineHours.map((line) => ({
+    id: line.id,
+    machineId: line.machineId,
+    machineName: line.machine.name,
+    hours: decimalToString(line.hours)!,
+    hourlyCostSnapshot: bigintToNumber(line.hourlyCostSnapshot)!,
+    costInCents: findCostEntryAmount(
+      activity,
+      CostEntrySourceType.ACTIVITY_MACHINE,
+      line.id,
+    ),
+  }));
+
+  const totalCostInCents = activity.costEntries.reduce(
+    (sum, entry) => sum + bigintToNumber(entry.amountInCents)!,
     0,
   );
 
@@ -80,6 +135,8 @@ export function toActivityResponse(
     date: activity.date,
     note: activity.note,
     inputs,
+    labor,
+    machineHours,
     totalCostInCents,
     createdAt: activity.createdAt,
     updatedAt: activity.updatedAt,

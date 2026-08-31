@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { ActivityType } from '@prisma/client';
 import { toActivityResponse } from '../mappers/activity.mapper';
 import {
   ACTIVITY_REPOSITORY,
@@ -9,6 +10,9 @@ type FetchActivitiesInput = {
   farmId: string;
   cropSeasonId: string;
   name?: string;
+  activityType?: ActivityType;
+  dateFrom?: Date;
+  dateTo?: Date;
   page: number;
   perPage: number;
   orderBy: string;
@@ -27,6 +31,9 @@ export class FetchActivitiesService {
       farmId: input.farmId,
       cropSeasonId: input.cropSeasonId,
       name: input.name,
+      activityType: input.activityType,
+      dateFrom: input.dateFrom,
+      dateTo: input.dateTo,
       page: input.page,
       perPage: input.perPage,
       orderBy: input.orderBy,

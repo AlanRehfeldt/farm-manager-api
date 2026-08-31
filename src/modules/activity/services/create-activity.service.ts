@@ -5,7 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ActivityType, CropSeasonStatus } from '@prisma/client';
+import { ActivityType, CropSeasonStatus, LaborPayBasis } from '@prisma/client';
 import {
   COST_CATEGORY_REPOSITORY,
   CostCategoryRepository,
@@ -19,9 +19,17 @@ import {
   CropSeasonRepository,
 } from 'src/modules/crop-season/repositories/crop-season.repository';
 import {
+  EMPLOYEE_REPOSITORY,
+  EmployeeRepository,
+} from 'src/modules/employee/repositories/employee.repository';
+import {
   FIELD_REPOSITORY,
   FieldRepository,
 } from 'src/modules/field/repositories/field.repository';
+import {
+  MACHINE_REPOSITORY,
+  MachineRepository,
+} from 'src/modules/machine/repositories/machine.repository';
 import {
   PRODUCT_REPOSITORY,
   ProductRepository,
@@ -41,6 +49,21 @@ type CreateActivityInputItem = {
   quantity: string;
 };
 
+type CreateActivityLaborItem = {
+  employeeId?: string;
+  contractorName?: string;
+  payBasis: LaborPayBasis;
+  hours?: string;
+  days?: string;
+  outputQty?: string;
+  costInCents: number;
+};
+
+type CreateActivityMachineHourItem = {
+  machineId: string;
+  hours: string;
+};
+
 type CreateActivityInput = {
   farmId: string;
   organizationId: string;
@@ -51,6 +74,8 @@ type CreateActivityInput = {
   note?: string | null;
   createdByUserId: string;
   inputs: CreateActivityInputItem[];
+  labor: CreateActivityLaborItem[];
+  machineHours: CreateActivityMachineHourItem[];
 };
 
 @Injectable()
@@ -70,6 +95,10 @@ export class CreateActivityService {
     private readonly unitOfMeasurementRepository: UnitOfMeasurementRepository,
     @Inject(COST_CATEGORY_REPOSITORY)
     private readonly costCategoryRepository: CostCategoryRepository,
+    @Inject(EMPLOYEE_REPOSITORY)
+    private readonly employeeRepository: EmployeeRepository,
+    @Inject(MACHINE_REPOSITORY)
+    private readonly machineRepository: MachineRepository,
   ) {}
 
   async execute(input: CreateActivityInput) {
@@ -101,13 +130,19 @@ export class CreateActivityService {
       throw new BadRequestException('Field is not planted in this crop season');
     }
 
-    const defaultCategory = await this.costCategoryRepository.findByCode(
-      input.organizationId,
-      'outros',
-    );
-    if (!defaultCategory) {
+    const [defaultCategory, moFixa, moTemporaria, maquina] = await Promise.all([
+      this.costCategoryRepository.findByCode(input.organizationId, 'outros'),
+      this.costCategoryRepository.findByCode(input.organizationId, 'MO_fixa'),
+      this.costCategoryRepository.findByCode(
+        input.organizationId,
+        'MO_temporaria',
+      ),
+      this.costCategoryRepository.findByCode(input.organizationId, 'maquina'),
+    ]);
+
+    if (!defaultCategory || !moFixa || !moTemporaria || !maquina) {
       throw new BadRequestException(
-        'Default cost category not found for organization',
+        'Required cost categories not found for organization',
       );
     }
 
@@ -150,6 +185,85 @@ export class CreateActivityService {
       };
     }
 
+    const employeeMeta: Record<string, { name: string }> = {};
+
+    for (const item of input.labor) {
+      if (item.costInCents <= 0) {
+        throw new BadRequestException('Labor cost must be greater than zero');
+      }
+
+      const hasEmployee = Boolean(item.employeeId);
+      const hasContractor = Boolean(item.contractorName?.trim());
+
+      if (hasEmployee === hasContractor) {
+        throw new BadRequestException(
+          'Labor line requires exactly one of employeeId or contractorName',
+        );
+      }
+
+      if (item.payBasis === LaborPayBasis.HOUR) {
+        if (!item.hours || Number(item.hours) <= 0) {
+          throw new BadRequestException(
+            'Hours must be greater than zero for HOUR pay basis',
+          );
+        }
+      } else if (item.payBasis === LaborPayBasis.DAY) {
+        if (!item.days || Number(item.days) <= 0) {
+          throw new BadRequestException(
+            'Days must be greater than zero for DAY pay basis',
+          );
+        }
+      } else if (item.payBasis === LaborPayBasis.OUTPUT) {
+        if (!item.outputQty || Number(item.outputQty) <= 0) {
+          throw new BadRequestException(
+            'Output quantity must be greater than zero for OUTPUT pay basis',
+          );
+        }
+      }
+
+      if (item.employeeId) {
+        const employee = await this.employeeRepository.findById(
+          item.employeeId,
+          input.organizationId,
+          input.farmId,
+        );
+        if (!employee) {
+          throw new NotFoundException(`Employee not found: ${item.employeeId}`);
+        }
+        employeeMeta[item.employeeId] = { name: employee.name };
+      }
+    }
+
+    const machineMeta: Record<
+      string,
+      { name: string; hourlyCostInCents: bigint }
+    > = {};
+
+    for (const item of input.machineHours) {
+      const hours = Number(item.hours);
+      if (Number.isNaN(hours) || hours <= 0) {
+        throw new BadRequestException(
+          'Machine hours must be greater than zero',
+        );
+      }
+
+      const machine = await this.machineRepository.findById(
+        item.machineId,
+        input.farmId,
+      );
+      if (!machine) {
+        throw new NotFoundException(`Machine not found: ${item.machineId}`);
+      }
+      if (!machine.active) {
+        throw new BadRequestException(`Machine is inactive: ${machine.name}`);
+      }
+
+      machineMeta[item.machineId] = {
+        name: machine.name,
+        hourlyCostInCents: machine.hourlyCostInCents,
+      };
+    }
+
     const { activity, stockEffects } = await this.activityRepository.create({
       farmId: input.farmId,
       cropSeasonId: input.cropSeasonId,
@@ -159,8 +273,17 @@ export class CreateActivityService {
       note: input.note,
       createdByUserId: input.createdByUserId,
       inputs: input.inputs,
+      labor: input.labor,
+      machineHours: input.machineHours,
       productMeta,
-      defaultCostCategoryId: defaultCategory.id,
+      machineMeta,
+      employeeMeta,
+      costCategoryIds: {
+        defaultInput: defaultCategory.id,
+        moFixa: moFixa.id,
+        moTemporaria: moTemporaria.id,
+        maquina: maquina.id,
+      },
     });
 
     return {

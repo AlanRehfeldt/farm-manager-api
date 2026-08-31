@@ -1,3 +1,15 @@
+import { StockMovement } from '@prisma/client';
+
+export type SearchManyStockBalancesQuery = {
+  farmId: string;
+  organizationId: string;
+  name?: string;
+  page: number;
+  perPage: number;
+  orderBy: string;
+  orderDirection: 'asc' | 'desc';
+};
+
 export type StockBalanceWithProduct = {
   id: string;
   farmId: string;
@@ -17,12 +29,17 @@ export type StockBalanceWithProduct = {
   updatedAt: Date;
 };
 
-export type SearchManyStockBalancesQuery = {
+export type CreateStockAdjustmentData = {
+  id: string;
   farmId: string;
-  organizationId: string;
-  name?: string;
-  page: number;
-  perPage: number;
-  orderBy: string;
-  orderDirection: 'asc' | 'desc';
+  productId: string;
+  quantity: string;
+  date: Date;
+  note: string;
+};
+
+export type StockAdjustmentResult = {
+  movement: StockMovement;
+  quantityOnHand: string;
+  avgCost: string;
 };
