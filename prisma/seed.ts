@@ -25,17 +25,40 @@ async function seedCostCategoriesForOrganization(organizationId: string) {
   }
 }
 
-async function main() {
+async function seedAllCostCategories() {
+  const organizations = await prisma.organization.findMany({
+    select: { id: true, name: true },
+  });
+
+  if (organizations.length === 0) {
+    console.log('No organizations found — skipping cost category seed.');
+    return;
+  }
+
+  for (const organization of organizations) {
+    await seedCostCategoriesForOrganization(organization.id);
+    console.log(
+      `Cost categories seeded for organization: ${organization.name}`,
+    );
+  }
+}
+
+async function seedPlatformAdminIfConfigured() {
   const email = process.env.PLATFORM_ADMIN_EMAIL;
   const password = process.env.PLATFORM_ADMIN_PASSWORD;
   const name = process.env.PLATFORM_ADMIN_NAME ?? 'Platform Admin';
 
-  if (!email) {
-    throw new Error('PLATFORM_ADMIN_EMAIL is required');
+  if (!email && !password) {
+    console.log(
+      'PLATFORM_ADMIN_EMAIL/PASSWORD not set — skipping platform admin seed.',
+    );
+    return;
   }
 
-  if (!password) {
-    throw new Error('PLATFORM_ADMIN_PASSWORD is required');
+  if (!email || !password) {
+    throw new Error(
+      'Set both PLATFORM_ADMIN_EMAIL and PLATFORM_ADMIN_PASSWORD to seed platform admin.',
+    );
   }
 
   const encryptedPassword = await hash(password, 6);
@@ -57,17 +80,11 @@ async function main() {
   });
 
   console.log(`Platform admin upserted: ${user.email} (${user.id})`);
+}
 
-  const organizations = await prisma.organization.findMany({
-    select: { id: true, name: true },
-  });
-
-  for (const organization of organizations) {
-    await seedCostCategoriesForOrganization(organization.id);
-    console.log(
-      `Cost categories seeded for organization: ${organization.name}`,
-    );
-  }
+async function main() {
+  await seedAllCostCategories();
+  await seedPlatformAdminIfConfigured();
 }
 
 main()

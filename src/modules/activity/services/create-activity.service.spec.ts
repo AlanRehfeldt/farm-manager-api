@@ -22,6 +22,7 @@ describe('CreateActivityService', () => {
     findById: jest.fn(),
     searchMany: jest.fn(),
     count: jest.fn(),
+    hasEmployeeLaborInSeasonMonth: jest.fn(),
   };
 
   const cropSeasonRepository: jest.Mocked<CropSeasonRepository> = {

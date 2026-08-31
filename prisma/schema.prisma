@@ -64,6 +64,7 @@ model Farm {
   cropSeasons    CropSeason[]
   activities     Activity[]
   costEntries    CostEntry[]
+  harvests       Harvest[]
 
   @@unique([organizationId, name])
   @@index([organizationId])
@@ -243,6 +244,7 @@ model CostCategory {
   parent   CostCategory?  @relation("Children", fields: [parentId], references: [id])
   children CostCategory[] @relation("Children")
   costEntries CostEntry[]
+  transactionAllocations TransactionAllocation[]
 
   @@unique([organizationId, code])
   @@index([organizationId])
@@ -284,14 +286,21 @@ model TransactionAllocation {
   transactionId         String
   costCenterId          String
   accountPlanId         String
+  costCategoryId        String
+  cropSeasonId          String
+  fieldId               String?
   allocatedValueInCents BigInt
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
-  transaction Transaction @relation(fields: [transactionId], references: [id])
-  costCenter  CostCenter  @relation(fields: [costCenterId], references: [id])
-  accountPlan AccountPlan @relation(fields: [accountPlanId], references: [id])
+  transaction  Transaction  @relation(fields: [transactionId], references: [id])
+  costCenter   CostCenter   @relation(fields: [costCenterId], references: [id])
+  accountPlan  AccountPlan  @relation(fields: [accountPlanId], references: [id])
+  costCategory CostCategory @relation(fields: [costCategoryId], references: [id])
+  cropSeason   CropSeason   @relation(fields: [cropSeasonId], references: [id])
+  field        Field?       @relation(fields: [fieldId], references: [id])
 
+  @@index([cropSeasonId])
   @@map("transaction_allocations")
 }
 
@@ -305,9 +314,10 @@ model UnitOfMeasurement {
 
   organization              Organization @relation(fields: [organizationId], references: [id])
   products                  Product[]
-  cropsDefaultProduction    Crop[]       @relation("CropDefaultProductionUom")
-  cropSeasonsProduction     CropSeason[] @relation("CropSeasonProductionUom")
+  cropsDefaultProduction    Crop[]        @relation("CropDefaultProductionUom")
+  cropSeasonsProduction     CropSeason[]  @relation("CropSeasonProductionUom")
   costEntries               CostEntry[]
+  harvestItems              HarvestItem[]
 
   @@unique([organizationId, acronym])
   @@index([organizationId])
@@ -507,9 +517,11 @@ model Field {
   updatedAt    DateTime @updatedAt
 
   farm        Farm           @relation(fields: [farmId], references: [id])
-  plantings   CropPlanting[]
-  activities  Activity[]
-  costEntries CostEntry[]
+  plantings              CropPlanting[]
+  activities             Activity[]
+  costEntries            CostEntry[]
+  transactionAllocations TransactionAllocation[]
+  harvests               Harvest[]
 
   @@unique([farmId, name])
   @@index([farmId])
@@ -567,9 +579,11 @@ model CropSeason {
   farm          Farm             @relation(fields: [farmId], references: [id])
   crop          Crop             @relation(fields: [cropId], references: [id])
   productionUom UnitOfMeasurement @relation("CropSeasonProductionUom", fields: [productionUomId], references: [id])
-  plantings     CropPlanting[]
-  activities    Activity[]
-  costEntries   CostEntry[]
+  plantings              CropPlanting[]
+  activities             Activity[]
+  costEntries            CostEntry[]
+  transactionAllocations TransactionAllocation[]
+  harvests               Harvest[]
 
   @@index([farmId])
   @@index([cropId])
@@ -747,4 +761,49 @@ model CostEntry {
   @@index([farmId, date])
   @@index([sourceType, sourceId])
   @@map("cost_entries")
+}
+
+enum HarvestQualityClass {
+  EXPORT
+  DOMESTIC
+  INDUSTRY
+  REJECT
+  OTHER
+}
+
+model Harvest {
+  id           String   @id @default(uuid())
+  farmId       String
+  cropSeasonId String
+  fieldId      String
+  date         DateTime
+  lotCode      String?
+  note         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  farm       Farm          @relation(fields: [farmId], references: [id])
+  cropSeason CropSeason    @relation(fields: [cropSeasonId], references: [id])
+  field      Field         @relation(fields: [fieldId], references: [id])
+  items      HarvestItem[]
+
+  @@index([farmId])
+  @@index([cropSeasonId, date])
+  @@map("harvests")
+}
+
+model HarvestItem {
+  id            String              @id @default(uuid())
+  harvestId     String
+  qualityClass  HarvestQualityClass @default(OTHER)
+  quantity      Decimal             @db.Decimal(18, 6)
+  uomId         String
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  harvest Harvest           @relation(fields: [harvestId], references: [id], onDelete: Cascade)
+  uom     UnitOfMeasurement @relation(fields: [uomId], references: [id])
+
+  @@index([harvestId])
+  @@map("harvest_items")
 }

@@ -41,5 +41,6 @@ import { GetActivityService } from './services/get-activity.service';
     FetchActivitiesService,
     GetActivityService,
   ],
+  exports: [ACTIVITY_REPOSITORY],
 })
 export class ActivityModule {}

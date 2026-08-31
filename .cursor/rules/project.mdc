@@ -8,7 +8,7 @@ alwaysApply: true
 - Prosa de docs e comentários: português. Código, rotas, DTOs e tabelas: inglês.
 - Domínio e ADRs: `farm-manager-docs` — não reescrever aqui; linkar quando relevante.
 - Engenharia da API: `docs/` neste repositório.
-- Não inventar RBAC nomeado (ADR-013), outbox ou CostEntry — ainda não existem no código. Tenancy (org + farm) **existe**: `@FarmScoped()`, `@FarmId()`, `@OrganizationId()` — ver `docs/08-tenancy.md`.
+- Não inventar RBAC nomeado (ADR-013), outbox ou CostEntry path B — **path B via `/expenses` já existe (PR-12)**; relatório de custeio aguarda PR-13. Tenancy (org + farm) **existe**: `@FarmScoped()`, `@FarmId()`, `@OrganizationId()` — ver `docs/08-tenancy.md`.
 - Não usar `class-validator` / `ValidationPipe` para validação — o projeto usa Zod 4 + `ZodValidationPipe`.
 - Não copiar `console.error` + try/catch nos controllers — é drift legado.
 - Imports: `src/...` (não `../../` profundo).

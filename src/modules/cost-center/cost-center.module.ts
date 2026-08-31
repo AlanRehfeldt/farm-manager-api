@@ -33,6 +33,6 @@ import { FetchCostCentersService } from './services/fetch-cost-center.service';
     GetCostCenterService,
     FetchCostCentersService,
   ],
-  exports: [],
+  exports: [COST_CENTER_REPOSITORY],
 })
 export class CostCenterModule {}

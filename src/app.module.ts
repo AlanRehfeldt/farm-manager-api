@@ -26,6 +26,8 @@ import { CostCategoryModule } from './modules/cost-category/cost-category.module
 import { PurchaseModule } from './modules/purchase/purchase.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { ActivityModule } from './modules/activity/activity.module';
+import { ExpenseModule } from './modules/expense/expense.module';
+import { HarvestModule } from './modules/harvest/harvest.module';
 
 @Module({
   imports: [
@@ -58,6 +60,8 @@ import { ActivityModule } from './modules/activity/activity.module';
     PurchaseModule,
     InventoryModule,
     ActivityModule,
+    ExpenseModule,
+    HarvestModule,
   ],
   controllers: [],
   providers: [],

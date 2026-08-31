@@ -65,12 +65,15 @@ Em `src/app.module.ts`:
 | `PurchaseModule` | Finance + Inventory IN — compras atômicas |
 | `InventoryModule` | Inventory — saldos (`GET /stock-balances`), ajustes (`POST /stock-adjustments`) |
 | `ActivityModule` | Operations — atividades, OUT + MO + máquina + CostEntry path A |
+| `ExpenseModule` | Finance — `POST/GET /expenses` (GENERIC/SALARY + alocação → CostEntry path B) |
+| `HarvestModule` | Harvest — `POST/GET /harvests` (volume/classes; sem CostEntry) |
+| `CostCategoryModule` | Catalog — naturezas de custo (seed) |
 
 `src/common/`: `PrismaModule`, `TenancyModule` (global), `ZodValidationPipe`, DTOs de erro para Swagger.
 
 ## Alinhamento com bounded contexts
 
-O mapa alvo de contextos e fronteiras está em `farm-manager-docs/04-tecnico/03-api-boundaries.md`. Os módulos Nest atuais são um **subconjunto** do catálogo — Inventory IN/OUT/ADJUSTMENT; CostEntry writers em atividade (insumo, MO, máquina); sem Harvest nem Costing report.
+O mapa alvo de contextos e fronteiras está em `farm-manager-docs/04-tecnico/03-api-boundaries.md`. Os módulos Nest atuais são um **subconjunto** do catálogo — Inventory IN/OUT/ADJUSTMENT; CostEntry writers path A (atividade) e **path B (alocação via `/expenses`)**; **Harvest** implementado; relatório de custeio (PR-13) ainda ausente.
 
 ## Implementado vs. planejado (ADRs)
 
@@ -81,7 +84,8 @@ O mapa alvo de contextos e fronteiras está em `farm-manager-docs/04-tecnico/03-
 | Role enum em `User` | Sim (legado; authz de fazenda = Membership) | ADR-013 permissions; remoção PR-18 |
 | Tenancy por farm/org | Sim (`@FarmScoped()`, `@FarmId()`, `@OrganizationId()`) | ACL nomeada ADR-013 |
 | Field, Crop, Variety, Machine, CropSeason, CropPlanting | Sim (PR-06) | — |
-| CostEntry ledger | Parcial (writers path A: insumo, MO, máquina via `POST /activities`) | ADR-006, ADR-007 — relatório PR-13 |
+| CostEntry ledger | Parcial (writers path A: insumo, MO, máquina via `POST /activities`; **path B: alocação via `POST /expenses`**) | ADR-006, ADR-007 — relatório PR-13 |
+| Harvest (volume/classes) | Sim (PR-12) | — |
 | Inventory desacoplado | Parcial (IN compra, OUT atividade, ADJUSTMENT, `GET /stock-balances`) | ADR-012 |
 | Domain event outbox | Não | ADR-015 |
 | Ports entre módulos | Parcial (token de repo exportado) | ADR-016 — ports formais |

@@ -12,6 +12,12 @@ export interface ActivityRepository {
     query: SearchManyActivitiesQuery,
   ): Promise<ActivityWithRelations[]>;
   count(query: SearchManyActivitiesQuery): Promise<number>;
+  hasEmployeeLaborInSeasonMonth(
+    employeeId: string,
+    cropSeasonId: string,
+    year: number,
+    month: number,
+  ): Promise<boolean>;
 }
 
 export const ACTIVITY_REPOSITORY = 'ACTIVITY_REPOSITORY';

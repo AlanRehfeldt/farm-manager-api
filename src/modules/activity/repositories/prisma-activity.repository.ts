@@ -324,4 +324,29 @@ export class PrismaActivityRepository implements ActivityRepository {
       where: this.buildWhereClause(query),
     });
   }
+
+  async hasEmployeeLaborInSeasonMonth(
+    employeeId: string,
+    cropSeasonId: string,
+    year: number,
+    month: number,
+  ): Promise<boolean> {
+    const start = new Date(Date.UTC(year, month - 1, 1));
+    const end = new Date(Date.UTC(year, month, 1));
+
+    const count = await this.prisma.activityLabor.count({
+      where: {
+        employeeId,
+        activity: {
+          cropSeasonId,
+          date: {
+            gte: start,
+            lt: end,
+          },
+        },
+      },
+    });
+
+    return count > 0;
+  }
 }

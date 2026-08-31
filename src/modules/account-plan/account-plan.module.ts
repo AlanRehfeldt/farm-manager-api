@@ -33,6 +33,6 @@ import { FetchAccountPlansService } from './services/fetch-account-plan.service'
     GetAccountPlanService,
     FetchAccountPlansService,
   ],
-  exports: [],
+  exports: [ACCOUNT_PLAN_REPOSITORY],
 })
 export class AccountPlanModule {}
