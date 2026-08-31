@@ -1,4 +1,10 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { CropSeasonStatus } from '@prisma/client';
 import {
   CROP_SEASON_REPOSITORY,
   CropSeasonRepository,
@@ -15,6 +21,10 @@ export class DeleteCropSeasonService {
     const existing = await this.cropSeasonRepository.findById(id, farmId);
     if (!existing) {
       throw new NotFoundException('Crop season does not exist');
+    }
+
+    if (existing.status === CropSeasonStatus.CLOSED) {
+      throw new ConflictException('Closed crop season cannot be deleted');
     }
 
     await this.cropSeasonRepository.delete(id);

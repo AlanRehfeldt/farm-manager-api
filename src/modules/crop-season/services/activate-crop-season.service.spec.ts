@@ -4,12 +4,17 @@ import { ActivateCropSeasonService } from './activate-crop-season.service';
 import { CropSeasonRepository } from '../repositories/crop-season.repository';
 
 describe('ActivateCropSeasonService', () => {
+  const updateStatus = jest.fn<
+    ReturnType<CropSeasonRepository['updateStatus']>,
+    Parameters<CropSeasonRepository['updateStatus']>
+  >();
+
   const cropSeasonRepository: jest.Mocked<CropSeasonRepository> = {
     create: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
     findById: jest.fn(),
-    updateStatus: jest.fn(),
+    updateStatus,
     countPlantings: jest.fn(),
     searchMany: jest.fn(),
     count: jest.fn(),
@@ -91,7 +96,7 @@ describe('ActivateCropSeasonService', () => {
       crop: { id: 'crop-id', name: 'Manga' },
     });
     cropSeasonRepository.countPlantings.mockResolvedValue(2);
-    cropSeasonRepository.updateStatus.mockResolvedValue({
+    updateStatus.mockResolvedValue({
       id: seasonId,
       farmId,
       cropId: 'crop-id',
@@ -108,7 +113,7 @@ describe('ActivateCropSeasonService', () => {
 
     const result = await service.execute(seasonId, farmId);
 
-    expect(cropSeasonRepository.updateStatus).toHaveBeenCalledWith(
+    expect(updateStatus).toHaveBeenCalledWith(
       seasonId,
       CropSeasonStatus.ACTIVE,
     );

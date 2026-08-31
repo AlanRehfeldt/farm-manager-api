@@ -28,6 +28,7 @@ import { InventoryModule } from './modules/inventory/inventory.module';
 import { ActivityModule } from './modules/activity/activity.module';
 import { ExpenseModule } from './modules/expense/expense.module';
 import { HarvestModule } from './modules/harvest/harvest.module';
+import { CostingModule } from './modules/costing/costing.module';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { HarvestModule } from './modules/harvest/harvest.module';
     ActivityModule,
     ExpenseModule,
     HarvestModule,
+    CostingModule,
   ],
   controllers: [],
   providers: [],

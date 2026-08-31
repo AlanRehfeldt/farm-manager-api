@@ -67,13 +67,14 @@ Em `src/app.module.ts`:
 | `ActivityModule` | Operations — atividades, OUT + MO + máquina + CostEntry path A |
 | `ExpenseModule` | Finance — `POST/GET /expenses` (GENERIC/SALARY + alocação → CostEntry path B) |
 | `HarvestModule` | Harvest — `POST/GET /harvests` (volume/classes; sem CostEntry) |
+| `CostingModule` | Costing — `GET /crop-seasons/:id/costing`, `PUT /reference-price`, `PATCH /close` + snapshot |
 | `CostCategoryModule` | Catalog — naturezas de custo (seed) |
 
 `src/common/`: `PrismaModule`, `TenancyModule` (global), `ZodValidationPipe`, DTOs de erro para Swagger.
 
 ## Alinhamento com bounded contexts
 
-O mapa alvo de contextos e fronteiras está em `farm-manager-docs/04-tecnico/03-api-boundaries.md`. Os módulos Nest atuais são um **subconjunto** do catálogo — Inventory IN/OUT/ADJUSTMENT; CostEntry writers path A (atividade) e **path B (alocação via `/expenses`)**; **Harvest** implementado; relatório de custeio (PR-13) ainda ausente.
+O mapa alvo de contextos e fronteiras está em `farm-manager-docs/04-tecnico/03-api-boundaries.md`. Os módulos Nest atuais são um **subconjunto** do catálogo — Inventory IN/OUT/ADJUSTMENT; CostEntry writers path A (atividade) e **path B (alocação via `/expenses`)**; **Harvest** implementado; **relatório de custeio (PR-13)** implementado.
 
 ## Implementado vs. planejado (ADRs)
 
@@ -84,8 +85,9 @@ O mapa alvo de contextos e fronteiras está em `farm-manager-docs/04-tecnico/03-
 | Role enum em `User` | Sim (legado; authz de fazenda = Membership) | ADR-013 permissions; remoção PR-18 |
 | Tenancy por farm/org | Sim (`@FarmScoped()`, `@FarmId()`, `@OrganizationId()`) | ACL nomeada ADR-013 |
 | Field, Crop, Variety, Machine, CropSeason, CropPlanting | Sim (PR-06) | — |
-| CostEntry ledger | Parcial (writers path A: insumo, MO, máquina via `POST /activities`; **path B: alocação via `POST /expenses`**) | ADR-006, ADR-007 — relatório PR-13 |
+| CostEntry ledger | Sim (writers path A + path B; **relatório PR-13**) | ADR-006, ADR-007 |
 | Harvest (volume/classes) | Sim (PR-12) | — |
+| SeasonCostingSnapshot + close | Sim (PR-13) | ADR-014 |
 | Inventory desacoplado | Parcial (IN compra, OUT atividade, ADJUSTMENT, `GET /stock-balances`) | ADR-012 |
 | Domain event outbox | Não | ADR-015 |
 | Ports entre módulos | Parcial (token de repo exportado) | ADR-016 — ports formais |
@@ -93,7 +95,7 @@ O mapa alvo de contextos e fronteiras está em `farm-manager-docs/04-tecnico/03-
 | Exception filter global | Não | Erros de domínio estruturados |
 | Boundary lint (imports) | Não | `04-architecture-overview.md` |
 
-**Não implementar** RBAC nomeado, outbox ou relatório de custeio em código novo sem PR/ADR explícito — documentar drift se necessário.
+**Não implementar** RBAC nomeado, outbox ou estorno F9 em código novo sem PR/ADR explícito — documentar drift se necessário.
 
 ## Infra transversal
 

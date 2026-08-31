@@ -4,7 +4,6 @@ import { CropModule } from 'src/modules/crop/crop.module';
 import { FieldModule } from 'src/modules/field/field.module';
 import { UnitOfMeasurementModule } from 'src/modules/unit-of-measurement/unit-of-measurement.module';
 import { ActivateCropSeasonController } from './controllers/activate-crop-season.controller';
-import { CloseCropSeasonController } from './controllers/close-crop-season.controller';
 import { CreateCropPlantingController } from './controllers/create-crop-planting.controller';
 import { CreateCropSeasonController } from './controllers/create-crop-season.controller';
 import { DeleteCropPlantingController } from './controllers/delete-crop-planting.controller';
@@ -20,7 +19,6 @@ import { PrismaCropSeasonRepository } from './repositories/prisma-crop-season.re
 import { CROP_PLANTING_REPOSITORY } from './repositories/crop-planting.repository';
 import { CROP_SEASON_REPOSITORY } from './repositories/crop-season.repository';
 import { ActivateCropSeasonService } from './services/activate-crop-season.service';
-import { CloseCropSeasonService } from './services/close-crop-season.service';
 import { CreateCropPlantingService } from './services/create-crop-planting.service';
 import { CreateCropSeasonService } from './services/create-crop-season.service';
 import { DeleteCropPlantingService } from './services/delete-crop-planting.service';
@@ -41,7 +39,6 @@ import { UpdateCropSeasonService } from './services/update-crop-season.service';
     UpdateCropSeasonController,
     DeleteCropSeasonController,
     ActivateCropSeasonController,
-    CloseCropSeasonController,
     CreateCropPlantingController,
     GetCropPlantingController,
     FetchCropPlantingsController,
@@ -60,7 +57,6 @@ import { UpdateCropSeasonService } from './services/update-crop-season.service';
     UpdateCropSeasonService,
     DeleteCropSeasonService,
     ActivateCropSeasonService,
-    CloseCropSeasonService,
     CreateCropPlantingService,
     GetCropPlantingService,
     FetchCropPlantingsService,

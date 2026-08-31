@@ -104,6 +104,7 @@ model User {
   refreshTokens RefreshToken[]
   memberships   Membership[]
   activities    Activity[]
+  seasonCostingSnapshotsClosed SeasonCostingSnapshot[]
 
   @@map("users")
 }
@@ -584,6 +585,7 @@ model CropSeason {
   costEntries            CostEntry[]
   transactionAllocations TransactionAllocation[]
   harvests               Harvest[]
+  costingSnapshot        SeasonCostingSnapshot?
 
   @@index([farmId])
   @@index([cropId])
@@ -806,4 +808,19 @@ model HarvestItem {
 
   @@index([harvestId])
   @@map("harvest_items")
+}
+
+model SeasonCostingSnapshot {
+  id             String   @id @default(uuid())
+  cropSeasonId   String   @unique
+  payload        Json
+  closedAt       DateTime
+  closedByUserId String
+  createdAt      DateTime @default(now())
+
+  cropSeason CropSeason @relation(fields: [cropSeasonId], references: [id], onDelete: Cascade)
+  closedBy   User       @relation(fields: [closedByUserId], references: [id])
+
+  @@index([cropSeasonId])
+  @@map("season_costing_snapshots")
 }
