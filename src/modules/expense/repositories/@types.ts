@@ -78,9 +78,21 @@ export type CreateExpenseResult = {
   expense: ExpenseWithRelations;
 };
 
+export type ReverseExpenseData = {
+  expenseId: string;
+  farmId: string;
+  reason: string;
+  reversedAt: Date;
+};
+
+export type ReverseExpenseResult = {
+  expense: ExpenseWithRelations;
+};
+
 export type SearchManyExpensesQuery = {
   farmId: string;
   name?: string;
+  excludeTypes?: TransactionType[];
   page: number;
   perPage: number;
   orderBy: string;

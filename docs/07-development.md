@@ -70,11 +70,19 @@ npx prisma db pull         # introspect (cuidado em prod)
 ## Testes
 
 - Unit: `src/**/*.spec.ts` (ex.: `FarmMembershipGuard`, helpers de visibilidade).
-- E2e: `test/app.e2e-spec.ts` (auth 401) e `test/tenancy.e2e-spec.ts` (INV-TEN, catálogo compartilhado vs restrito, saldo por fazenda).
+- E2e: `test/app.e2e-spec.ts` (401), `test/tenancy.e2e-spec.ts` (INV-TEN), `test/onboarding.e2e-spec.ts`, `test/agricultural-structure.e2e-spec.ts`, **`test/mvp-flows.e2e-spec.ts`** (fluxos F3–F7: compra → atividade → despesa → colheita → custeio → fechar safra).
 
 E2e precisa de PostgreSQL com migrations aplicadas e `.env` válida (`DATABASE_URL`, `JWT_SECRET`). Arquivos de teste usam `tsconfig.spec.json` (tipos Jest + pasta `test/`).
 
 Ao adicionar testes, ver `.cursor/rules/testing.mdc` e `farm-manager-docs/07-plataforma/03-testing-strategy.md`.
+
+## Backup (piloto)
+
+Runbook completo: `farm-manager-docs/07-plataforma/04-environments-and-data-lifecycle.md`. Resumo:
+
+- Backup diário do PostgreSQL; retenção mínima 30 dias.
+- Antes do go-live: restore testado em staging + smoke (`npm run test:e2e`).
+- Em incidente: parar writes → restore → `migrate deploy` → smoke → reabrir.
 
 ## Estrutura útil
 

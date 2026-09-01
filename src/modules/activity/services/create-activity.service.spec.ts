@@ -3,7 +3,12 @@ import {
   ConflictException,
   NotFoundException,
 } from '@nestjs/common';
-import { CropSeasonStatus, type CostCategory } from '@prisma/client';
+import {
+  CropSeasonStatus,
+  UomDimension,
+  type CostCategory,
+} from '@prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
 import { CreateActivityService } from './create-activity.service';
 import { ActivityRepository } from '../repositories/activity.repository';
 import { CropSeasonRepository } from 'src/modules/crop-season/repositories/crop-season.repository';
@@ -19,10 +24,12 @@ describe('CreateActivityService', () => {
   const createActivity = jest.fn();
   const activityRepository: jest.Mocked<ActivityRepository> = {
     create: createActivity,
+    reverse: jest.fn(),
     findById: jest.fn(),
     searchMany: jest.fn(),
     count: jest.fn(),
     hasEmployeeLaborInSeasonMonth: jest.fn(),
+    hasSalaryAllocationInSeasonMonth: jest.fn().mockResolvedValue(false),
   };
 
   const cropSeasonRepository: jest.Mocked<CropSeasonRepository> = {
@@ -32,6 +39,8 @@ describe('CreateActivityService', () => {
     findById: jest.fn(),
     updateStatus: jest.fn(),
     countPlantings: jest.fn(),
+    hasOperationalData: jest.fn(),
+    countHarvests: jest.fn(),
     searchMany: jest.fn(),
     count: jest.fn(),
   };
@@ -42,7 +51,9 @@ describe('CreateActivityService', () => {
     delete: jest.fn(),
     findById: jest.fn(),
     findBySeasonAndField: jest.fn(),
+    findAllBySeason: jest.fn(),
     countBySeasonId: jest.fn(),
+    hasFieldOperations: jest.fn(),
     searchMany: jest.fn(),
     count: jest.fn(),
   };
@@ -73,6 +84,7 @@ describe('CreateActivityService', () => {
       delete: jest.fn(),
       findById: jest.fn(),
       findByAcronym: jest.fn(),
+      findBaseByDimension: jest.fn(),
       searchMany: jest.fn(),
       count: jest.fn(),
     };
@@ -85,6 +97,7 @@ describe('CreateActivityService', () => {
   const costCategoryRepository: jest.Mocked<CostCategoryRepository> = {
     upsertSeed: jest.fn(),
     findByCode,
+    findById: jest.fn(),
     searchMany: jest.fn(),
     count: jest.fn(),
   };
@@ -130,7 +143,6 @@ describe('CreateActivityService', () => {
   const machineId = 'machine-id';
   const uomId = 'uom-id';
   const userId = 'user-id';
-  const categoryId = 'category-id';
 
   const makeCategory = (code: string, id: string): CostCategory => ({
     id,
@@ -251,13 +263,23 @@ describe('CreateActivityService', () => {
     });
     findByCode.mockImplementation((_orgId, code) => {
       const map: Record<string, string> = {
-        outros: categoryId,
+        fertilizante: 'fertilizante-id',
+        combustivel: 'combustivel-id',
         MO_fixa: 'mo-fixa-id',
         MO_temporaria: 'mo-temp-id',
         maquina: 'maquina-id',
       };
       const id = map[code];
       return Promise.resolve(id ? makeCategory(code, id) : null);
+    });
+    costCategoryRepository.findById.mockImplementation((id) => {
+      if (id === 'fertilizante-id') {
+        return Promise.resolve(makeCategory('fertilizante', id));
+      }
+      if (id === 'combustivel-id') {
+        return Promise.resolve(makeCategory('combustivel', id));
+      }
+      return Promise.resolve(null);
     });
   });
 
@@ -326,7 +348,6 @@ describe('CreateActivityService', () => {
         labor: [],
         machineHours: [],
         costCategoryIds: {
-          defaultInput: categoryId,
           moFixa: 'mo-fixa-id',
           moTemporaria: 'mo-temp-id',
           maquina: 'maquina-id',
@@ -345,6 +366,7 @@ describe('CreateActivityService', () => {
       name: 'Ureia',
       description: null,
       unitOfMeasurementId: uomId,
+      costCategoryId: 'fertilizante-id',
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -353,6 +375,9 @@ describe('CreateActivityService', () => {
       organizationId,
       name: 'Quilograma',
       acronym: 'kg',
+      dimension: UomDimension.MASS,
+      isBase: true,
+      factorToBase: new Decimal(1),
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -385,7 +410,7 @@ describe('CreateActivityService', () => {
             activityId: 'activity-id',
             sourceType: 'ACTIVITY_INPUT',
             sourceId: 'input-id',
-            costCategoryId: categoryId,
+            costCategoryId: 'fertilizante-id',
             amountInCents: 35000n,
             quantity: { toString: () => '100' } as never,
             uomId,
@@ -567,5 +592,76 @@ describe('CreateActivityService', () => {
         machineHours: [{ machineId, hours: '3' }],
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('blocks labor when employee already has salary allocation (DC-02 inverse)', async () => {
+    employeeRepository.findById.mockResolvedValue({
+      id: employeeId,
+      organizationId,
+      farmId,
+      name: 'João',
+      registration: '001',
+      type: 'FIELD_WORKER',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    activityRepository.hasSalaryAllocationInSeasonMonth.mockResolvedValue(true);
+
+    await expect(
+      service.execute({
+        ...baseInput,
+        labor: [
+          {
+            employeeId,
+            payBasis: 'HOUR',
+            hours: '4',
+            costInCents: 20000,
+          },
+        ],
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('blocks fuel input when machine hourly cost includes fuel (DC-03)', async () => {
+    productRepository.findById.mockResolvedValue({
+      id: productId,
+      organizationId,
+      farmId: null,
+      name: 'Diesel',
+      description: null,
+      unitOfMeasurementId: uomId,
+      costCategoryId: 'combustivel-id',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    unitOfMeasurementRepository.findById.mockResolvedValue({
+      id: uomId,
+      organizationId,
+      name: 'Litro',
+      acronym: 'L',
+      dimension: UomDimension.VOLUME,
+      isBase: true,
+      factorToBase: new Decimal(1),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    machineRepository.findById.mockResolvedValue({
+      id: machineId,
+      farmId,
+      name: 'Trator',
+      hourlyCostInCents: 5000n,
+      fuelIncludedInHourlyCost: true,
+      active: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    await expect(
+      service.execute({
+        ...baseInput,
+        inputs: [{ productId, quantity: '10' }],
+        machineHours: [{ machineId, hours: '3' }],
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
   });
 });

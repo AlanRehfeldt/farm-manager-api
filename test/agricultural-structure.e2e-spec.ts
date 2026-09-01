@@ -118,7 +118,13 @@ describe('Agricultural structure (e2e)', () => {
       .post('/unit-of-measurements')
       .set('Cookie', adminCookies)
       .set('x-farm-id', farmId)
-      .send({ name: 'Quilograma', acronym: `kg-${suffix}` })
+      .send({
+        name: 'Quilograma',
+        acronym: `kg-${suffix}`,
+        dimension: 'MASS',
+        isBase: true,
+        factorToBase: '1',
+      })
       .expect(201);
     kgUomId = commandResult<{ id: string }>(uomRes).id;
 
@@ -264,12 +270,50 @@ describe('Agricultural structure (e2e)', () => {
     expect(commandResult<{ status: string }>(res).status).toBe('ACTIVE');
   });
 
-  it('returns 501 for close crop season stub', async () => {
-    await request(server)
+  it('closes active crop season and creates snapshot', async () => {
+    const closeRes = await request(server)
       .patch(`/crop-seasons/${seasonId}/close`)
       .set('Cookie', adminCookies)
       .set('x-farm-id', farmId)
-      .expect(501);
+      .expect(200);
+
+    const closed = commandResult<{ status: string; source: string }>(closeRes);
+    expect(closed.status).toBe('CLOSED');
+    expect(closed.source).toBe('SNAPSHOT');
+
+    const snapshot = await prisma.seasonCostingSnapshot.findUnique({
+      where: { cropSeasonId: seasonId },
+    });
+    expect(snapshot).not.toBeNull();
+  });
+
+  it('INV-REOPEN: reopen deletes snapshot and returns live costing', async () => {
+    const reopenRes = await request(server)
+      .patch(`/crop-seasons/${seasonId}/reopen`)
+      .set('Cookie', adminCookies)
+      .set('x-farm-id', farmId)
+      .send({ reason: 'Corrigir lançamento esquecido' })
+      .expect(200);
+
+    const reopened = commandResult<{
+      status: string;
+      source: string;
+      closedAt: string | null;
+    }>(reopenRes);
+
+    expect(reopened.status).toBe('ACTIVE');
+    expect(reopened.source).toBe('LIVE');
+    expect(reopened.closedAt).toBeNull();
+
+    const snapshot = await prisma.seasonCostingSnapshot.findUnique({
+      where: { cropSeasonId: seasonId },
+    });
+    expect(snapshot).toBeNull();
+
+    const season = await prisma.cropSeason.findUniqueOrThrow({
+      where: { id: seasonId },
+    });
+    expect(season.status).toBe('ACTIVE');
   });
 
   it('creates machine with hourly cost and fuel flag', async () => {

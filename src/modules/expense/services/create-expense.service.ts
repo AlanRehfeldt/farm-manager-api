@@ -1,13 +1,19 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import {
+  DomainConflictCode,
+  domainConflict,
+} from 'src/common/errors/domain-conflict';
+import {
   CropSeasonStatus,
   GenericTransactionSubtype,
+  Role,
   TransactionType,
 } from '@prisma/client';
 import {
@@ -53,6 +59,7 @@ import {
 type CreateExpenseInput = {
   farmId: string;
   organizationId: string;
+  membershipRole: Role;
   type: TransactionType;
   date: Date;
   note?: string | null;
@@ -107,6 +114,13 @@ export class CreateExpenseService {
       throw new BadRequestException('Salary payment requires employeeId');
     }
 
+    if (
+      input.type === TransactionType.SALARY_PAYMENT &&
+      input.membershipRole !== Role.ADMIN
+    ) {
+      throw new ForbiddenException('Salary payments require farm admin access');
+    }
+
     const installmentTotal = input.installments.reduce(
       (sum, inst) => sum + BigInt(inst.valueInCents),
       0n,
@@ -151,14 +165,10 @@ export class CreateExpenseService {
     }
 
     for (const seasonId of seasonIdsNeedingPlantings) {
-      const plantings = await this.cropPlantingRepository.searchMany({
-        farmId: input.farmId,
-        cropSeasonId: seasonId,
-        page: 1,
-        perPage: 500,
-        orderBy: 'createdAt',
-        orderDirection: 'asc',
-      });
+      const plantings = await this.cropPlantingRepository.findAllBySeason(
+        seasonId,
+        input.farmId,
+      );
 
       plantingAreasBySeason[seasonId] = plantings.map((planting) => ({
         fieldId: planting.fieldId,
@@ -182,8 +192,9 @@ export class CreateExpenseService {
           );
 
         if (hasOverlap) {
-          throw new ConflictException(
-            'Salary allocation blocked: employee already has activity labor in this season and month (DOUBLE_COUNT_BLOCKED)',
+          throw domainConflict(
+            DomainConflictCode.DOUBLE_COUNT_BLOCKED,
+            'Salary allocation blocked: employee already has activity labor in this season and month',
           );
         }
       }

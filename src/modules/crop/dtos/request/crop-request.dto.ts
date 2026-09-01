@@ -5,7 +5,7 @@ export class UpdateCropBodyDto {
   name?: string;
 
   @ApiPropertyOptional({ example: 'uuid' })
-  defaultProductionUomId?: string | null;
+  defaultProductionUomId?: string;
 
   @ApiPropertyOptional({ example: 'ERP-001' })
   externalRef?: string | null;

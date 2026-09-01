@@ -5,8 +5,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { CropSeasonStatus } from '@prisma/client';
-import { computeSeasonCosting } from '../domain/compute-season-costing';
-import { toSeasonCostingResponse } from '../mappers/costing.mapper';
 import {
   COSTING_REPOSITORY,
   CostingRepository,
@@ -36,38 +34,10 @@ export class CloseCropSeasonService {
       throw new ConflictException('Only active crop seasons can be closed');
     }
 
-    const [costEntries, plantings, fieldHarvests] = await Promise.all([
-      this.costingRepository.findCostEntries(cropSeasonId),
-      this.costingRepository.findPlantings(cropSeasonId),
-      this.costingRepository.findFieldHarvests(
-        farmId,
-        cropSeasonId,
-        context.productionUomId,
-      ),
-    ]);
-
-    const computed = computeSeasonCosting({
-      costEntries,
-      plantings,
-      fieldHarvests,
-      referenceSalePriceInCents: context.referenceSalePriceInCents,
-    });
-
-    const payload = toSeasonCostingResponse(
-      context.id,
-      CropSeasonStatus.CLOSED,
-      'SNAPSHOT',
-      context.productionUomId,
-      context.productionUomAcronym,
-      computed,
-      new Date(),
-    );
-
-    await this.costingRepository.closeSeason({
+    const payload = await this.costingRepository.closeSeason({
       cropSeasonId,
       farmId,
       closedByUserId,
-      payload,
     });
 
     return { costing: payload };

@@ -9,11 +9,13 @@ import { EmployeeModule } from '../employee/employee.module';
 import { CreateExpenseController } from './controllers/create-expense.controller';
 import { FetchExpensesController } from './controllers/fetch-expenses.controller';
 import { GetExpenseController } from './controllers/get-expense.controller';
+import { ReverseExpenseController } from './controllers/reverse-expense.controller';
 import { PrismaExpenseRepository } from './repositories/prisma-expense.repository';
 import { EXPENSE_REPOSITORY } from './repositories/expense.repository';
 import { CreateExpenseService } from './services/create-expense.service';
 import { FetchExpensesService } from './services/fetch-expenses.service';
 import { GetExpenseService } from './services/get-expense.service';
+import { ReverseExpenseService } from './services/reverse-expense.service';
 
 @Module({
   imports: [
@@ -29,6 +31,7 @@ import { GetExpenseService } from './services/get-expense.service';
     CreateExpenseController,
     FetchExpensesController,
     GetExpenseController,
+    ReverseExpenseController,
   ],
   providers: [
     {
@@ -38,6 +41,7 @@ import { GetExpenseService } from './services/get-expense.service';
     CreateExpenseService,
     FetchExpensesService,
     GetExpenseService,
+    ReverseExpenseService,
   ],
 })
 export class ExpenseModule {}

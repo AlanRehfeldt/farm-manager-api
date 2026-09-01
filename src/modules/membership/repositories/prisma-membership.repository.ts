@@ -40,6 +40,7 @@ export class PrismaMembershipRepository implements MembershipRepository {
         userId,
         organizationId,
         role: Role.ADMIN,
+        farmId: null,
       },
     });
   }

@@ -37,4 +37,16 @@ describe('allocateByArea', () => {
       100n,
     );
   });
+
+  it('preserves totals for large bigint amounts without Number precision loss', () => {
+    const total = 9_007_199_254_740_991n;
+    const result = allocateByArea(total, [
+      { fieldId: 'field-a', areaHa: new Decimal('1.5') },
+      { fieldId: 'field-b', areaHa: new Decimal('2.5') },
+    ]);
+
+    expect(result.reduce((sum, entry) => sum + entry.amountInCents, 0n)).toBe(
+      total,
+    );
+  });
 });

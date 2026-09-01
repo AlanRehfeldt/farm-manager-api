@@ -3,7 +3,7 @@ import {
   ConflictException,
   NotFoundException,
 } from '@nestjs/common';
-import { CropSeasonStatus } from '@prisma/client';
+import { CropSeasonStatus, Role } from '@prisma/client';
 import { CreateExpenseService } from './create-expense.service';
 import { ExpenseRepository } from '../repositories/expense.repository';
 import { CropSeasonRepository } from 'src/modules/crop-season/repositories/crop-season.repository';
@@ -18,6 +18,7 @@ describe('CreateExpenseService', () => {
   const createExpense = jest.fn();
   const expenseRepository: jest.Mocked<ExpenseRepository> = {
     create: createExpense,
+    reverse: jest.fn(),
     findById: jest.fn(),
     searchMany: jest.fn(),
     count: jest.fn(),
@@ -30,6 +31,8 @@ describe('CreateExpenseService', () => {
     findById: jest.fn(),
     updateStatus: jest.fn(),
     countPlantings: jest.fn(),
+    hasOperationalData: jest.fn(),
+    countHarvests: jest.fn(),
     searchMany: jest.fn(),
     count: jest.fn(),
   };
@@ -40,7 +43,9 @@ describe('CreateExpenseService', () => {
     delete: jest.fn(),
     findById: jest.fn(),
     findBySeasonAndField: jest.fn(),
+    findAllBySeason: jest.fn(),
     countBySeasonId: jest.fn(),
+    hasFieldOperations: jest.fn(),
     searchMany: jest.fn(),
     count: jest.fn(),
   };
@@ -68,6 +73,7 @@ describe('CreateExpenseService', () => {
   const costCategoryRepository: jest.Mocked<CostCategoryRepository> = {
     upsertSeed: jest.fn(),
     findByCode: jest.fn(),
+    findById: jest.fn(),
     searchMany: jest.fn(),
     count: jest.fn(),
   };
@@ -84,10 +90,12 @@ describe('CreateExpenseService', () => {
 
   const activityRepository: jest.Mocked<ActivityRepository> = {
     create: jest.fn(),
+    reverse: jest.fn(),
     findById: jest.fn(),
     searchMany: jest.fn(),
     count: jest.fn(),
     hasEmployeeLaborInSeasonMonth: jest.fn(),
+    hasSalaryAllocationInSeasonMonth: jest.fn(),
   };
 
   const service = new CreateExpenseService(
@@ -104,6 +112,7 @@ describe('CreateExpenseService', () => {
   const baseInput = {
     farmId: 'farm-1',
     organizationId: 'org-1',
+    membershipRole: Role.ADMIN,
     type: 'GENERIC' as const,
     date: new Date('2026-08-15T12:00:00.000Z'),
     generic: { subtype: 'SERVICE_PAYMENT' as const },
@@ -136,7 +145,7 @@ describe('CreateExpenseService', () => {
     costCategoryRepository.searchMany.mockResolvedValue([
       { id: 'cat-1' },
     ] as never);
-    cropPlantingRepository.searchMany.mockResolvedValue([
+    cropPlantingRepository.findAllBySeason.mockResolvedValue([
       {
         fieldId: 'field-a',
         plantedAreaHa: { toString: () => '2' },

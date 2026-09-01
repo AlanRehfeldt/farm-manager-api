@@ -1,4 +1,5 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Role, TransactionType } from '@prisma/client';
 import { toExpenseResponse } from '../mappers/expense.mapper';
 import {
   EXPENSE_REPOSITORY,
@@ -8,6 +9,7 @@ import {
 type GetExpenseInput = {
   id: string;
   farmId: string;
+  membershipRole: Role;
 };
 
 @Injectable()
@@ -23,6 +25,13 @@ export class GetExpenseService {
       input.farmId,
     );
     if (!expense) {
+      throw new NotFoundException('Expense not found');
+    }
+
+    if (
+      expense.type === TransactionType.SALARY_PAYMENT &&
+      input.membershipRole !== Role.ADMIN
+    ) {
       throw new NotFoundException('Expense not found');
     }
 

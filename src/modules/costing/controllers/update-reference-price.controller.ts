@@ -1,11 +1,4 @@
-import {
-  Body,
-  Controller,
-  HttpStatus,
-  Param,
-  Put,
-  UsePipes,
-} from '@nestjs/common';
+import { Body, Controller, HttpStatus, Param, Put } from '@nestjs/common';
 import {
   ApiConflictResponse,
   ApiNotFoundResponse,
@@ -15,6 +8,7 @@ import {
 } from '@nestjs/swagger';
 import z from 'zod';
 import { FarmId } from 'src/common/tenancy/farm-id.decorator';
+import { FarmAdmin } from 'src/common/tenancy/farm-admin.decorator';
 import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
 import { numberToBigint } from 'src/common/serialization/money';
@@ -32,6 +26,7 @@ const bodySchema = z.object({
 
 @ApiTags('Costing')
 @FarmScoped()
+@FarmAdmin()
 @Controller('/crop-seasons')
 export class UpdateReferencePriceController {
   constructor(
@@ -52,11 +47,11 @@ export class UpdateReferencePriceController {
     type: ConflictDto,
   })
   @Put(':id/reference-price')
-  @UsePipes(new ZodValidationPipe(bodySchema))
   async update(
     @FarmId() farmId: string,
     @Param(new ZodValidationPipe(paramSchema)) param: { id: string },
-    @Body() body: UpdateReferencePriceBodyDto,
+    @Body(new ZodValidationPipe(bodySchema))
+    body: UpdateReferencePriceBodyDto,
   ) {
     const referenceSalePriceInCents =
       body.referenceSalePriceInCents != null

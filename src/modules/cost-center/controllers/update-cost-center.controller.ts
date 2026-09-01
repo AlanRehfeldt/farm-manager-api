@@ -9,6 +9,7 @@ import {
 } from '@nestjs/swagger';
 import z from 'zod';
 import { OrganizationId } from 'src/common/tenancy/organization-id.decorator';
+import { FarmAdmin } from 'src/common/tenancy/farm-admin.decorator';
 import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
@@ -45,6 +46,7 @@ const updateCostCenterSchema = z.object({
 
 @ApiTags('CostCenter')
 @FarmScoped()
+@FarmAdmin()
 @Controller('/cost-centers')
 export class UpdateCostCenterController {
   constructor(

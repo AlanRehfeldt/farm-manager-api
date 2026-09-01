@@ -1,4 +1,5 @@
-import { Body, Controller, HttpStatus, Post } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
+import { throwDeprecatedWriteEndpoint } from 'src/common/http/deprecated-endpoint';
 import {
   ApiBadRequestResponse,
   ApiCreatedResponse,
@@ -38,20 +39,13 @@ export class CreateTransactionController {
     type: BadRequestDto,
   })
   @Post()
-  async create(
+  create(
     @FarmId() farmId: string,
     @Body(new ZodValidationPipe(createTransactionBodySchema))
     data: CreateTransactionBodyDto,
   ) {
-    const { transaction } = await this.createTransactionService.execute({
-      ...data,
-      farmId,
-    });
-
-    return {
-      statusCode: HttpStatus.CREATED,
-      message: 'Transaction created successfully',
-      result: transaction,
-    };
+    void farmId;
+    void data;
+    throwDeprecatedWriteEndpoint('Transaction');
   }
 }

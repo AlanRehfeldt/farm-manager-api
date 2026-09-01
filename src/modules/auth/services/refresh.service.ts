@@ -26,10 +26,20 @@ export class RefreshService {
     }
 
     const tokenHash = hashToken(refreshToken);
-    const storedToken =
-      await this.refreshTokenRepository.findValidByHash(tokenHash);
+    const storedToken = await this.refreshTokenRepository.findByHash(tokenHash);
 
     if (!storedToken) {
+      this.tokenService.clearAuthCookies(res);
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    if (storedToken.revokedAt !== null) {
+      await this.refreshTokenRepository.revokeAllByUserId(storedToken.userId);
+      this.tokenService.clearAuthCookies(res);
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    if (storedToken.expiresAt <= new Date()) {
       this.tokenService.clearAuthCookies(res);
       throw new UnauthorizedException('Invalid refresh token');
     }

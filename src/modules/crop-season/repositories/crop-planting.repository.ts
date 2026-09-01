@@ -17,7 +17,12 @@ export interface CropPlantingRepository {
     cropSeasonId: string,
     fieldId: string,
   ): Promise<CropPlantingWithRelations | null>;
+  findAllBySeason(
+    cropSeasonId: string,
+    farmId: string,
+  ): Promise<CropPlantingWithRelations[]>;
   countBySeasonId(cropSeasonId: string): Promise<number>;
+  hasFieldOperations(cropSeasonId: string, fieldId: string): Promise<boolean>;
   searchMany(
     query: SearchManyCropPlantingsQuery,
   ): Promise<CropPlantingWithRelations[]>;

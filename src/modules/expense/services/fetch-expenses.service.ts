@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { Role, TransactionType } from '@prisma/client';
 import { toExpenseResponse } from '../mappers/expense.mapper';
 import {
   EXPENSE_REPOSITORY,
@@ -7,6 +8,7 @@ import {
 
 type FetchExpensesInput = {
   farmId: string;
+  membershipRole: Role;
   name?: string;
   page: number;
   perPage: number;
@@ -22,9 +24,14 @@ export class FetchExpensesService {
   ) {}
 
   async execute(input: FetchExpensesInput) {
+    const excludeTypes =
+      input.membershipRole === Role.ADMIN
+        ? undefined
+        : [TransactionType.SALARY_PAYMENT];
+
     const [results, total] = await Promise.all([
-      this.expenseRepository.searchMany(input),
-      this.expenseRepository.count(input),
+      this.expenseRepository.searchMany({ ...input, excludeTypes }),
+      this.expenseRepository.count({ ...input, excludeTypes }),
     ]);
 
     return {

@@ -10,7 +10,9 @@ import {
 import z from 'zod';
 import { FarmId } from 'src/common/tenancy/farm-id.decorator';
 import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
+import { OrganizationId } from 'src/common/tenancy/organization-id.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
+import { Idempotent } from 'src/common/idempotency';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
 import { ConflictDto } from 'src/common/errors/conflict.dto';
 import { NotFoundDto } from 'src/common/errors/not-found.dto';
@@ -73,13 +75,16 @@ export class CreateHarvestController {
     type: ConflictDto,
   })
   @Post()
+  @Idempotent()
   async create(
+    @OrganizationId() organizationId: string,
     @FarmId() farmId: string,
     @Body(new ZodValidationPipe(createHarvestBodySchema))
     data: CreateHarvestBodyDto,
   ) {
     const { harvest } = await this.createHarvestService.execute({
       ...data,
+      organizationId,
       farmId,
     });
 

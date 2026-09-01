@@ -1,4 +1,11 @@
-import { Controller, HttpStatus, Post, Req, Res } from '@nestjs/common';
+import {
+  Controller,
+  HttpStatus,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiOkResponse,
   ApiOperation,
@@ -7,6 +14,7 @@ import {
 } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { UnauthorizedDto } from 'src/common/errors/unauthorized.dto';
+import { AuthRateLimitGuard } from 'src/common/http/auth-rate-limit.guard';
 import { Public } from '../decorators/public.decorator';
 import { MessageResponseDto } from '../dtos/response/message.dto';
 import { RefreshService } from '../services/refresh.service';
@@ -27,6 +35,7 @@ export class RefreshController {
     type: UnauthorizedDto,
   })
   @Post('/refresh')
+  @UseGuards(AuthRateLimitGuard)
   async refresh(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,

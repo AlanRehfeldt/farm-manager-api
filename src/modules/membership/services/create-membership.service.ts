@@ -5,7 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { hash } from 'bcryptjs';
+import { hashPassword } from 'src/common/crypto/bcrypt';
 import { Role } from '@prisma/client';
 import {
   FARM_REPOSITORY,
@@ -102,7 +102,7 @@ export class CreateMembershipService {
       throw new ConflictException('Email already exists');
     }
 
-    const encryptedPassword = await hash(input.password, 6);
+    const encryptedPassword = await hashPassword(input.password);
     const user = await this.userRepository.create({
       name: input.name,
       email: input.email,

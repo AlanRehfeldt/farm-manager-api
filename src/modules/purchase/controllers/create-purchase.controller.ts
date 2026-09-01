@@ -11,6 +11,7 @@ import { FarmId } from 'src/common/tenancy/farm-id.decorator';
 import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
 import { OrganizationId } from 'src/common/tenancy/organization-id.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
+import { Idempotent } from 'src/common/idempotency';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
 import { NotFoundDto } from 'src/common/errors/not-found.dto';
 import { CreatePurchaseBodyDto } from '../dtos/request/purchase.dto';
@@ -86,6 +87,7 @@ export class CreatePurchaseController {
     type: NotFoundDto,
   })
   @Post()
+  @Idempotent()
   async create(
     @OrganizationId() organizationId: string,
     @FarmId() farmId: string,

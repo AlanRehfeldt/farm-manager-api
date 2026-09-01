@@ -1,4 +1,5 @@
-import { Controller, Delete, HttpStatus, Param } from '@nestjs/common';
+import { Controller, Delete, Param } from '@nestjs/common';
+import { throwDeprecatedWriteEndpoint } from 'src/common/http/deprecated-endpoint';
 import {
   ApiBadRequestResponse,
   ApiNotFoundResponse,
@@ -42,17 +43,13 @@ export class DeleteInstallmentController {
     type: NotFoundDto,
   })
   @Delete(':id')
-  async delete(
+  delete(
     @FarmId() farmId: string,
     @Param(new ZodValidationPipe(deleteInstallmentParamSchema))
     param: DeleteInstallmentParamDto,
   ) {
-    await this.deleteInstallmentService.execute(param.id, farmId);
-
-    return {
-      statusCode: HttpStatus.OK,
-      message: 'Installment deleted successfully',
-      result: null,
-    };
+    void farmId;
+    void param;
+    throwDeprecatedWriteEndpoint('Installment');
   }
 }

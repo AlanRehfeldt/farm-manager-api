@@ -7,6 +7,7 @@ import {
 } from '@nestjs/swagger';
 import z from 'zod';
 import { FarmId } from 'src/common/tenancy/farm-id.decorator';
+import { FarmAdmin } from 'src/common/tenancy/farm-admin.decorator';
 import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
 import { NotFoundDto } from 'src/common/errors/not-found.dto';
@@ -18,6 +19,7 @@ const deleteMachineParamSchema = z.object({ id: z.uuid() });
 
 @ApiTags('Machine')
 @FarmScoped()
+@FarmAdmin()
 @Controller('/machines')
 export class DeleteMachineController {
   constructor(private readonly deleteMachineService: DeleteMachineService) {}

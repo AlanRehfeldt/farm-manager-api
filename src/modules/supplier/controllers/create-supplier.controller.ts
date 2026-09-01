@@ -8,6 +8,7 @@ import {
 } from '@nestjs/swagger';
 import z from 'zod';
 import { FarmId } from 'src/common/tenancy/farm-id.decorator';
+import { FarmAdmin } from 'src/common/tenancy/farm-admin.decorator';
 import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
 import { OrganizationId } from 'src/common/tenancy/organization-id.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
@@ -30,6 +31,7 @@ const createSupplierBodySchema = z.object({
 
 @ApiTags('Supplier')
 @FarmScoped()
+@FarmAdmin()
 @Controller('/suppliers')
 export class CreateSupplierController {
   constructor(private readonly createSupplierService: CreateSupplierService) {}

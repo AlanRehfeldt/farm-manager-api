@@ -48,7 +48,13 @@ export type CloseSeasonData = {
   cropSeasonId: string;
   farmId: string;
   closedByUserId: string;
-  payload: SeasonCostingSnapshotRecord['payload'];
+};
+
+export type ReopenSeasonData = {
+  cropSeasonId: string;
+  farmId: string;
+  reason: string;
+  reopenedByUserId: string;
 };
 
 export type UpdateReferencePriceData = {

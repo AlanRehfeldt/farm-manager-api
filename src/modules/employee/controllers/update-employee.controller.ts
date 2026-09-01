@@ -9,6 +9,7 @@ import {
 } from '@nestjs/swagger';
 import z from 'zod';
 import { FarmId } from 'src/common/tenancy/farm-id.decorator';
+import { FarmAdmin } from 'src/common/tenancy/farm-admin.decorator';
 import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
 import { OrganizationId } from 'src/common/tenancy/organization-id.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
@@ -21,6 +22,8 @@ import {
 } from '../dtos/request/update-employee.dto';
 import { UpdateEmployeeResponseDto } from '../dtos/response/update-employee.dto';
 import { UpdateEmployeeService } from '../services/update-employee.service';
+
+import { SUPPORTED_EMPLOYEE_TYPES } from '../constants/employee-type';
 
 const updateEmployeeParamSchema = z.object({
   id: z.uuid(),
@@ -38,25 +41,15 @@ const updateEmployeeSchema = z.object({
     .max(20, { message: 'Registration must be at most 20 characters long.' })
     .optional(),
   type: z
-    .enum([
-      'FARM_MANAGER',
-      'AGRONOMIST',
-      'VETERINARIAN',
-      'MACHINE_OPERATOR',
-      'FIELD_WORKER',
-      'LIVESTOCK_HANDLER',
-      'IRRIGATION_TECHNICIAN',
-      'ADMINISTRATIVE_ASSISTANT',
-      'DRIVER',
-      'SECURITY_GUARD',
-      'TEMPORARY_WORKER',
-      'OTHER',
-    ])
+    .enum(SUPPORTED_EMPLOYEE_TYPES, {
+      message: 'Employee type is not supported in the agricultural MVP.',
+    })
     .optional(),
 });
 
 @ApiTags('Employee')
 @FarmScoped()
+@FarmAdmin()
 @Controller('/employees')
 export class UpdateEmployeeController {
   constructor(private readonly updateEmployeeService: UpdateEmployeeService) {}

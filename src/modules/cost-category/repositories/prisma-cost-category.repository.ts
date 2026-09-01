@@ -45,6 +45,15 @@ export class PrismaCostCategoryRepository implements CostCategoryRepository {
     });
   }
 
+  async findById(
+    id: string,
+    organizationId: string,
+  ): Promise<CostCategory | null> {
+    return this.prisma.costCategory.findFirst({
+      where: { id, organizationId },
+    });
+  }
+
   async searchMany(query: SearchManyQuery): Promise<CostCategory[]> {
     return this.prisma.costCategory.findMany({
       where: {

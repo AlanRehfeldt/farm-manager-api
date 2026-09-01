@@ -31,7 +31,7 @@ export function allocateByArea(
     throw new Error('Total area must be positive');
   }
 
-  const total = Number(totalInCents);
+  const totalDecimal = new Decimal(totalInCents.toString());
 
   const residueField = [...fields].sort((a, b) => {
     const areaCmp = b.areaHa.comparedTo(a.areaHa);
@@ -41,7 +41,7 @@ export function allocateByArea(
     return a.fieldId.localeCompare(b.fieldId);
   })[0];
 
-  let allocated = 0;
+  let allocated = 0n;
   const results: AreaAllocation[] = [];
 
   for (const field of fields) {
@@ -49,22 +49,22 @@ export function allocateByArea(
       continue;
     }
 
-    const share = new Decimal(total)
+    const share = totalDecimal
       .times(field.areaHa)
       .div(totalArea)
       .toDecimalPlaces(0, Decimal.ROUND_HALF_UP);
 
-    const amount = Number(share);
+    const amount = BigInt(share.toFixed(0));
     allocated += amount;
     results.push({
       fieldId: field.fieldId,
-      amountInCents: BigInt(amount),
+      amountInCents: amount,
     });
   }
 
   results.push({
     fieldId: residueField.fieldId,
-    amountInCents: BigInt(total - allocated),
+    amountInCents: totalInCents - allocated,
   });
 
   return results.sort((a, b) => a.fieldId.localeCompare(b.fieldId));

@@ -1,5 +1,5 @@
 import { PlatformRole, PrismaClient, Role } from '@prisma/client';
-import { hash } from 'bcryptjs';
+import { hashPassword } from 'src/common/crypto/bcrypt';
 
 export type InsertUserInput = {
   name: string;
@@ -10,7 +10,7 @@ export type InsertUserInput = {
 };
 
 export async function insertUser(prisma: PrismaClient, input: InsertUserInput) {
-  const encryptedPassword = await hash(input.password, 6);
+  const encryptedPassword = await hashPassword(input.password);
 
   return prisma.user.create({
     data: {

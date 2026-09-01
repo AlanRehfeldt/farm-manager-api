@@ -1,4 +1,5 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { RequestIdMiddleware } from './common/http/request-id.middleware';
 import { UserModule } from './modules/user/user.module';
 import { PrismaModule } from './common/prisma/prisma.module';
 import { TenancyModule } from './common/tenancy/tenancy.module';
@@ -29,6 +30,7 @@ import { ActivityModule } from './modules/activity/activity.module';
 import { ExpenseModule } from './modules/expense/expense.module';
 import { HarvestModule } from './modules/harvest/harvest.module';
 import { CostingModule } from './modules/costing/costing.module';
+import { IdempotencyModule } from './common/idempotency/idempotency.module';
 
 @Module({
   imports: [
@@ -37,6 +39,7 @@ import { CostingModule } from './modules/costing/costing.module';
       isGlobal: true,
     }),
     PrismaModule,
+    IdempotencyModule,
     TenancyModule,
     PlatformModule,
     AuthModule,
@@ -68,4 +71,8 @@ import { CostingModule } from './modules/costing/costing.module';
   controllers: [],
   providers: [],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    consumer.apply(RequestIdMiddleware).forRoutes('*');
+  }
+}

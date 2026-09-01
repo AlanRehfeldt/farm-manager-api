@@ -1,12 +1,10 @@
-import { ConflictException, Injectable } from '@nestjs/common';
-import { StockMovementSourceType, StockMovementType } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Injectable } from '@nestjs/common';
 import {
   parseDecimal,
   decimalToString,
 } from 'src/common/serialization/decimal';
 import { PrismaService } from 'src/common/prisma/prisma.service';
-import { applyStockAdjustment } from '../domain/stock-adjustment';
+import { applyStockAdjustmentLedger } from '../domain/stock-ledger';
 import { CreateStockAdjustmentData, StockAdjustmentResult } from './@types';
 import { StockMovementRepository } from './stock-movement.repository';
 
@@ -21,60 +19,17 @@ export class PrismaStockMovementRepository implements StockMovementRepository {
       const signedQuantity = parseDecimal(data.quantity);
       const movementId = data.id;
 
-      const existingBalance = await tx.productStockBalance.findUnique({
-        where: {
-          farmId_productId: {
-            farmId: data.farmId,
-            productId: data.productId,
-          },
-        },
-      });
-
-      const quantityBefore = existingBalance?.quantityOnHand ?? new Decimal(0);
-      const avgCost = existingBalance?.avgCost ?? new Decimal(0);
-      const quantityOnHand = applyStockAdjustment(
-        quantityBefore,
+      const { quantityOnHand, avgCost } = await applyStockAdjustmentLedger(tx, {
+        movementId,
+        farmId: data.farmId,
+        productId: data.productId,
         signedQuantity,
-      );
-
-      if (quantityOnHand.lt(0)) {
-        throw new ConflictException(
-          `Adjustment would result in negative stock: available ${quantityBefore.toString()}, adjustment ${signedQuantity.toString()}`,
-        );
-      }
-
-      const movement = await tx.stockMovement.create({
-        data: {
-          id: movementId,
-          farmId: data.farmId,
-          type: StockMovementType.ADJUSTMENT,
-          productId: data.productId,
-          quantity: signedQuantity.abs(),
-          date: data.date,
-          note: data.note,
-          sourceType: StockMovementSourceType.ADJUSTMENT,
-          sourceId: movementId,
-        },
+        date: data.date,
+        note: data.note,
       });
 
-      await tx.productStockBalance.upsert({
-        where: {
-          farmId_productId: {
-            farmId: data.farmId,
-            productId: data.productId,
-          },
-        },
-        create: {
-          farmId: data.farmId,
-          productId: data.productId,
-          quantityOnHand,
-          avgCost,
-          version: 0,
-        },
-        update: {
-          quantityOnHand,
-          version: (existingBalance?.version ?? 0) + 1,
-        },
+      const movement = await tx.stockMovement.findUniqueOrThrow({
+        where: { id: movementId },
       });
 
       return {

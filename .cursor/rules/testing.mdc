@@ -10,7 +10,7 @@ Detalhe: `docs/07-development.md`. Invariantes de produto: `farm-manager-docs/07
 
 ## Estado atual
 
-Unitários em `src/common/tenancy/*.spec.ts`. E2e: `test/app.e2e-spec.ts` (401) e `test/tenancy.e2e-spec.ts` (INV-TEN).
+Unitários em `src/common/tenancy/*.spec.ts` e services críticos (`*.service.spec.ts`). E2e: `test/app.e2e-spec.ts` (401), `test/tenancy.e2e-spec.ts` (INV-TEN), `test/mvp-flows.e2e-spec.ts` (F3–F7).
 
 ## Quando adicionar testes
 

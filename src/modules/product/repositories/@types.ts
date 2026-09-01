@@ -7,6 +7,7 @@ export interface UpdateProductData {
   name?: string;
   description?: string;
   unitOfMeasurementId?: string;
+  costCategoryId?: string;
 }
 
 export interface SearchManyQuery {

@@ -9,6 +9,7 @@ import {
 } from '@nestjs/swagger';
 import z from 'zod';
 import { OrganizationId } from 'src/common/tenancy/organization-id.decorator';
+import { FarmAdmin } from 'src/common/tenancy/farm-admin.decorator';
 import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
@@ -35,6 +36,7 @@ const createAccountPlanBodySchema = z.object({
 
 @ApiTags('AccountPlan')
 @FarmScoped()
+@FarmAdmin()
 @Controller('/account-plans')
 export class CreateAccountPlanController {
   constructor(

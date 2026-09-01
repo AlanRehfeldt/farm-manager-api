@@ -17,7 +17,7 @@ import {
 type UpdateCropInput = {
   id: string;
   name?: string;
-  defaultProductionUomId?: string | null;
+  defaultProductionUomId?: string;
   externalRef?: string | null;
   organizationId: string;
 };

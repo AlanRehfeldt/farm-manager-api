@@ -69,6 +69,23 @@ export class PrismaCropSeasonRepository implements CropSeasonRepository {
     });
   }
 
+  async hasOperationalData(cropSeasonId: string): Promise<boolean> {
+    const [activities, costEntries, harvests, allocations] = await Promise.all([
+      this.prisma.activity.count({ where: { cropSeasonId } }),
+      this.prisma.costEntry.count({ where: { cropSeasonId } }),
+      this.prisma.harvest.count({ where: { cropSeasonId } }),
+      this.prisma.transactionAllocation.count({ where: { cropSeasonId } }),
+    ]);
+
+    return activities > 0 || costEntries > 0 || harvests > 0 || allocations > 0;
+  }
+
+  async countHarvests(cropSeasonId: string): Promise<number> {
+    return await this.prisma.harvest.count({
+      where: { cropSeasonId },
+    });
+  }
+
   async searchMany(
     query: SearchManyCropSeasonsQuery,
   ): Promise<CropSeasonWithCrop[]> {

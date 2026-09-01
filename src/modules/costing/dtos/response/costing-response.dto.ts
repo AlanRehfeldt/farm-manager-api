@@ -118,6 +118,17 @@ export class CloseCropSeasonResponseDto {
   result!: SeasonCostingDto;
 }
 
+export class ReopenCropSeasonResponseDto {
+  @ApiProperty({ default: HttpStatus.OK })
+  statusCode!: number;
+
+  @ApiProperty({ default: 'Crop season reopened successfully' })
+  message!: string;
+
+  @ApiProperty({ type: SeasonCostingDto })
+  result!: SeasonCostingDto;
+}
+
 export class UpdateReferencePriceResponseDto {
   @ApiProperty({ default: HttpStatus.OK })
   statusCode!: number;

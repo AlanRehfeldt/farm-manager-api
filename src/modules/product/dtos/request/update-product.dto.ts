@@ -22,4 +22,9 @@ export class UpdateProductBodyDto {
     description: "Unit of measurement's unique identifier",
   })
   unitOfMeasurementId!: string;
+
+  @ApiPropertyOptional({
+    description: 'Input cost category identifier',
+  })
+  costCategoryId!: string;
 }

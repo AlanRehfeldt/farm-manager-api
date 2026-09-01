@@ -8,7 +8,9 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import z from 'zod';
+import { UomDimension } from '@prisma/client';
 import { OrganizationId } from 'src/common/tenancy/organization-id.decorator';
+import { FarmAdmin } from 'src/common/tenancy/farm-admin.decorator';
 import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
@@ -20,6 +22,7 @@ import {
 } from '../dtos/request/update-unit-of-measurement.dto';
 import { UpdateUnitOfMeasurementResponseDto } from '../dtos/response/update-unit-of-measurement.dto';
 import { UpdateUnitOfMeasurementService } from '../services/update-unit-of-measurement.service';
+import { toUnitOfMeasurementResponse } from '../mappers/unit-of-measurement.mapper';
 
 const updateUnitOfMeasurementParamSchema = z.object({
   id: z.uuid(),
@@ -36,10 +39,20 @@ const updateUnitOfMeasurementSchema = z.object({
     .min(1, { message: 'Acronym must be at least 1 characters long.' })
     .max(20, { message: 'Acronym must be at most 20 characters long.' })
     .optional(),
+  dimension: z.enum(UomDimension).optional(),
+  isBase: z.boolean().optional(),
+  factorToBase: z
+    .string()
+    .min(1)
+    .refine((value) => !Number.isNaN(Number(value)) && Number(value) > 0, {
+      message: 'factorToBase must be greater than zero.',
+    })
+    .optional(),
 });
 
 @ApiTags('UnitOfMeasurement')
 @FarmScoped()
+@FarmAdmin()
 @Controller('/unit-of-measurements')
 export class UpdateUnitOfMeasurementController {
   constructor(
@@ -80,7 +93,7 @@ export class UpdateUnitOfMeasurementController {
     return {
       statusCode: HttpStatus.OK,
       message: 'Unit of measurement updated successfully',
-      result: unitOfMeasurement,
+      result: toUnitOfMeasurementResponse(unitOfMeasurement),
     };
   }
 }

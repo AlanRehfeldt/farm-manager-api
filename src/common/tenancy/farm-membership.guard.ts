@@ -49,7 +49,7 @@ export class FarmMembershipGuard implements CanActivate {
         organizationId: farm.organizationId,
         OR: [{ farmId: farm.id }, { farmId: null }],
       },
-      select: { id: true },
+      select: { id: true, role: true },
     });
 
     if (!membership) {
@@ -59,6 +59,7 @@ export class FarmMembershipGuard implements CanActivate {
     request.farmContext = {
       farmId: farm.id,
       organizationId: farm.organizationId,
+      membershipRole: membership.role,
     };
 
     return true;

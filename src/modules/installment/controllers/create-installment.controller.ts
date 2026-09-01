@@ -1,4 +1,5 @@
-import { Body, Controller, HttpStatus, Post } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
+import { throwDeprecatedWriteEndpoint } from 'src/common/http/deprecated-endpoint';
 import {
   ApiBadRequestResponse,
   ApiCreatedResponse,
@@ -61,20 +62,13 @@ export class CreateInstallmentController {
     type: NotFoundDto,
   })
   @Post()
-  async create(
+  create(
     @FarmId() farmId: string,
     @Body(new ZodValidationPipe(createInstallmentBodySchema))
     data: CreateInstallmentBodyDto,
   ) {
-    const { installment } = await this.createInstallmentService.execute({
-      ...data,
-      farmId,
-    });
-
-    return {
-      statusCode: HttpStatus.CREATED,
-      message: 'Installment created successfully',
-      result: installment,
-    };
+    void farmId;
+    void data;
+    throwDeprecatedWriteEndpoint('Installment');
   }
 }

@@ -221,9 +221,25 @@ describe('Tenancy (e2e)', () => {
       .post('/unit-of-measurements')
       .set('Cookie', adminCookies)
       .set('x-farm-id', sedeId)
-      .send({ name: 'Kilogram', acronym: `kg${suffix.slice(-8)}` })
+      .send({
+        name: 'Kilogram',
+        acronym: `kg${suffix.slice(-8)}`,
+        dimension: 'MASS',
+        isBase: true,
+        factorToBase: '1',
+      })
       .expect(201);
     const uomId = commandResult<{ id: string }>(uom).id;
+
+    const categoriesRes = await request(server)
+      .get('/cost-categories')
+      .query({ perPage: 50, page: 1 })
+      .set('Cookie', adminCookies)
+      .set('x-farm-id', sedeId)
+      .expect(200);
+    const fertilizanteCategoryId = listResults<{ id: string; code: string }>(
+      categoriesRes,
+    ).find((category) => category.code === 'fertilizante')!.id;
 
     const ureiaName = `Ureia ${suffix}`;
     const ureia = await request(server)
@@ -233,6 +249,7 @@ describe('Tenancy (e2e)', () => {
       .send({
         name: ureiaName,
         unitOfMeasurementId: uomId,
+        costCategoryId: fertilizanteCategoryId,
       })
       .expect(201);
     const ureiaResult = commandResult<{ id: string; farmId: string | null }>(
@@ -250,6 +267,7 @@ describe('Tenancy (e2e)', () => {
         name: sedeOnlyName,
         unitOfMeasurementId: uomId,
         farmId: sedeId,
+        costCategoryId: fertilizanteCategoryId,
       })
       .expect(201);
     const sedeOnlyResult = commandResult<{ id: string; farmId: string | null }>(

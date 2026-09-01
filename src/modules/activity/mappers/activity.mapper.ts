@@ -52,6 +52,7 @@ export type ActivityResponse = {
   labor: ActivityLaborResponse[];
   machineHours: ActivityMachineHourResponse[];
   totalCostInCents: number;
+  reversedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -69,7 +70,38 @@ function findCostEntryAmount(
     (ce) => ce.sourceType === sourceType && ce.sourceId === sourceId,
   );
 
-  return entry ? bigintToNumber(entry.amountInCents)! : 0;
+  if (!entry || entry.reversedAt) {
+    return 0;
+  }
+
+  return bigintToNumber(entry.amountInCents)!;
+}
+
+function computeActivityReversedAt(
+  activity: ActivityWithRelations,
+): Date | null {
+  const originalEntries = activity.costEntries.filter(
+    (entry) => entry.sourceType !== CostEntrySourceType.REVERSAL,
+  );
+
+  if (
+    originalEntries.length === 0 ||
+    !originalEntries.every((entry) => entry.reversedAt !== null)
+  ) {
+    return null;
+  }
+
+  return originalEntries.reduce<Date | null>((latest, entry) => {
+    if (!entry.reversedAt) {
+      return latest;
+    }
+
+    if (!latest || entry.reversedAt > latest) {
+      return entry.reversedAt;
+    }
+
+    return latest;
+  }, null);
 }
 
 export function toActivityResponse(
@@ -138,6 +170,7 @@ export function toActivityResponse(
     labor,
     machineHours,
     totalCostInCents,
+    reversedAt: computeActivityReversedAt(activity),
     createdAt: activity.createdAt,
     updatedAt: activity.updatedAt,
   };

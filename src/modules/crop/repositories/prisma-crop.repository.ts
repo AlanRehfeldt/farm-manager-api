@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Crop } from '@prisma/client';
+import { Crop, Prisma } from '@prisma/client';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { CreateCropData, SearchManyCropsQuery, UpdateCropData } from './@types';
 import { CropRepository } from './crop.repository';
@@ -16,7 +16,7 @@ export class PrismaCropRepository implements CropRepository {
     const { id, ...rest } = data;
     return await this.prisma.crop.update({
       where: { id },
-      data: rest,
+      data: rest as Prisma.CropUncheckedUpdateInput,
     });
   }
 

@@ -8,6 +8,7 @@ import {
 import z from 'zod';
 import { FarmId } from 'src/common/tenancy/farm-id.decorator';
 import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
+import { MembershipRole } from 'src/common/tenancy/membership-role.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
 import { FetchExpensesQueryDto } from '../dtos/request/expense.dto';
@@ -40,11 +41,13 @@ export class FetchExpensesController {
   @Get()
   async fetch(
     @FarmId() farmId: string,
+    @MembershipRole() membershipRole: import('@prisma/client').Role,
     @Query(new ZodValidationPipe(fetchExpensesSchema))
     query: FetchExpensesQueryDto,
   ) {
     return await this.fetchExpensesService.execute({
       farmId,
+      membershipRole,
       name: query.name,
       page: query.page ?? 1,
       perPage: query.perPage ?? 10,

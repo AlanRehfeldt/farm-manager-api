@@ -1,5 +1,6 @@
 import {
   CloseSeasonData,
+  ReopenSeasonData,
   CostEntryForCosting,
   CropSeasonCostingContext,
   FieldHarvestForCosting,
@@ -28,7 +29,11 @@ export interface CostingRepository {
     cropSeasonId: string,
   ): Promise<SeasonCostingSnapshotRecord | null>;
 
-  closeSeason(data: CloseSeasonData): Promise<void>;
+  closeSeason(
+    data: CloseSeasonData,
+  ): Promise<SeasonCostingSnapshotRecord['payload']>;
+
+  reopenSeason(data: ReopenSeasonData): Promise<void>;
 
   updateReferencePrice(data: UpdateReferencePriceData): Promise<void>;
 }

@@ -46,6 +46,18 @@ export class DeleteCropPlantingService {
           'Active crop season must keep at least one planting',
         );
       }
+
+      const hasOperations =
+        await this.cropPlantingRepository.hasFieldOperations(
+          existing.cropSeasonId,
+          existing.fieldId,
+        );
+
+      if (hasOperations) {
+        throw new ConflictException(
+          'Cannot delete planting with activities or harvests on this field',
+        );
+      }
     }
 
     await this.cropPlantingRepository.delete(id);

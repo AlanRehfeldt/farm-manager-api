@@ -1,5 +1,5 @@
 import { PlatformRole, PrismaClient, Role } from '@prisma/client';
-import { hash } from 'bcryptjs';
+import { hashPassword } from '../src/common/crypto/bcrypt';
 import { COST_CATEGORY_SEED } from '../src/modules/cost-category/constants/cost-category-seed';
 
 const prisma = new PrismaClient();
@@ -61,7 +61,7 @@ async function seedPlatformAdminIfConfigured() {
     );
   }
 
-  const encryptedPassword = await hash(password, 6);
+  const encryptedPassword = await hashPassword(password);
 
   const user = await prisma.user.upsert({
     where: { email },

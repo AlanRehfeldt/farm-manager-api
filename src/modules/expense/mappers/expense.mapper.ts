@@ -46,9 +46,35 @@ export type ExpenseResponse = {
   installments: ExpenseInstallmentResponse[];
   allocations: ExpenseAllocationResponse[];
   totalInCents: number;
+  reversedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 };
+
+function computeExpenseReversedAt(expense: ExpenseWithRelations): Date | null {
+  const costEntries = expense.transactionAllocations.flatMap(
+    (allocation) => allocation.costEntries,
+  );
+
+  if (
+    costEntries.length === 0 ||
+    !costEntries.every((entry) => entry.reversedAt !== null)
+  ) {
+    return null;
+  }
+
+  return costEntries.reduce<Date | null>((latest, entry) => {
+    if (!entry.reversedAt) {
+      return latest;
+    }
+
+    if (!latest || entry.reversedAt > latest) {
+      return entry.reversedAt;
+    }
+
+    return latest;
+  }, null);
+}
 
 export function toExpenseResponse(
   expense: ExpenseWithRelations,
@@ -85,10 +111,13 @@ export function toExpenseResponse(
     })),
   }));
 
-  const totalInCents = allocations.reduce(
-    (sum, allocation) => sum + allocation.allocatedValueInCents,
-    0,
-  );
+  const reversedAt = computeExpenseReversedAt(expense);
+  const totalInCents = reversedAt
+    ? 0
+    : allocations.reduce(
+        (sum, allocation) => sum + allocation.allocatedValueInCents,
+        0,
+      );
 
   return {
     id: expense.id,
@@ -106,6 +135,7 @@ export function toExpenseResponse(
     installments,
     allocations,
     totalInCents,
+    reversedAt,
     createdAt: expense.createdAt,
     updatedAt: expense.updatedAt,
   };

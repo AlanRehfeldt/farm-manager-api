@@ -1,4 +1,4 @@
-import { UnitOfMeasurement } from '@prisma/client';
+import { UnitOfMeasurement, UomDimension } from '@prisma/client';
 import {
   CreateUnitOfMeasurementData,
   SearchManyQuery,
@@ -16,6 +16,10 @@ export interface UnitOfMeasurementRepository {
   findByAcronym(
     organizationId: string,
     acronym: string,
+  ): Promise<UnitOfMeasurement | null>;
+  findBaseByDimension(
+    organizationId: string,
+    dimension: UomDimension,
   ): Promise<UnitOfMeasurement | null>;
   searchMany(query: SearchManyQuery): Promise<UnitOfMeasurement[]>;
   count(query: SearchManyQuery): Promise<number>;

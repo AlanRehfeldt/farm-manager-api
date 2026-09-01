@@ -14,6 +14,11 @@ import {
   CROP_SEASON_REPOSITORY,
   CropSeasonRepository,
 } from 'src/modules/crop-season/repositories/crop-season.repository';
+import {
+  UNIT_OF_MEASUREMENT_REPOSITORY,
+  UnitOfMeasurementRepository,
+} from 'src/modules/unit-of-measurement/repositories/unit-of-measurement.repository';
+import { convertQuantity } from 'src/modules/unit-of-measurement/domain/uom-conversion';
 import { toHarvestResponse } from '../mappers/harvest.mapper';
 import {
   HARVEST_REPOSITORY,
@@ -23,6 +28,7 @@ import { HarvestItemInput } from '../repositories/@types';
 
 type CreateHarvestInput = {
   farmId: string;
+  organizationId: string;
   cropSeasonId: string;
   fieldId: string;
   date: Date;
@@ -40,6 +46,8 @@ export class CreateHarvestService {
     private readonly cropSeasonRepository: CropSeasonRepository,
     @Inject(CROP_PLANTING_REPOSITORY)
     private readonly cropPlantingRepository: CropPlantingRepository,
+    @Inject(UNIT_OF_MEASUREMENT_REPOSITORY)
+    private readonly unitOfMeasurementRepository: UnitOfMeasurementRepository,
   ) {}
 
   async execute(input: CreateHarvestInput) {
@@ -66,27 +74,49 @@ export class CreateHarvestService {
       throw new BadRequestException('Field is not planted in this crop season');
     }
 
-    const normalizedItems = input.items.map((item) => {
-      const quantity = Number(item.quantity);
-      if (Number.isNaN(quantity) || quantity <= 0) {
-        throw new BadRequestException(
-          'Harvest quantity must be greater than zero',
-        );
-      }
+    const productionUom = await this.unitOfMeasurementRepository.findById(
+      cropSeason.productionUomId,
+      input.organizationId,
+    );
+    if (!productionUom) {
+      throw new BadRequestException('Crop season production UoM not found');
+    }
 
-      const uomId = item.uomId ?? cropSeason.productionUomId;
-      if (uomId !== cropSeason.productionUomId) {
-        throw new BadRequestException(
-          'Harvest item UoM must match crop season production UoM',
-        );
-      }
+    const normalizedItems = await Promise.all(
+      input.items.map(async (item) => {
+        const quantity = Number(item.quantity);
+        if (Number.isNaN(quantity) || quantity <= 0) {
+          throw new BadRequestException(
+            'Harvest quantity must be greater than zero',
+          );
+        }
 
-      return {
-        qualityClass: item.qualityClass ?? HarvestQualityClass.OTHER,
-        quantity: item.quantity,
-        uomId,
-      };
-    });
+        const itemUomId = item.uomId ?? cropSeason.productionUomId;
+        const itemUom =
+          itemUomId === productionUom.id
+            ? productionUom
+            : await this.unitOfMeasurementRepository.findById(
+                itemUomId,
+                input.organizationId,
+              );
+
+        if (!itemUom) {
+          throw new BadRequestException('Harvest item UoM not found');
+        }
+
+        const convertedQuantity = convertQuantity(
+          item.quantity,
+          itemUom,
+          productionUom,
+        );
+
+        return {
+          qualityClass: item.qualityClass ?? HarvestQualityClass.OTHER,
+          quantity: convertedQuantity.toString(),
+          uomId: productionUom.id,
+        };
+      }),
+    );
 
     const { harvest } = await this.harvestRepository.create({
       ...input,

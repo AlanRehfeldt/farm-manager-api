@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Decimal } from '@prisma/client/runtime/library';
+import { assertActiveCropSeasonLocked } from 'src/common/prisma/crop-season-lock';
 import { parseDecimal } from 'src/common/serialization/decimal';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import {
@@ -45,26 +46,30 @@ export class PrismaHarvestRepository implements HarvestRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(data: CreateHarvestData): Promise<CreateHarvestResult> {
-    const harvest = await this.prisma.harvest.create({
-      data: {
-        farmId: data.farmId,
-        cropSeasonId: data.cropSeasonId,
-        fieldId: data.fieldId,
-        date: data.date,
-        lotCode: data.lotCode,
-        note: data.note,
-        items: {
-          create: data.items.map((item) => ({
-            qualityClass: item.qualityClass,
-            quantity: parseDecimal(item.quantity),
-            uomId: item.uomId,
-          })),
-        },
-      },
-      include: harvestInclude,
-    });
+    return await this.prisma.$transaction(async (tx) => {
+      await assertActiveCropSeasonLocked(tx, data.cropSeasonId, data.farmId);
 
-    return { harvest: harvest as HarvestWithRelations };
+      const harvest = await tx.harvest.create({
+        data: {
+          farmId: data.farmId,
+          cropSeasonId: data.cropSeasonId,
+          fieldId: data.fieldId,
+          date: data.date,
+          lotCode: data.lotCode,
+          note: data.note,
+          items: {
+            create: data.items.map((item) => ({
+              qualityClass: item.qualityClass,
+              quantity: parseDecimal(item.quantity),
+              uomId: item.uomId,
+            })),
+          },
+        },
+        include: harvestInclude,
+      });
+
+      return { harvest: harvest as HarvestWithRelations };
+    });
   }
 
   async findById(

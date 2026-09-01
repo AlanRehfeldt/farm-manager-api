@@ -1,13 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import {
-  StockMovementSourceType,
-  StockMovementType,
-  TransactionType,
-} from '@prisma/client';
+import { TransactionType } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { parseDecimal } from 'src/common/serialization/decimal';
 import { PrismaService } from 'src/common/prisma/prisma.service';
-import { computeNewAvgCost } from 'src/modules/inventory/domain/avg-cost';
+import { applyStockIn } from 'src/modules/inventory/domain/stock-ledger';
 import {
   CreatePurchaseData,
   CreatePurchaseResult,
@@ -93,54 +89,13 @@ export class PrismaPurchaseRepository implements PurchaseRepository {
         const unitPriceInReais = new Decimal(item.priceInCents).div(100);
         const meta = data.productMeta[item.productId];
 
-        await tx.stockMovement.create({
-          data: {
-            farmId: data.farmId,
-            type: StockMovementType.IN,
-            productId: item.productId,
-            quantity,
-            date: data.date,
-            transactionId: transaction.id,
-            sourceType: StockMovementSourceType.PURCHASE,
-            sourceId: transaction.id,
-          },
-        });
-
-        const existingBalance = await tx.productStockBalance.findUnique({
-          where: {
-            farmId_productId: {
-              farmId: data.farmId,
-              productId: item.productId,
-            },
-          },
-        });
-
-        const { quantityOnHand, avgCost } = computeNewAvgCost(
-          existingBalance?.quantityOnHand ?? new Decimal(0),
-          existingBalance?.avgCost ?? new Decimal(0),
+        const { avgCost } = await applyStockIn(tx, {
+          farmId: data.farmId,
+          productId: item.productId,
           quantity,
           unitPriceInReais,
-        );
-
-        await tx.productStockBalance.upsert({
-          where: {
-            farmId_productId: {
-              farmId: data.farmId,
-              productId: item.productId,
-            },
-          },
-          create: {
-            farmId: data.farmId,
-            productId: item.productId,
-            quantityOnHand,
-            avgCost,
-            version: 0,
-          },
-          update: {
-            quantityOnHand,
-            avgCost,
-            version: (existingBalance?.version ?? 0) + 1,
-          },
+          date: data.date,
+          transactionId: transaction.id,
         });
 
         stockEffects.push({

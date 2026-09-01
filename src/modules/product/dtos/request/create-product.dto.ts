@@ -19,6 +19,12 @@ export class CreateProductBodyDto {
   })
   unitOfMeasurementId!: string;
 
+  @ApiProperty({
+    example: 'uuid',
+    description: 'Input cost category (natureza do insumo)',
+  })
+  costCategoryId!: string;
+
   @ApiPropertyOptional({
     example: 'uuid',
     nullable: true,

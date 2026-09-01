@@ -29,7 +29,7 @@ const updateCropBodySchema = z.object({
     .min(1, { message: 'Name must be at least 1 character long.' })
     .max(150, { message: 'Name must be at most 150 characters long.' })
     .optional(),
-  defaultProductionUomId: z.uuid().nullable().optional(),
+  defaultProductionUomId: z.uuid().optional(),
   externalRef: z.string().max(100).nullable().optional(),
 });
 

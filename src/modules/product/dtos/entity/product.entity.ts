@@ -39,6 +39,12 @@ export class ProductDto {
   unitOfMeasurementId!: string;
 
   @ApiProperty({
+    example: 'uuid',
+    description: 'Input cost category identifier',
+  })
+  costCategoryId!: string;
+
+  @ApiProperty({
     example: '2023-01-01T00:00:00.000Z',
     description: "Product's creation date",
   })

@@ -1,6 +1,5 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { CropSeasonStatus } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
 import { CloseCropSeasonService } from './close-crop-season.service';
 import { CostingRepository } from '../repositories/costing.repository';
 
@@ -17,6 +16,7 @@ describe('CloseCropSeasonService', () => {
     findFieldHarvests: jest.fn(),
     findSnapshot: jest.fn(),
     closeSeason,
+    reopenSeason: jest.fn(),
     updateReferencePrice: jest.fn(),
   };
 
@@ -77,35 +77,32 @@ describe('CloseCropSeasonService', () => {
       productionUomAcronym: 'kg',
       referenceSalePriceInCents: 120n,
     });
-    costingRepository.findCostEntries.mockResolvedValue([
-      {
-        fieldId: 'field-1',
-        sourceType: 'ACTIVITY_INPUT',
-        costCategoryId: 'cat-1',
-        costCategoryCode: 'outros',
-        costCategoryName: 'Outros',
-        amountInCents: 100000n,
-      },
-    ]);
-    costingRepository.findPlantings.mockResolvedValue([
-      {
-        fieldId: 'field-1',
-        fieldName: 'T1',
-        areaHa: new Decimal(10),
-      },
-    ]);
-    costingRepository.findFieldHarvests.mockResolvedValue([]);
-    closeSeason.mockResolvedValue();
+    closeSeason.mockResolvedValue({
+      cropSeasonId: seasonId,
+      status: CropSeasonStatus.CLOSED,
+      source: 'SNAPSHOT',
+      closedAt: '2026-08-31T00:00:00.000Z',
+      totalCostInCents: 100000,
+      areaHa: '10',
+      harvestedQuantity: '0',
+      productionUomId: 'uom-id',
+      productionUomAcronym: 'kg',
+      costPerHaInCents: 10000,
+      costPerUnitInCents: null,
+      referenceSalePriceInCents: 120,
+      estimatedMarginPerUnitInCents: null,
+      breakdownByCategory: [],
+      breakdownBySource: [],
+      byField: [],
+    });
 
     const result = await service.execute(seasonId, farmId, userId);
 
-    expect(closeSeason).toHaveBeenCalledWith(
-      expect.objectContaining({
-        cropSeasonId: seasonId,
-        farmId,
-        closedByUserId: userId,
-      }),
-    );
+    expect(closeSeason).toHaveBeenCalledWith({
+      cropSeasonId: seasonId,
+      farmId,
+      closedByUserId: userId,
+    });
     expect(result.costing.status).toBe('CLOSED');
     expect(result.costing.source).toBe('SNAPSHOT');
     expect(result.costing.costPerUnitInCents).toBeNull();

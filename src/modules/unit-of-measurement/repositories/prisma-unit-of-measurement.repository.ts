@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { UnitOfMeasurement } from '@prisma/client';
+import { UnitOfMeasurement, UomDimension } from '@prisma/client';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import {
   CreateUnitOfMeasurementData,
@@ -42,6 +42,15 @@ export class PrismaUnitOfMeasurementRepository implements UnitOfMeasurementRepos
   ): Promise<UnitOfMeasurement | null> {
     return await this.prisma.unitOfMeasurement.findFirst({
       where: { organizationId, acronym },
+    });
+  }
+
+  async findBaseByDimension(
+    organizationId: string,
+    dimension: UomDimension,
+  ): Promise<UnitOfMeasurement | null> {
+    return await this.prisma.unitOfMeasurement.findFirst({
+      where: { organizationId, dimension, isBase: true },
     });
   }
 

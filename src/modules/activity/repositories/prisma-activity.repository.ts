@@ -1,19 +1,24 @@
-import { ConflictException, Injectable } from '@nestjs/common';
 import {
-  CostEntrySourceType,
-  StockMovementSourceType,
-  StockMovementType,
-} from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { CostEntrySourceType, TransactionType } from '@prisma/client';
 import { parseDecimal } from 'src/common/serialization/decimal';
+import { assertActiveCropSeasonLocked } from 'src/common/prisma/crop-season-lock';
 import { PrismaService } from 'src/common/prisma/prisma.service';
+import {
+  applyCompensatoryStockIn,
+  applyStockOut as applyStockOutLedger,
+} from 'src/modules/inventory/domain/stock-ledger';
 import { computeConsumptionAmountInCents } from '../domain/consumption-cost';
 import { computeHourlyAmountInCents } from '../domain/hourly-cost';
-import { applyStockOut } from 'src/modules/inventory/domain/stock-out';
 import {
   ActivityStockEffect,
   CreateActivityData,
   CreateActivityResult,
+  ReverseActivityData,
+  ReverseActivityResult,
   SearchManyActivitiesQuery,
   ActivityWithRelations,
 } from './@types';
@@ -79,6 +84,8 @@ export class PrismaActivityRepository implements ActivityRepository {
 
   async create(data: CreateActivityData): Promise<CreateActivityResult> {
     return await this.prisma.$transaction(async (tx) => {
+      await assertActiveCropSeasonLocked(tx, data.cropSeasonId, data.farmId);
+
       const activity = await tx.activity.create({
         data: {
           farmId: data.farmId,
@@ -97,24 +104,17 @@ export class PrismaActivityRepository implements ActivityRepository {
         const quantity = parseDecimal(item.quantity);
         const meta = data.productMeta[item.productId];
 
-        const existingBalance = await tx.productStockBalance.findUnique({
-          where: {
-            farmId_productId: {
-              farmId: data.farmId,
-              productId: item.productId,
-            },
+        const { quantityOnHand, unitCostSnapshot } = await applyStockOutLedger(
+          tx,
+          {
+            farmId: data.farmId,
+            productId: item.productId,
+            quantity,
+            date: data.date,
+            sourceId: activity.id,
+            productName: meta.name,
           },
-        });
-
-        const quantityBefore =
-          existingBalance?.quantityOnHand ?? new Decimal(0);
-        const unitCostSnapshot = existingBalance?.avgCost ?? new Decimal(0);
-
-        if (quantity.gt(quantityBefore)) {
-          throw new ConflictException(
-            `Insufficient stock for ${meta.name}: available ${quantityBefore.toString()}, requested ${quantity.toString()}`,
-          );
-        }
+        );
 
         const activityInput = await tx.activityInput.create({
           data: {
@@ -122,41 +122,6 @@ export class PrismaActivityRepository implements ActivityRepository {
             productId: item.productId,
             quantity,
             unitCostSnapshot,
-          },
-        });
-
-        await tx.stockMovement.create({
-          data: {
-            farmId: data.farmId,
-            type: StockMovementType.OUT,
-            productId: item.productId,
-            quantity,
-            date: data.date,
-            sourceType: StockMovementSourceType.ACTIVITY,
-            sourceId: activity.id,
-          },
-        });
-
-        const quantityOnHand = applyStockOut(quantityBefore, quantity);
-        const avgCost = existingBalance?.avgCost ?? new Decimal(0);
-
-        await tx.productStockBalance.upsert({
-          where: {
-            farmId_productId: {
-              farmId: data.farmId,
-              productId: item.productId,
-            },
-          },
-          create: {
-            farmId: data.farmId,
-            productId: item.productId,
-            quantityOnHand,
-            avgCost,
-            version: 0,
-          },
-          update: {
-            quantityOnHand,
-            version: (existingBalance?.version ?? 0) + 1,
           },
         });
 
@@ -173,7 +138,7 @@ export class PrismaActivityRepository implements ActivityRepository {
             activityId: activity.id,
             sourceType: CostEntrySourceType.ACTIVITY_INPUT,
             sourceId: activityInput.id,
-            costCategoryId: data.costCategoryIds.defaultInput,
+            costCategoryId: meta.costCategoryId,
             amountInCents,
             quantity,
             uomId: meta.uomId,
@@ -267,6 +232,98 @@ export class PrismaActivityRepository implements ActivityRepository {
     });
   }
 
+  async reverse(data: ReverseActivityData): Promise<ReverseActivityResult> {
+    return await this.prisma.$transaction(async (tx) => {
+      const activity = await tx.activity.findFirst({
+        where: { id: data.activityId, farmId: data.farmId },
+        include: {
+          inputs: {
+            include: {
+              product: { select: { id: true, name: true } },
+            },
+          },
+          costEntries: true,
+        },
+      });
+
+      if (!activity) {
+        throw new NotFoundException('Activity not found');
+      }
+
+      await assertActiveCropSeasonLocked(
+        tx,
+        activity.cropSeasonId,
+        data.farmId,
+      );
+
+      const originalEntries = activity.costEntries.filter(
+        (entry) => entry.sourceType !== CostEntrySourceType.REVERSAL,
+      );
+
+      if (originalEntries.length === 0) {
+        throw new ConflictException('Activity has no cost entries to reverse');
+      }
+
+      if (originalEntries.some((entry) => entry.reversedAt !== null)) {
+        throw new ConflictException('Activity has already been reversed');
+      }
+
+      for (const input of activity.inputs) {
+        const quantity = parseDecimal(input.quantity.toString());
+
+        await applyCompensatoryStockIn(tx, {
+          farmId: data.farmId,
+          productId: input.productId,
+          quantity,
+          date: data.reversedAt,
+          sourceId: activity.id,
+          note: `Estorno: ${data.reason}`,
+        });
+      }
+
+      for (const entry of originalEntries) {
+        await tx.costEntry.update({
+          where: { id: entry.id },
+          data: { reversedAt: data.reversedAt },
+        });
+
+        await tx.costEntry.create({
+          data: {
+            farmId: entry.farmId,
+            cropSeasonId: entry.cropSeasonId,
+            fieldId: entry.fieldId,
+            activityId: entry.activityId,
+            sourceType: CostEntrySourceType.REVERSAL,
+            sourceId: entry.id,
+            costCategoryId: entry.costCategoryId,
+            amountInCents: -entry.amountInCents,
+            quantity: entry.quantity,
+            uomId: entry.uomId,
+            date: data.reversedAt,
+            reversalOfId: entry.id,
+          },
+        });
+      }
+
+      const reversalNote = `[Estornado em ${data.reversedAt.toISOString()}] ${data.reason}`;
+      const updatedNote = activity.note
+        ? `${activity.note}\n${reversalNote}`
+        : reversalNote;
+
+      await tx.activity.update({
+        where: { id: activity.id },
+        data: { note: updatedNote },
+      });
+
+      const fullActivity = await tx.activity.findUniqueOrThrow({
+        where: { id: activity.id },
+        include: activityInclude,
+      });
+
+      return { activity: fullActivity };
+    });
+  }
+
   async findById(
     id: string,
     farmId: string,
@@ -342,6 +399,34 @@ export class PrismaActivityRepository implements ActivityRepository {
           date: {
             gte: start,
             lt: end,
+          },
+        },
+      },
+    });
+
+    return count > 0;
+  }
+
+  async hasSalaryAllocationInSeasonMonth(
+    employeeId: string,
+    cropSeasonId: string,
+    year: number,
+    month: number,
+  ): Promise<boolean> {
+    const start = new Date(Date.UTC(year, month - 1, 1));
+    const end = new Date(Date.UTC(year, month, 1));
+
+    const count = await this.prisma.transactionAllocation.count({
+      where: {
+        cropSeasonId,
+        transaction: {
+          type: TransactionType.SALARY_PAYMENT,
+          date: {
+            gte: start,
+            lt: end,
+          },
+          salaryTransaction: {
+            employeeId,
           },
         },
       },

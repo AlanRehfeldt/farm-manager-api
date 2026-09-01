@@ -16,6 +16,8 @@ describe('ActivateCropSeasonService', () => {
     findById: jest.fn(),
     updateStatus,
     countPlantings: jest.fn(),
+    hasOperationalData: jest.fn(),
+    countHarvests: jest.fn(),
     searchMany: jest.fn(),
     count: jest.fn(),
   };

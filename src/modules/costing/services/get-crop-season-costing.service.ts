@@ -1,4 +1,9 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CropSeasonStatus } from '@prisma/client';
 import { computeSeasonCosting } from '../domain/compute-season-costing';
 import { toSeasonCostingResponse } from '../mappers/costing.mapper';
@@ -28,6 +33,10 @@ export class GetCropSeasonCostingService {
       if (snapshot) {
         return { costing: snapshot.payload };
       }
+
+      throw new ConflictException(
+        'Crop season is closed but costing snapshot is missing',
+      );
     }
 
     const [costEntries, plantings, fieldHarvests] = await Promise.all([

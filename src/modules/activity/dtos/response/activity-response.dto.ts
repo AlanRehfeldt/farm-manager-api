@@ -133,6 +133,9 @@ export class ActivityDto {
   @ApiProperty()
   totalCostInCents!: number;
 
+  @ApiProperty({ nullable: true })
+  reversedAt!: Date | null;
+
   @ApiProperty()
   createdAt!: Date;
 

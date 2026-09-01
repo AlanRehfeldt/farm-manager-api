@@ -3,6 +3,8 @@ export type { FarmRequestContext } from './constants';
 export { FarmId } from './farm-id.decorator';
 export { OrganizationId } from './organization-id.decorator';
 export { FarmScoped } from './farm-scoped.decorator';
+export { FarmAdmin } from './farm-admin.decorator';
+export { MembershipRole } from './membership-role.decorator';
 export { FarmMembershipGuard } from './farm-membership.guard';
 export { catalogVisibilityWhere } from './catalog-visibility';
 export { TenancyModule } from './tenancy.module';

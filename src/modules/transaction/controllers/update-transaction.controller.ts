@@ -1,4 +1,5 @@
-import { Body, Controller, HttpStatus, Param, Put } from '@nestjs/common';
+import { Body, Controller, Param, Put } from '@nestjs/common';
+import { throwDeprecatedWriteEndpoint } from 'src/common/http/deprecated-endpoint';
 import {
   ApiBadRequestResponse,
   ApiNotFoundResponse,
@@ -51,25 +52,16 @@ export class UpdateTransactionController {
     type: NotFoundDto,
   })
   @Put(':id')
-  async update(
+  update(
     @FarmId() farmId: string,
     @Param(new ZodValidationPipe(updateTransactionParamSchema))
     param: UpdateTransactionParamDto,
     @Body(new ZodValidationPipe(updateTransactionSchema))
     data: UpdateTransactionBodyDto,
   ) {
-    const { transaction } = await this.updateTransactionService.execute(
-      farmId,
-      {
-        id: param.id,
-        ...data,
-      },
-    );
-
-    return {
-      statusCode: HttpStatus.OK,
-      message: 'Transaction updated successfully',
-      result: transaction,
-    };
+    void farmId;
+    void param;
+    void data;
+    throwDeprecatedWriteEndpoint('Transaction');
   }
 }

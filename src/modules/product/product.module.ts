@@ -13,9 +13,10 @@ import { DeleteProductService } from './services/delete-product.service';
 import { GetProductService } from './services/get-product.service';
 import { FetchProductsService } from './services/fetch-products.service';
 import { UnitOfMeasurementModule } from '../unit-of-measurement/unit-of-measurement.module';
+import { CostCategoryModule } from '../cost-category/cost-category.module';
 
 @Module({
-  imports: [PrismaModule, UnitOfMeasurementModule],
+  imports: [PrismaModule, UnitOfMeasurementModule, CostCategoryModule],
   controllers: [
     CreateProductController,
     UpdateProductController,

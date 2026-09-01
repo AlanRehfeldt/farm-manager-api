@@ -5,6 +5,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import {
+  DomainConflictCode,
+  domainConflict,
+} from 'src/common/errors/domain-conflict';
 import { ActivityType, CropSeasonStatus, LaborPayBasis } from '@prisma/client';
 import {
   COST_CATEGORY_REPOSITORY,
@@ -130,8 +134,7 @@ export class CreateActivityService {
       throw new BadRequestException('Field is not planted in this crop season');
     }
 
-    const [defaultCategory, moFixa, moTemporaria, maquina] = await Promise.all([
-      this.costCategoryRepository.findByCode(input.organizationId, 'outros'),
+    const [moFixa, moTemporaria, maquina] = await Promise.all([
       this.costCategoryRepository.findByCode(input.organizationId, 'MO_fixa'),
       this.costCategoryRepository.findByCode(
         input.organizationId,
@@ -140,7 +143,7 @@ export class CreateActivityService {
       this.costCategoryRepository.findByCode(input.organizationId, 'maquina'),
     ]);
 
-    if (!defaultCategory || !moFixa || !moTemporaria || !maquina) {
+    if (!moFixa || !moTemporaria || !maquina) {
       throw new BadRequestException(
         'Required cost categories not found for organization',
       );
@@ -148,7 +151,13 @@ export class CreateActivityService {
 
     const productMeta: Record<
       string,
-      { name: string; uomAcronym: string; uomId: string }
+      {
+        name: string;
+        uomAcronym: string;
+        uomId: string;
+        costCategoryId: string;
+        costCategoryCode: string;
+      }
     > = {};
 
     for (const item of input.inputs) {
@@ -178,10 +187,22 @@ export class CreateActivityService {
         );
       }
 
+      const costCategory = await this.costCategoryRepository.findById(
+        product.costCategoryId,
+        input.organizationId,
+      );
+      if (!costCategory) {
+        throw new BadRequestException(
+          `Cost category not found for product ${product.name}`,
+        );
+      }
+
       productMeta[item.productId] = {
         name: product.name,
         uomAcronym: uom.acronym,
         uomId: uom.id,
+        costCategoryId: costCategory.id,
+        costCategoryCode: costCategory.code,
       };
     }
 
@@ -231,12 +252,31 @@ export class CreateActivityService {
           throw new NotFoundException(`Employee not found: ${item.employeeId}`);
         }
         employeeMeta[item.employeeId] = { name: employee.name };
+
+        const hasSalaryAllocation =
+          await this.activityRepository.hasSalaryAllocationInSeasonMonth(
+            item.employeeId,
+            input.cropSeasonId,
+            input.date.getUTCFullYear(),
+            input.date.getUTCMonth() + 1,
+          );
+
+        if (hasSalaryAllocation) {
+          throw domainConflict(
+            DomainConflictCode.DOUBLE_COUNT_BLOCKED,
+            'Activity labor blocked: employee already has salary allocated in this season and month',
+          );
+        }
       }
     }
 
     const machineMeta: Record<
       string,
-      { name: string; hourlyCostInCents: bigint }
+      {
+        name: string;
+        hourlyCostInCents: bigint;
+        fuelIncludedInHourlyCost: boolean;
+      }
     > = {};
 
     for (const item of input.machineHours) {
@@ -261,7 +301,22 @@ export class CreateActivityService {
       machineMeta[item.machineId] = {
         name: machine.name,
         hourlyCostInCents: machine.hourlyCostInCents,
+        fuelIncludedInHourlyCost: machine.fuelIncludedInHourlyCost,
       };
+    }
+
+    const hasFuelIncludedMachine = input.machineHours.some(
+      (item) => machineMeta[item.machineId].fuelIncludedInHourlyCost,
+    );
+    const hasFuelInput = input.inputs.some(
+      (item) => productMeta[item.productId].costCategoryCode === 'combustivel',
+    );
+
+    if (hasFuelIncludedMachine && hasFuelInput) {
+      throw domainConflict(
+        DomainConflictCode.DOUBLE_COUNT_BLOCKED,
+        'Fuel input blocked: machine hourly cost already includes fuel',
+      );
     }
 
     const { activity, stockEffects } = await this.activityRepository.create({
@@ -279,7 +334,6 @@ export class CreateActivityService {
       machineMeta,
       employeeMeta,
       costCategoryIds: {
-        defaultInput: defaultCategory.id,
         moFixa: moFixa.id,
         moTemporaria: moTemporaria.id,
         maquina: maquina.id,

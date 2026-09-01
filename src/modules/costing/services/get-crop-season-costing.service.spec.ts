@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { CropSeasonStatus } from '@prisma/client';
 import { GetCropSeasonCostingService } from './get-crop-season-costing.service';
 import { CostingRepository } from '../repositories/costing.repository';
@@ -16,6 +16,7 @@ describe('GetCropSeasonCostingService', () => {
     findFieldHarvests: jest.fn(),
     findSnapshot: jest.fn(),
     closeSeason: jest.fn(),
+    reopenSeason: jest.fn(),
     updateReferencePrice: jest.fn(),
   };
 
@@ -75,6 +76,22 @@ describe('GetCropSeasonCostingService', () => {
 
     expect(result.costing).toEqual(snapshotPayload);
     expect(findCostEntries).not.toHaveBeenCalled();
+  });
+
+  it('throws ConflictException when closed season has no snapshot', async () => {
+    costingRepository.findSeasonContext.mockResolvedValue({
+      id: seasonId,
+      farmId,
+      status: CropSeasonStatus.CLOSED,
+      productionUomId: 'uom-id',
+      productionUomAcronym: 'kg',
+      referenceSalePriceInCents: null,
+    });
+    costingRepository.findSnapshot.mockResolvedValue(null);
+
+    await expect(service.execute(seasonId, farmId)).rejects.toBeInstanceOf(
+      ConflictException,
+    );
   });
 
   it('returns live costing for active season', async () => {

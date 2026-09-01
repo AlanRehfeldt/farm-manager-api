@@ -10,8 +10,10 @@ import {
 import z from 'zod';
 import { FarmId } from 'src/common/tenancy/farm-id.decorator';
 import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
+import { MembershipRole } from 'src/common/tenancy/membership-role.decorator';
 import { OrganizationId } from 'src/common/tenancy/organization-id.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
+import { Idempotent } from 'src/common/idempotency';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
 import { ConflictDto } from 'src/common/errors/conflict.dto';
 import { NotFoundDto } from 'src/common/errors/not-found.dto';
@@ -123,9 +125,11 @@ export class CreateExpenseController {
     type: ConflictDto,
   })
   @Post()
+  @Idempotent()
   async create(
     @OrganizationId() organizationId: string,
     @FarmId() farmId: string,
+    @MembershipRole() membershipRole: import('@prisma/client').Role,
     @Body(new ZodValidationPipe(createExpenseBodySchema))
     data: CreateExpenseBodyDto,
   ) {
@@ -133,6 +137,7 @@ export class CreateExpenseController {
       ...data,
       organizationId,
       farmId,
+      membershipRole,
     });
 
     return {

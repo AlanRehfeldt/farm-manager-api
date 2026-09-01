@@ -16,7 +16,7 @@ import {
 
 type CreateCropInput = {
   name: string;
-  defaultProductionUomId?: string;
+  defaultProductionUomId: string;
   externalRef?: string | null;
   organizationId: string;
 };
@@ -31,14 +31,12 @@ export class CreateCropService {
   ) {}
 
   async execute(input: CreateCropInput) {
-    if (input.defaultProductionUomId) {
-      const unitOfMeasurement = await this.unitOfMeasurementRepository.findById(
-        input.defaultProductionUomId,
-        input.organizationId,
-      );
-      if (!unitOfMeasurement) {
-        throw new NotFoundException('Unit of measurement does not exist');
-      }
+    const unitOfMeasurement = await this.unitOfMeasurementRepository.findById(
+      input.defaultProductionUomId,
+      input.organizationId,
+    );
+    if (!unitOfMeasurement) {
+      throw new NotFoundException('Unit of measurement does not exist');
     }
 
     const existing = await this.cropRepository.findByName(

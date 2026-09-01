@@ -1,0 +1,19 @@
+export const LIVESTOCK_EMPLOYEE_TYPES = [
+  'VETERINARIAN',
+  'LIVESTOCK_HANDLER',
+] as const;
+
+export const SUPPORTED_EMPLOYEE_TYPES = [
+  'FARM_MANAGER',
+  'AGRONOMIST',
+  'MACHINE_OPERATOR',
+  'FIELD_WORKER',
+  'IRRIGATION_TECHNICIAN',
+  'ADMINISTRATIVE_ASSISTANT',
+  'DRIVER',
+  'SECURITY_GUARD',
+  'TEMPORARY_WORKER',
+  'OTHER',
+] as const;
+
+export type SupportedEmployeeType = (typeof SUPPORTED_EMPLOYEE_TYPES)[number];

@@ -12,6 +12,7 @@ import { FarmId } from 'src/common/tenancy/farm-id.decorator';
 import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
 import { OrganizationId } from 'src/common/tenancy/organization-id.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
+import { Idempotent } from 'src/common/idempotency';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
 import { NotFoundDto } from 'src/common/errors/not-found.dto';
 import { CreateStockAdjustmentBodyDto } from '../dtos/request/stock-adjustment.dto';
@@ -58,6 +59,7 @@ export class CreateStockAdjustmentController {
     description: 'Conflict: Adjustment would result in negative stock',
   })
   @Post()
+  @Idempotent()
   async create(
     @OrganizationId() organizationId: string,
     @FarmId() farmId: string,

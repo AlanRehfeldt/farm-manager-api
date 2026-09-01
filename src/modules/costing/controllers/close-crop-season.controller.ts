@@ -8,6 +8,7 @@ import {
 } from '@nestjs/swagger';
 import z from 'zod';
 import { FarmId } from 'src/common/tenancy/farm-id.decorator';
+import { FarmAdmin } from 'src/common/tenancy/farm-admin.decorator';
 import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
 import { CurrentUser } from 'src/modules/auth/decorators/current-user.decorator';
@@ -20,6 +21,7 @@ const paramSchema = z.object({ id: z.uuid() });
 
 @ApiTags('Costing')
 @FarmScoped()
+@FarmAdmin()
 @Controller('/crop-seasons')
 export class CloseCropSeasonController {
   constructor(

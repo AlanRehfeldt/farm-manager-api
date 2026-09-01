@@ -16,6 +16,7 @@ describe('UpdateReferencePriceService', () => {
     findFieldHarvests: jest.fn(),
     findSnapshot: jest.fn(),
     closeSeason: jest.fn(),
+    reopenSeason: jest.fn(),
     updateReferencePrice,
   };
 

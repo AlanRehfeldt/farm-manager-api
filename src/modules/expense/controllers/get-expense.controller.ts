@@ -8,6 +8,7 @@ import {
 import z from 'zod';
 import { FarmId } from 'src/common/tenancy/farm-id.decorator';
 import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
+import { MembershipRole } from 'src/common/tenancy/membership-role.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
 import { NotFoundDto } from 'src/common/errors/not-found.dto';
 import { GetExpenseResponseDto } from '../dtos/response/expense-response.dto';
@@ -33,11 +34,13 @@ export class GetExpenseController {
   @Get('/:id')
   async get(
     @FarmId() farmId: string,
+    @MembershipRole() membershipRole: import('@prisma/client').Role,
     @Param(new ZodValidationPipe(idSchema)) params: { id: string },
   ) {
     const { expense } = await this.getExpenseService.execute({
       id: params.id,
       farmId,
+      membershipRole,
     });
 
     return {

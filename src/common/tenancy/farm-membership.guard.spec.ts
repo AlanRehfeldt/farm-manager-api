@@ -89,7 +89,10 @@ describe('FarmMembershipGuard', () => {
       id: 'farm-a',
       organizationId: 'org-1',
     });
-    prisma.membership.findFirst.mockResolvedValue({ id: 'mem-1' });
+    prisma.membership.findFirst.mockResolvedValue({
+      id: 'mem-1',
+      role: 'USER',
+    });
     const { context, request } = createContext({
       userId: 'user-1',
       farmHeader: 'farm-a',
@@ -99,6 +102,7 @@ describe('FarmMembershipGuard', () => {
     expect(request.farmContext).toEqual({
       farmId: 'farm-a',
       organizationId: 'org-1',
+      membershipRole: 'USER',
     });
   });
 
@@ -107,7 +111,10 @@ describe('FarmMembershipGuard', () => {
       id: 'farm-b',
       organizationId: 'org-1',
     });
-    prisma.membership.findFirst.mockResolvedValue({ id: 'mem-org' });
+    prisma.membership.findFirst.mockResolvedValue({
+      id: 'mem-org',
+      role: 'ADMIN',
+    });
     const { context } = createContext({
       userId: 'user-1',
       farmHeader: 'farm-b',
@@ -120,7 +127,7 @@ describe('FarmMembershipGuard', () => {
         organizationId: 'org-1',
         OR: [{ farmId: 'farm-b' }, { farmId: null }],
       },
-      select: { id: true },
+      select: { id: true, role: true },
     });
   });
 });

@@ -1,12 +1,19 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { CropSeasonStatus } from '@prisma/client';
+import {
+  assertActiveCropSeasonForClose,
+  assertClosedCropSeasonForReopen,
+} from 'src/common/prisma/crop-season-lock';
 import { PrismaService } from 'src/common/prisma/prisma.service';
+import { computeSeasonCosting } from '../domain/compute-season-costing';
+import { toSeasonCostingResponse } from '../mappers/costing.mapper';
 import {
   CloseSeasonData,
   CostEntryForCosting,
   CropSeasonCostingContext,
   FieldHarvestForCosting,
   PlantingForCosting,
+  ReopenSeasonData,
   SeasonCostingSnapshotRecord,
   UpdateReferencePriceData,
 } from './@types';
@@ -128,21 +135,142 @@ export class PrismaCostingRepository implements CostingRepository {
     };
   }
 
-  async closeSeason(data: CloseSeasonData): Promise<void> {
-    await this.prisma.$transaction([
-      this.prisma.seasonCostingSnapshot.create({
+  async closeSeason(
+    data: CloseSeasonData,
+  ): Promise<SeasonCostingSnapshotRecord['payload']> {
+    return await this.prisma.$transaction(async (tx) => {
+      await assertActiveCropSeasonForClose(tx, data.cropSeasonId, data.farmId);
+
+      const season = await tx.cropSeason.findFirstOrThrow({
+        where: { id: data.cropSeasonId, farmId: data.farmId },
+        include: {
+          productionUom: { select: { id: true, acronym: true } },
+        },
+      });
+
+      const costEntries = await tx.costEntry.findMany({
+        where: { cropSeasonId: data.cropSeasonId },
+        include: {
+          costCategory: { select: { id: true, code: true, name: true } },
+        },
+      });
+
+      const plantings = await tx.cropPlanting.findMany({
+        where: { cropSeasonId: data.cropSeasonId },
+        include: {
+          field: { select: { id: true, name: true, areaHa: true } },
+        },
+      });
+
+      const harvestItems = await tx.harvestItem.findMany({
+        where: {
+          uomId: season.productionUomId,
+          harvest: { farmId: data.farmId, cropSeasonId: data.cropSeasonId },
+        },
+        select: {
+          quantity: true,
+          harvest: { select: { fieldId: true } },
+        },
+      });
+
+      const byField = new Map<
+        string,
+        import('@prisma/client/runtime/library').Decimal
+      >();
+
+      for (const item of harvestItems) {
+        const fieldId = item.harvest.fieldId;
+        const current = byField.get(fieldId);
+        if (current) {
+          byField.set(fieldId, current.plus(item.quantity));
+        } else {
+          byField.set(fieldId, item.quantity);
+        }
+      }
+
+      const fieldHarvests = [...byField.entries()].map(
+        ([fieldId, quantity]) => ({
+          fieldId,
+          quantity,
+        }),
+      );
+
+      const computed = computeSeasonCosting({
+        costEntries: costEntries.map((entry) => ({
+          fieldId: entry.fieldId,
+          sourceType: entry.sourceType,
+          costCategoryId: entry.costCategory.id,
+          costCategoryCode: entry.costCategory.code,
+          costCategoryName: entry.costCategory.name,
+          amountInCents: entry.amountInCents,
+        })),
+        plantings: plantings.map((planting) => ({
+          fieldId: planting.fieldId,
+          fieldName: planting.field.name,
+          areaHa: planting.plantedAreaHa ?? planting.field.areaHa,
+        })),
+        fieldHarvests,
+        referenceSalePriceInCents: season.referenceSalePriceInCents,
+      });
+
+      const closedAt = new Date();
+      const payload = toSeasonCostingResponse(
+        season.id,
+        CropSeasonStatus.CLOSED,
+        'SNAPSHOT',
+        season.productionUomId,
+        season.productionUom.acronym,
+        computed,
+        closedAt,
+      );
+
+      await tx.seasonCostingSnapshot.create({
         data: {
           cropSeasonId: data.cropSeasonId,
-          payload: data.payload,
-          closedAt: new Date(),
+          payload,
+          closedAt,
           closedByUserId: data.closedByUserId,
         },
-      }),
-      this.prisma.cropSeason.update({
-        where: { id: data.cropSeasonId },
+      });
+
+      const updateResult = await tx.cropSeason.updateMany({
+        where: {
+          id: data.cropSeasonId,
+          farmId: data.farmId,
+          status: CropSeasonStatus.ACTIVE,
+        },
         data: { status: CropSeasonStatus.CLOSED },
-      }),
-    ]);
+      });
+
+      if (updateResult.count === 0) {
+        throw new ConflictException('Only active crop seasons can be closed');
+      }
+
+      return payload;
+    });
+  }
+
+  async reopenSeason(data: ReopenSeasonData): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      await assertClosedCropSeasonForReopen(tx, data.cropSeasonId, data.farmId);
+
+      await tx.seasonCostingSnapshot.deleteMany({
+        where: { cropSeasonId: data.cropSeasonId },
+      });
+
+      const updateResult = await tx.cropSeason.updateMany({
+        where: {
+          id: data.cropSeasonId,
+          farmId: data.farmId,
+          status: CropSeasonStatus.CLOSED,
+        },
+        data: { status: CropSeasonStatus.ACTIVE },
+      });
+
+      if (updateResult.count === 0) {
+        throw new ConflictException('Only closed crop seasons can be reopened');
+      }
+    });
   }
 
   async updateReferencePrice(data: UpdateReferencePriceData): Promise<void> {

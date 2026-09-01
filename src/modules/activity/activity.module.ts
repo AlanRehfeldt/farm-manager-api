@@ -10,11 +10,13 @@ import { UnitOfMeasurementModule } from 'src/modules/unit-of-measurement/unit-of
 import { CreateActivityController } from './controllers/create-activity.controller';
 import { FetchActivitiesController } from './controllers/fetch-activities.controller';
 import { GetActivityController } from './controllers/get-activity.controller';
+import { ReverseActivityController } from './controllers/reverse-activity.controller';
 import { PrismaActivityRepository } from './repositories/prisma-activity.repository';
 import { ACTIVITY_REPOSITORY } from './repositories/activity.repository';
 import { CreateActivityService } from './services/create-activity.service';
 import { FetchActivitiesService } from './services/fetch-activities.service';
 import { GetActivityService } from './services/get-activity.service';
+import { ReverseActivityService } from './services/reverse-activity.service';
 
 @Module({
   imports: [
@@ -31,6 +33,7 @@ import { GetActivityService } from './services/get-activity.service';
     CreateActivityController,
     FetchActivitiesController,
     GetActivityController,
+    ReverseActivityController,
   ],
   providers: [
     {
@@ -40,6 +43,7 @@ import { GetActivityService } from './services/get-activity.service';
     CreateActivityService,
     FetchActivitiesService,
     GetActivityService,
+    ReverseActivityService,
   ],
   exports: [ACTIVITY_REPOSITORY],
 })

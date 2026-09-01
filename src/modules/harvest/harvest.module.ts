@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from 'src/common/prisma/prisma.module';
 import { CropSeasonModule } from '../crop-season/crop-season.module';
+import { UnitOfMeasurementModule } from '../unit-of-measurement/unit-of-measurement.module';
 import { CreateHarvestController } from './controllers/create-harvest.controller';
 import { FetchHarvestsController } from './controllers/fetch-harvests.controller';
 import { GetHarvestController } from './controllers/get-harvest.controller';
@@ -11,7 +12,7 @@ import { FetchHarvestsService } from './services/fetch-harvests.service';
 import { GetHarvestService } from './services/get-harvest.service';
 
 @Module({
-  imports: [PrismaModule, CropSeasonModule],
+  imports: [PrismaModule, CropSeasonModule, UnitOfMeasurementModule],
   controllers: [
     CreateHarvestController,
     FetchHarvestsController,

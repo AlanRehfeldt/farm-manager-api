@@ -8,6 +8,7 @@ import {
 } from '@nestjs/swagger';
 import z from 'zod';
 import { FarmId } from 'src/common/tenancy/farm-id.decorator';
+import { FarmAdmin } from 'src/common/tenancy/farm-admin.decorator';
 import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
 import { OrganizationId } from 'src/common/tenancy/organization-id.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
@@ -16,6 +17,8 @@ import { ConflictDto } from 'src/common/errors/conflict.dto';
 import { CreateEmployeeBodyDto } from '../dtos/request/create-employee.dto';
 import { CreateEmployeeResponseDto } from '../dtos/response/create-employee.dto';
 import { CreateEmployeeService } from '../services/create-employee.service';
+
+import { SUPPORTED_EMPLOYEE_TYPES } from '../constants/employee-type';
 
 const createEmployeeBodySchema = z.object({
   name: z
@@ -26,25 +29,15 @@ const createEmployeeBodySchema = z.object({
     .string()
     .min(3, { message: 'Registration must be at least 3 characters long.' })
     .max(20, { message: 'Registration must be at most 20 characters long.' }),
-  type: z.enum([
-    'FARM_MANAGER',
-    'AGRONOMIST',
-    'VETERINARIAN',
-    'MACHINE_OPERATOR',
-    'FIELD_WORKER',
-    'LIVESTOCK_HANDLER',
-    'IRRIGATION_TECHNICIAN',
-    'ADMINISTRATIVE_ASSISTANT',
-    'DRIVER',
-    'SECURITY_GUARD',
-    'TEMPORARY_WORKER',
-    'OTHER',
-  ]),
+  type: z.enum(SUPPORTED_EMPLOYEE_TYPES, {
+    message: 'Employee type is not supported in the agricultural MVP.',
+  }),
   farmId: z.uuid().nullable().optional(),
 });
 
 @ApiTags('Employee')
 @FarmScoped()
+@FarmAdmin()
 @Controller('/employees')
 export class CreateEmployeeController {
   constructor(private readonly createEmployeeService: CreateEmployeeService) {}

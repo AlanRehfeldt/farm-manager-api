@@ -4,11 +4,20 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Decimal } from '@prisma/client/runtime/library';
+import { validateUomFields } from '../domain/validate-uom-fields';
 import { UpdateUnitOfMeasurementData } from '../repositories/@types';
 import {
   UNIT_OF_MEASUREMENT_REPOSITORY,
   UnitOfMeasurementRepository,
 } from '../repositories/unit-of-measurement.repository';
+
+type UpdateUnitOfMeasurementInput = Omit<
+  UpdateUnitOfMeasurementData,
+  'factorToBase'
+> & {
+  factorToBase?: string;
+};
 
 @Injectable()
 export class UpdateUnitOfMeasurementService {
@@ -19,7 +28,14 @@ export class UpdateUnitOfMeasurementService {
 
   async execute(
     organizationId: string,
-    { id, name, acronym }: UpdateUnitOfMeasurementData,
+    {
+      id,
+      name,
+      acronym,
+      dimension,
+      isBase,
+      factorToBase,
+    }: UpdateUnitOfMeasurementInput,
   ) {
     const existing = await this.unitOfMeasurementRepository.findById(
       id,
@@ -39,10 +55,26 @@ export class UpdateUnitOfMeasurementService {
       }
     }
 
+    const nextDimension = dimension ?? existing.dimension;
+    const nextIsBase = isBase ?? existing.isBase;
+    const nextFactorToBase =
+      factorToBase != null ? new Decimal(factorToBase) : existing.factorToBase;
+
+    await validateUomFields(this.unitOfMeasurementRepository, {
+      organizationId,
+      dimension: nextDimension,
+      isBase: nextIsBase,
+      factorToBase: nextFactorToBase,
+      excludeId: id,
+    });
+
     const unitOfMeasurement = await this.unitOfMeasurementRepository.update({
       id,
       name,
       acronym,
+      dimension,
+      isBase,
+      factorToBase: factorToBase != null ? nextFactorToBase : undefined,
     });
 
     return { unitOfMeasurement };

@@ -8,6 +8,7 @@ import {
 } from '@nestjs/swagger';
 import z from 'zod';
 import { FarmId } from 'src/common/tenancy/farm-id.decorator';
+import { FarmAdmin } from 'src/common/tenancy/farm-admin.decorator';
 import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
 import { OrganizationId } from 'src/common/tenancy/organization-id.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
@@ -23,6 +24,7 @@ const deleteProductParamSchema = z.object({
 
 @ApiTags('Product')
 @FarmScoped()
+@FarmAdmin()
 @Controller('/products')
 export class DeleteProductController {
   constructor(private readonly deleteProductService: DeleteProductService) {}

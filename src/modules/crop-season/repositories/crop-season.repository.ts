@@ -1,4 +1,4 @@
-import { CropSeason, CropSeasonStatus } from '@prisma/client';
+import { CropSeasonStatus } from '@prisma/client';
 import {
   CreateCropSeasonData,
   CropSeasonWithCrop,
@@ -16,6 +16,8 @@ export interface CropSeasonRepository {
     status: CropSeasonStatus,
   ): Promise<CropSeasonWithCrop>;
   countPlantings(cropSeasonId: string): Promise<number>;
+  hasOperationalData(cropSeasonId: string): Promise<boolean>;
+  countHarvests(cropSeasonId: string): Promise<number>;
   searchMany(query: SearchManyCropSeasonsQuery): Promise<CropSeasonWithCrop[]>;
   count(query: SearchManyCropSeasonsQuery): Promise<number>;
 }

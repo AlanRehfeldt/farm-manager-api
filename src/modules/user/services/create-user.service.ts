@@ -13,7 +13,7 @@ import {
   EMPLOYEE_REPOSITORY,
   EmployeeRepository,
 } from 'src/modules/employee/repositories/employee.repository';
-import { hash } from 'bcryptjs';
+import { hashPassword } from 'src/common/crypto/bcrypt';
 
 @Injectable()
 export class CreateUserService {
@@ -38,7 +38,7 @@ export class CreateUserService {
       }
     }
 
-    const encryptedPassword = await hash(password, 6);
+    const encryptedPassword = await hashPassword(password);
 
     const user = await this.userRepository.create({
       name,

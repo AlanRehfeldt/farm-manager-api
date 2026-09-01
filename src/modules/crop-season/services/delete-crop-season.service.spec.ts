@@ -16,6 +16,8 @@ describe('DeleteCropSeasonService', () => {
     findById: jest.fn(),
     updateStatus: jest.fn(),
     countPlantings: jest.fn(),
+    hasOperationalData: jest.fn(),
+    countHarvests: jest.fn(),
     searchMany: jest.fn(),
     count: jest.fn(),
   };
@@ -58,6 +60,29 @@ describe('DeleteCropSeasonService', () => {
     );
   });
 
+  it('throws ConflictException when crop season has operational data', async () => {
+    cropSeasonRepository.findById.mockResolvedValue({
+      id: seasonId,
+      farmId,
+      cropId: 'crop-id',
+      name: 'Manga 25/26',
+      startDate: new Date(),
+      endDate: null,
+      status: CropSeasonStatus.ACTIVE,
+      productionUomId: 'uom-id',
+      referenceSalePriceInCents: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      crop: { id: 'crop-id', name: 'Manga' },
+    });
+    cropSeasonRepository.hasOperationalData.mockResolvedValue(true);
+
+    await expect(service.execute(seasonId, farmId)).rejects.toBeInstanceOf(
+      ConflictException,
+    );
+    expect(deleteCropSeason).not.toHaveBeenCalled();
+  });
+
   it('deletes active crop season', async () => {
     cropSeasonRepository.findById.mockResolvedValue({
       id: seasonId,
@@ -73,6 +98,7 @@ describe('DeleteCropSeasonService', () => {
       updatedAt: new Date(),
       crop: { id: 'crop-id', name: 'Manga' },
     });
+    cropSeasonRepository.hasOperationalData.mockResolvedValue(false);
     deleteCropSeason.mockResolvedValue();
 
     await service.execute(seasonId, farmId);

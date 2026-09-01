@@ -34,22 +34,24 @@ export type ProductMeta = {
   name: string;
   uomAcronym: string;
   uomId: string;
+  costCategoryId: string;
+  costCategoryCode: string;
 };
 
 export type MachineMeta = {
   name: string;
   hourlyCostInCents: bigint;
+  fuelIncludedInHourlyCost: boolean;
+};
+
+export type CostCategoryIds = {
+  moFixa: string;
+  moTemporaria: string;
+  maquina: string;
 };
 
 export type EmployeeMeta = {
   name: string;
-};
-
-export type CostCategoryIds = {
-  defaultInput: string;
-  moFixa: string;
-  moTemporaria: string;
-  maquina: string;
 };
 
 export type CreateActivityData = {
@@ -119,6 +121,17 @@ export type ActivityWithRelations = Activity & {
 export type CreateActivityResult = {
   activity: ActivityWithRelations;
   stockEffects: ActivityStockEffect[];
+};
+
+export type ReverseActivityData = {
+  activityId: string;
+  farmId: string;
+  reason: string;
+  reversedAt: Date;
+};
+
+export type ReverseActivityResult = {
+  activity: ActivityWithRelations;
 };
 
 export type SearchManyActivitiesQuery = {

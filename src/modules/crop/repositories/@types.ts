@@ -5,7 +5,7 @@ export type CreateCropData = Prisma.CropUncheckedCreateInput;
 export interface UpdateCropData {
   id: string;
   name?: string;
-  defaultProductionUomId?: string | null;
+  defaultProductionUomId?: string;
   externalRef?: string | null;
 }
 

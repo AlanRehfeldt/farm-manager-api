@@ -3,6 +3,7 @@ import {
   UNIT_OF_MEASUREMENT_REPOSITORY,
   UnitOfMeasurementRepository,
 } from '../repositories/unit-of-measurement.repository';
+import { toUnitOfMeasurementResponse } from '../mappers/unit-of-measurement.mapper';
 
 @Injectable()
 export class GetUnitOfMeasurementService {
@@ -21,6 +22,8 @@ export class GetUnitOfMeasurementService {
       throw new NotFoundException('Unit of measurement does not exist');
     }
 
-    return { unitOfMeasurement };
+    return {
+      unitOfMeasurement: toUnitOfMeasurementResponse(unitOfMeasurement),
+    };
   }
 }

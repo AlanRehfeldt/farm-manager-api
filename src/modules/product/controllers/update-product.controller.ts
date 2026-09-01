@@ -8,6 +8,7 @@ import {
 } from '@nestjs/swagger';
 import z from 'zod';
 import { FarmId } from 'src/common/tenancy/farm-id.decorator';
+import { FarmAdmin } from 'src/common/tenancy/farm-admin.decorator';
 import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
 import { OrganizationId } from 'src/common/tenancy/organization-id.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
@@ -35,10 +36,12 @@ const updateProductSchema = z.object({
     .max(250, { message: 'Description must be at most 250 characters long.' })
     .optional(),
   unitOfMeasurementId: z.uuid().optional(),
+  costCategoryId: z.uuid().optional(),
 });
 
 @ApiTags('Product')
 @FarmScoped()
+@FarmAdmin()
 @Controller('/products')
 export class UpdateProductController {
   constructor(private readonly updateProductService: UpdateProductService) {}

@@ -1,12 +1,19 @@
-import { Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CostEntrySourceType, TransactionType } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
+import { assertActiveCropSeasonLocked } from 'src/common/prisma/crop-season-lock';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { allocateByArea } from '../domain/allocate-by-area';
 import {
   CreateExpenseData,
   CreateExpenseResult,
   ExpenseWithRelations,
+  ReverseExpenseData,
+  ReverseExpenseResult,
   SearchManyExpensesQuery,
 } from './@types';
 import { ExpenseRepository } from './expense.repository';
@@ -48,6 +55,16 @@ export class PrismaExpenseRepository implements ExpenseRepository {
 
   async create(data: CreateExpenseData): Promise<CreateExpenseResult> {
     return await this.prisma.$transaction(async (tx) => {
+      const seasonIds = [
+        ...new Set(
+          data.allocations.map((allocation) => allocation.cropSeasonId),
+        ),
+      ];
+
+      for (const cropSeasonId of seasonIds) {
+        await assertActiveCropSeasonLocked(tx, cropSeasonId, data.farmId);
+      }
+
       const transaction = await tx.transaction.create({
         data: {
           farmId: data.farmId,
@@ -164,7 +181,7 @@ export class PrismaExpenseRepository implements ExpenseRepository {
       });
 
       return {
-        expense: await this.attachCostEntries(
+        expense: await this.attachCostEntriesForSingleExpense(
           expense as Omit<ExpenseWithRelations, 'transactionAllocations'> & {
             transactionAllocations: Omit<
               ExpenseWithRelations['transactionAllocations'][number],
@@ -177,43 +194,14 @@ export class PrismaExpenseRepository implements ExpenseRepository {
     });
   }
 
-  private async attachCostEntries<
+  private attachCostEntries<
     T extends {
       transactionAllocations: Array<{ id: string }>;
     },
   >(
     expense: T,
-    prisma:
-      | Pick<PrismaService, 'costEntry'>
-      | Parameters<Parameters<PrismaService['$transaction']>[0]>[0],
-  ): Promise<ExpenseWithRelations> {
-    const allocationIds = expense.transactionAllocations.map((a) => a.id);
-
-    const costEntries =
-      allocationIds.length === 0
-        ? []
-        : await prisma.costEntry.findMany({
-            where: {
-              sourceType: CostEntrySourceType.ALLOCATION,
-              sourceId: { in: allocationIds },
-            },
-            include: {
-              costCategory: {
-                select: { id: true, code: true, name: true },
-              },
-              field: {
-                select: { id: true, name: true },
-              },
-            },
-          });
-
-    const bySourceId = new Map<string, typeof costEntries>();
-    for (const entry of costEntries) {
-      const list = bySourceId.get(entry.sourceId) ?? [];
-      list.push(entry);
-      bySourceId.set(entry.sourceId, list);
-    }
-
+    bySourceId: Map<string, Awaited<ReturnType<typeof this.loadCostEntries>>>,
+  ): ExpenseWithRelations {
     return {
       ...expense,
       transactionAllocations: expense.transactionAllocations.map(
@@ -223,6 +211,168 @@ export class PrismaExpenseRepository implements ExpenseRepository {
         }),
       ),
     } as unknown as ExpenseWithRelations;
+  }
+
+  private async loadCostEntries(
+    allocationIds: string[],
+    prisma:
+      | Pick<PrismaService, 'costEntry'>
+      | Parameters<Parameters<PrismaService['$transaction']>[0]>[0],
+  ) {
+    if (allocationIds.length === 0) {
+      return [];
+    }
+
+    return prisma.costEntry.findMany({
+      where: {
+        sourceType: CostEntrySourceType.ALLOCATION,
+        sourceId: { in: allocationIds },
+      },
+      include: {
+        costCategory: {
+          select: { id: true, code: true, name: true },
+        },
+        field: {
+          select: { id: true, name: true },
+        },
+      },
+    });
+  }
+
+  private groupCostEntriesBySourceId(
+    costEntries: Awaited<ReturnType<typeof this.loadCostEntries>>,
+  ) {
+    const bySourceId = new Map<string, typeof costEntries>();
+    for (const entry of costEntries) {
+      const list = bySourceId.get(entry.sourceId) ?? [];
+      list.push(entry);
+      bySourceId.set(entry.sourceId, list);
+    }
+    return bySourceId;
+  }
+
+  private async attachCostEntriesForExpenses<
+    T extends {
+      transactionAllocations: Array<{ id: string }>;
+    },
+  >(
+    expenses: T[],
+    prisma:
+      | Pick<PrismaService, 'costEntry'>
+      | Parameters<Parameters<PrismaService['$transaction']>[0]>[0],
+  ): Promise<ExpenseWithRelations[]> {
+    const allocationIds = expenses.flatMap((expense) =>
+      expense.transactionAllocations.map((allocation) => allocation.id),
+    );
+    const costEntries = await this.loadCostEntries(allocationIds, prisma);
+    const bySourceId = this.groupCostEntriesBySourceId(costEntries);
+
+    return expenses.map((expense) =>
+      this.attachCostEntries(expense, bySourceId),
+    );
+  }
+
+  private async attachCostEntriesForSingleExpense<
+    T extends {
+      transactionAllocations: Array<{ id: string }>;
+    },
+  >(
+    expense: T,
+    prisma:
+      | Pick<PrismaService, 'costEntry'>
+      | Parameters<Parameters<PrismaService['$transaction']>[0]>[0],
+  ): Promise<ExpenseWithRelations> {
+    const allocationIds = expense.transactionAllocations.map(
+      (allocation) => allocation.id,
+    );
+    const costEntries = await this.loadCostEntries(allocationIds, prisma);
+    const bySourceId = this.groupCostEntriesBySourceId(costEntries);
+
+    return this.attachCostEntries(expense, bySourceId);
+  }
+
+  async reverse(data: ReverseExpenseData): Promise<ReverseExpenseResult> {
+    return await this.prisma.$transaction(async (tx) => {
+      const expense = await tx.transaction.findFirst({
+        where: {
+          id: data.expenseId,
+          farmId: data.farmId,
+          type: {
+            in: [TransactionType.GENERIC, TransactionType.SALARY_PAYMENT],
+          },
+        },
+        include: {
+          transactionAllocations: true,
+        },
+      });
+
+      if (!expense) {
+        throw new NotFoundException('Expense not found');
+      }
+
+      const seasonIds = [
+        ...new Set(
+          expense.transactionAllocations.map(
+            (allocation) => allocation.cropSeasonId,
+          ),
+        ),
+      ];
+
+      for (const cropSeasonId of seasonIds) {
+        await assertActiveCropSeasonLocked(tx, cropSeasonId, data.farmId);
+      }
+
+      const allocationIds = expense.transactionAllocations.map((a) => a.id);
+      const costEntries = await this.loadCostEntries(allocationIds, tx);
+
+      if (costEntries.length === 0) {
+        throw new ConflictException('Expense has no cost entries to reverse');
+      }
+
+      if (costEntries.some((entry) => entry.reversedAt !== null)) {
+        throw new ConflictException('Expense has already been reversed');
+      }
+
+      for (const entry of costEntries) {
+        await tx.costEntry.update({
+          where: { id: entry.id },
+          data: { reversedAt: data.reversedAt },
+        });
+
+        await tx.costEntry.create({
+          data: {
+            farmId: entry.farmId,
+            cropSeasonId: entry.cropSeasonId,
+            fieldId: entry.fieldId,
+            sourceType: CostEntrySourceType.REVERSAL,
+            sourceId: entry.id,
+            costCategoryId: entry.costCategoryId,
+            amountInCents: -entry.amountInCents,
+            date: data.reversedAt,
+            reversalOfId: entry.id,
+          },
+        });
+      }
+
+      const reversalNote = `[Estornado em ${data.reversedAt.toISOString()}] ${data.reason}`;
+      const updatedNote = expense.note
+        ? `${expense.note}\n${reversalNote}`
+        : reversalNote;
+
+      await tx.transaction.update({
+        where: { id: expense.id },
+        data: { note: updatedNote },
+      });
+
+      const fullExpense = await tx.transaction.findUniqueOrThrow({
+        where: { id: expense.id },
+        include: expenseInclude,
+      });
+
+      return {
+        expense: await this.attachCostEntriesForSingleExpense(fullExpense, tx),
+      };
+    });
   }
 
   async findById(
@@ -244,7 +394,7 @@ export class PrismaExpenseRepository implements ExpenseRepository {
       return null;
     }
 
-    return this.attachCostEntries(expense, this.prisma);
+    return this.attachCostEntriesForSingleExpense(expense, this.prisma);
   }
 
   async searchMany(
@@ -254,7 +404,13 @@ export class PrismaExpenseRepository implements ExpenseRepository {
       where: {
         farmId: query.farmId,
         type: {
-          in: [TransactionType.GENERIC, TransactionType.SALARY_PAYMENT],
+          in:
+            query.excludeTypes && query.excludeTypes.length > 0
+              ? [
+                  TransactionType.GENERIC,
+                  TransactionType.SALARY_PAYMENT,
+                ].filter((type) => !query.excludeTypes!.includes(type))
+              : [TransactionType.GENERIC, TransactionType.SALARY_PAYMENT],
         },
         ...(query.name
           ? {
@@ -284,9 +440,7 @@ export class PrismaExpenseRepository implements ExpenseRepository {
       },
     });
 
-    return Promise.all(
-      expenses.map((expense) => this.attachCostEntries(expense, this.prisma)),
-    );
+    return this.attachCostEntriesForExpenses(expenses, this.prisma);
   }
 
   async count(query: SearchManyExpensesQuery): Promise<number> {
@@ -294,7 +448,13 @@ export class PrismaExpenseRepository implements ExpenseRepository {
       where: {
         farmId: query.farmId,
         type: {
-          in: [TransactionType.GENERIC, TransactionType.SALARY_PAYMENT],
+          in:
+            query.excludeTypes && query.excludeTypes.length > 0
+              ? [
+                  TransactionType.GENERIC,
+                  TransactionType.SALARY_PAYMENT,
+                ].filter((type) => !query.excludeTypes!.includes(type))
+              : [TransactionType.GENERIC, TransactionType.SALARY_PAYMENT],
         },
         ...(query.name
           ? {

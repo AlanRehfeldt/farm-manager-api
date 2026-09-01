@@ -4,6 +4,7 @@ import {
   HttpStatus,
   Post,
   Res,
+  UseGuards,
   UsePipes,
 } from '@nestjs/common';
 import {
@@ -15,6 +16,7 @@ import {
 } from '@nestjs/swagger';
 import type { Response } from 'express';
 import z from 'zod';
+import { AuthRateLimitGuard } from 'src/common/http/auth-rate-limit.guard';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
 import { UnauthorizedDto } from 'src/common/errors/unauthorized.dto';
@@ -48,6 +50,7 @@ export class LoginController {
     type: UnauthorizedDto,
   })
   @Post('/login')
+  @UseGuards(AuthRateLimitGuard)
   @UsePipes(new ZodValidationPipe(loginBodySchema))
   async login(
     @Body() data: LoginBodyDto,

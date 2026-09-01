@@ -58,6 +58,20 @@ export class UpdateCropSeasonService {
       if (!productionUom) {
         throw new NotFoundException('Unit of measurement does not exist');
       }
+
+      if (
+        input.productionUomId !== existing.productionUomId &&
+        existing.status === CropSeasonStatus.ACTIVE
+      ) {
+        const harvestCount = await this.cropSeasonRepository.countHarvests(
+          input.id,
+        );
+        if (harvestCount > 0) {
+          throw new ConflictException(
+            'Cannot change production unit of measure after harvests exist',
+          );
+        }
+      }
     }
 
     const startDate = input.startDate ?? existing.startDate;

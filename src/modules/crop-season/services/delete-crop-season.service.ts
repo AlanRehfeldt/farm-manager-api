@@ -27,6 +27,15 @@ export class DeleteCropSeasonService {
       throw new ConflictException('Closed crop season cannot be deleted');
     }
 
+    const hasOperationalData =
+      await this.cropSeasonRepository.hasOperationalData(id);
+
+    if (hasOperationalData) {
+      throw new ConflictException(
+        'Crop season with operational data cannot be deleted',
+      );
+    }
+
     await this.cropSeasonRepository.delete(id);
   }
 }

@@ -4,7 +4,7 @@ export type CropResponse = {
   id: string;
   organizationId: string;
   name: string;
-  defaultProductionUomId: string | null;
+  defaultProductionUomId: string;
   externalRef: string | null;
   createdAt: Date;
   updatedAt: Date;

@@ -4,6 +4,7 @@ import {
   UnitOfMeasurementRepository,
 } from '../repositories/unit-of-measurement.repository';
 import { SearchManyQuery } from '../repositories/@types';
+import { toUnitOfMeasurementResponse } from '../mappers/unit-of-measurement.mapper';
 
 @Injectable()
 export class FetchUnitOfMeasurementsService {
@@ -18,7 +19,7 @@ export class FetchUnitOfMeasurementsService {
     const total = await this.unitOfMeasurementRepository.count(params);
 
     return {
-      results: unitOfMeasurements,
+      results: unitOfMeasurements.map(toUnitOfMeasurementResponse),
       total,
       page: params.page,
       perPage: params.perPage,

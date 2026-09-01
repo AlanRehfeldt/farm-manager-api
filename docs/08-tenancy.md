@@ -8,7 +8,7 @@
 - **Farm** — unidade operacional (header `x-farm-id`). Unique `(organizationId, name)`.
 - **Membership** — `ADMIN` | `USER`. `farmId` null = todas as fazendas da org; preenchido = só aquela.
 
-`User.role` permanece (legado). Autorização de fazenda = Membership. **`User.platformRole`** (`NONE` | `PLATFORM_ADMIN`) é ortogonal ao tenant — ADR-018 em `farm-manager-docs`. ACL nomeada (ADR-013) **não** está neste PR.
+`User.role` permanece (legado). Autorização de fazenda = Membership (`ADMIN` | `USER`). **`User.platformRole`** (`NONE` | `PLATFORM_ADMIN`) é ortogonal ao tenant — ADR-018 em `farm-manager-docs`. ACL nomeada (ADR-013) **não** implementada; mutações sensíveis usam `@FarmAdmin()` (membership `ADMIN` org-wide ou na farm do header).
 
 ## Contexto HTTP
 
@@ -65,6 +65,12 @@ Alternativa para usuários dentro da org: ADMIN usa `POST /memberships` (Configu
 
 Settings no app: `GET/PATCH /organizations/:id`, `GET/POST/PATCH /farms`, `GET/POST/DELETE /memberships` (ADMIN).
 
+## Operações restritas a ADMIN (`@FarmAdmin()`)
+
+Cadastros (product, supplier, employee, machine, cost-center, account-plan, uom), `PATCH /crop-seasons/:id/close`, `PUT /crop-seasons/:id/reference-price` e writes em safra `CLOSED` retornam 403 para membership `USER`.
+
+Fechamento de safra (PR-13): `PATCH /crop-seasons/:id/close` cria `SeasonCostingSnapshot`; safra `CLOSED` bloqueia novos lançamentos (atividade, despesa, colheita) via lock transacional (`crop-season-lock.ts`).
+
 ## Fora deste recorte
 
-Permissões nomeadas (ADR-013), join table cadastro × N fazendas, namespace `/platform/*` (PR-18+), fechamento completo de safra com snapshot (PR-13).
+Permissões nomeadas (ADR-013), join table cadastro × N fazendas, namespace `/platform/*` (PR-18+), reopen de safra fechada (planejado INV-REOPEN).

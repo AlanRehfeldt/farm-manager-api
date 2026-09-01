@@ -64,10 +64,36 @@ export class PrismaCropPlantingRepository implements CropPlantingRepository {
     });
   }
 
+  async findAllBySeason(
+    cropSeasonId: string,
+    farmId: string,
+  ): Promise<CropPlantingWithRelations[]> {
+    return await this.prisma.cropPlanting.findMany({
+      where: {
+        cropSeasonId,
+        cropSeason: { farmId },
+      },
+      include: plantingInclude,
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
   async countBySeasonId(cropSeasonId: string): Promise<number> {
     return await this.prisma.cropPlanting.count({
       where: { cropSeasonId },
     });
+  }
+
+  async hasFieldOperations(
+    cropSeasonId: string,
+    fieldId: string,
+  ): Promise<boolean> {
+    const [activities, harvests] = await Promise.all([
+      this.prisma.activity.count({ where: { cropSeasonId, fieldId } }),
+      this.prisma.harvest.count({ where: { cropSeasonId, fieldId } }),
+    ]);
+
+    return activities > 0 || harvests > 0;
   }
 
   async searchMany(

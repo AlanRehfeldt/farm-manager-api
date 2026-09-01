@@ -121,6 +121,9 @@ export class ExpenseDto {
   @ApiProperty()
   totalInCents!: number;
 
+  @ApiProperty({ nullable: true })
+  reversedAt!: Date | null;
+
   @ApiProperty()
   createdAt!: Date;
 

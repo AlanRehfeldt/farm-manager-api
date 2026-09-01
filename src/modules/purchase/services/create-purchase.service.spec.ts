@@ -1,4 +1,5 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { UomDimension } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { CreatePurchaseService } from './create-purchase.service';
 import { PurchaseRepository } from '../repositories/purchase.repository';
@@ -41,6 +42,7 @@ describe('CreatePurchaseService', () => {
       delete: jest.fn(),
       findById: jest.fn(),
       findByAcronym: jest.fn(),
+      findBaseByDimension: jest.fn(),
       searchMany: jest.fn(),
       count: jest.fn(),
     };
@@ -129,6 +131,7 @@ describe('CreatePurchaseService', () => {
       name: 'Ureia',
       description: null,
       unitOfMeasurementId: uomId,
+      costCategoryId: 'outros-id',
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -137,6 +140,9 @@ describe('CreatePurchaseService', () => {
       organizationId,
       name: 'Quilograma',
       acronym: 'kg',
+      dimension: UomDimension.MASS,
+      isBase: true,
+      factorToBase: new Decimal(1),
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -174,6 +180,7 @@ describe('CreatePurchaseService', () => {
       name: 'Ureia',
       description: null,
       unitOfMeasurementId: uomId,
+      costCategoryId: 'outros-id',
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -182,6 +189,9 @@ describe('CreatePurchaseService', () => {
       organizationId,
       name: 'Quilograma',
       acronym: 'kg',
+      dimension: UomDimension.MASS,
+      isBase: true,
+      factorToBase: new Decimal(1),
       createdAt: new Date(),
       updatedAt: new Date(),
     });
