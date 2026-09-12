@@ -6,6 +6,7 @@ import request from 'supertest';
 import { Prisma } from '@prisma/client';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/common/prisma/prisma.service';
+import { changePassword } from './helpers/change-password';
 import { insertUser } from './helpers/insert-user';
 
 type ApiCommandResponse<T> = {
@@ -123,7 +124,12 @@ describe('Tenancy (e2e)', () => {
       .post('/auth/login')
       .send({ email: norteEmail, password: nortePassword })
       .expect(201);
-    norteCookies = cookieHeader(loginNorte);
+    norteCookies = await changePassword(
+      server,
+      cookieHeader(loginNorte),
+      nortePassword,
+      'NorteOp2!x',
+    );
 
     await insertUser(prisma, {
       name: 'Outra Org User',

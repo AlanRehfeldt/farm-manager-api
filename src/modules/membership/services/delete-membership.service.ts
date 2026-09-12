@@ -36,7 +36,7 @@ export class DeleteMembershipService {
       );
     }
 
-    if (membership.role === Role.ADMIN) {
+    if (membership.role === Role.ADMIN && membership.farmId === null) {
       const adminCount = await this.membershipRepository.countOrgAdmins(
         membership.organizationId,
       );

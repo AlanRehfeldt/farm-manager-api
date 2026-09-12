@@ -37,6 +37,13 @@ export class UserDto {
   })
   platformRole!: PlatformRole;
 
+  @ApiProperty({
+    example: false,
+    description:
+      'When true, the user must change password before accessing business routes (PR-22).',
+  })
+  mustChangePassword!: boolean;
+
   @ApiPropertyOptional({
     example: 'uuid',
     description: "User's employee unique identifier",

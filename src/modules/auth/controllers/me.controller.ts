@@ -8,6 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { NotFoundDto } from 'src/common/errors/not-found.dto';
 import { UnauthorizedDto } from 'src/common/errors/unauthorized.dto';
+import { AllowMustChangePassword } from '../decorators/allow-must-change-password.decorator';
 import {
   AuthenticatedUser,
   CurrentUser,
@@ -33,6 +34,7 @@ export class MeController {
     description: 'User does not exist',
     type: NotFoundDto,
   })
+  @AllowMustChangePassword()
   @Get('/me')
   async me(@CurrentUser() user: AuthenticatedUser) {
     const result = await this.meService.execute(user.userId);

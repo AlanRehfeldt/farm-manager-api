@@ -6,6 +6,8 @@ export interface UpdateUserData {
   name?: string;
   email?: string;
   employeeId?: string;
+  password?: string;
+  mustChangePassword?: boolean;
 }
 export interface SearchManyQuery {
   id?: string;

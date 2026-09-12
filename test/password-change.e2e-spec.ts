@@ -6,6 +6,7 @@ import { Server } from 'node:http';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/common/prisma/prisma.service';
+import { changePassword } from './helpers/change-password';
 import { insertUser } from './helpers/insert-user';
 
 type ApiCommandResponse<T> = {
@@ -23,21 +24,18 @@ function cookieHeader(res: request.Response): string {
   return cookies.map((cookie: string) => cookie.split(';')[0]).join('; ');
 }
 
-describe('Users platform admin (e2e)', () => {
+describe('Password change (e2e)', () => {
   let app: INestApplication;
   let server: Server;
   let prisma: PrismaService;
+  let platformCookies: string;
 
   const suffix = `${Date.now()}`;
-  const regularEmail = `regular.${suffix}@example.com`;
-  const regularPassword = 'Regular1!x';
-  const platformEmail = `platform.${suffix}@example.com`;
+  const platformEmail = `pw.platform.${suffix}@example.com`;
   const platformPassword = 'Platfm1!x';
-  const newUserEmail = `new.user.${suffix}@example.com`;
-  const newUserPassword = 'Newusr1!x';
-
-  let regularCookies: string;
-  let platformCookies: string;
+  const newUserEmail = `pw.user.${suffix}@example.com`;
+  const tempPassword = 'TempPass1!';
+  const nextPassword = 'NextPass1!';
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -51,23 +49,11 @@ describe('Users platform admin (e2e)', () => {
     prisma = app.get(PrismaService);
 
     await insertUser(prisma, {
-      name: 'Regular User',
-      email: regularEmail,
-      password: regularPassword,
-    });
-
-    await insertUser(prisma, {
       name: 'Platform Admin',
       email: platformEmail,
       password: platformPassword,
       platformRole: PlatformRole.PLATFORM_ADMIN,
     });
-
-    const regularLogin = await request(server)
-      .post('/auth/login')
-      .send({ email: regularEmail, password: regularPassword })
-      .expect(201);
-    regularCookies = cookieHeader(regularLogin);
 
     const platformLogin = await request(server)
       .post('/auth/login')
@@ -80,45 +66,61 @@ describe('Users platform admin (e2e)', () => {
     await app.close();
   });
 
-  it('POST /users without cookie returns 401', async () => {
-    await request(server)
-      .post('/users')
-      .send({
-        name: 'New User',
-        email: newUserEmail,
-        password: newUserPassword,
-      })
-      .expect(401);
-  });
-
-  it('POST /users as regular user returns 403', async () => {
-    await request(server)
-      .post('/users')
-      .set('Cookie', regularCookies)
-      .send({
-        name: 'New User',
-        email: newUserEmail,
-        password: newUserPassword,
-      })
-      .expect(403);
-  });
-
-  it('POST /users as platform admin returns 201', async () => {
-    const res = await request(server)
+  it('forces password change after POST /users before business routes', async () => {
+    const createRes = await request(server)
       .post('/users')
       .set('Cookie', platformCookies)
       .send({
-        name: 'New User',
+        name: 'Temp Password User',
         email: newUserEmail,
-        password: newUserPassword,
+        password: tempPassword,
       })
       .expect(201);
 
-    const body = res.body as ApiCommandResponse<{
-      email: string;
+    const created = createRes.body as ApiCommandResponse<{
       mustChangePassword: boolean;
     }>;
-    expect(body.result.email).toBe(newUserEmail);
-    expect(body.result.mustChangePassword).toBe(true);
+    expect(created.result.mustChangePassword).toBe(true);
+
+    const loginRes = await request(server)
+      .post('/auth/login')
+      .send({ email: newUserEmail, password: tempPassword })
+      .expect(201);
+    let cookies = cookieHeader(loginRes);
+
+    const meRes = await request(server)
+      .get('/auth/me')
+      .set('Cookie', cookies)
+      .expect(200);
+
+    const me = (
+      meRes.body as ApiCommandResponse<{ mustChangePassword: boolean }>
+    ).result;
+    expect(me.mustChangePassword).toBe(true);
+
+    await request(server).get('/farms').set('Cookie', cookies).expect(403);
+
+    await request(server)
+      .post('/auth/change-password')
+      .set('Cookie', cookies)
+      .send({
+        currentPassword: 'WrongPass1!',
+        newPassword: nextPassword,
+      })
+      .expect(401);
+
+    cookies = await changePassword(server, cookies, tempPassword, nextPassword);
+
+    const meAfter = await request(server)
+      .get('/auth/me')
+      .set('Cookie', cookies)
+      .expect(200);
+
+    expect(
+      (meAfter.body as ApiCommandResponse<{ mustChangePassword: boolean }>)
+        .result.mustChangePassword,
+    ).toBe(false);
+
+    await request(server).get('/farms').set('Cookie', cookies).expect(200);
   });
 });

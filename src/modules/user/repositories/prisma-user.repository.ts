@@ -15,11 +15,13 @@ export class PrismaUserRepository implements UserRepository {
   }
 
   async update(data: UpdateUserData): Promise<User> {
+    const { id, ...rest } = data;
+
     return await this.prisma.user.update({
       where: {
-        id: data.id,
+        id,
       },
-      data,
+      data: rest,
     });
   }
 

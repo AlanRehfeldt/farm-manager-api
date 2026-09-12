@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Inject,
@@ -19,10 +20,12 @@ import {
   MEMBERSHIP_REPOSITORY,
   MembershipRepository,
 } from '../repositories/membership.repository';
+import { resolveFarmIds } from '../utils/resolve-farm-ids';
 
 type CreateMembershipInput = {
   organizationId: string;
   farmId?: string | null;
+  farmIds?: string[];
   role?: Role;
   userId?: string;
   name?: string;
@@ -53,35 +56,76 @@ export class CreateMembershipService {
       );
     }
 
-    const farmId = input.farmId ?? null;
+    const farmIds = resolveFarmIds(input);
+    await this.assertFarmsInOrg(input.organizationId, farmIds);
 
-    if (farmId) {
-      const farm = await this.farmRepository.findById(farmId);
-      if (!farm || farm.organizationId !== input.organizationId) {
-        throw new NotFoundException('Farm does not exist');
+    const userId = await this.resolveUserId(input);
+    const existing = await this.membershipRepository.findManyByUserAndOrg(
+      userId,
+      input.organizationId,
+    );
+
+    const existingHasOrgWide = existing.some((item) => item.farmId === null);
+    const creatingOrgWide = farmIds === null;
+
+    if (existingHasOrgWide && !creatingOrgWide) {
+      throw new BadRequestException(
+        'Cannot mix org-wide and farm-scoped memberships',
+      );
+    }
+
+    if (creatingOrgWide && existing.length > 0) {
+      throw new BadRequestException(
+        'Cannot mix org-wide and farm-scoped memberships',
+      );
+    }
+
+    const existingFarmIds = new Set(
+      existing.map((item) => item.farmId).filter((id): id is string => !!id),
+    );
+
+    const targetFarmIds: Array<string | null> = farmIds ?? [null];
+
+    for (const farmId of targetFarmIds) {
+      if (farmId === null) {
+        if (existingHasOrgWide) {
+          throw new ConflictException('Membership already exists');
+        }
+        continue;
+      }
+
+      if (existingFarmIds.has(farmId)) {
+        throw new ConflictException('Membership already exists');
       }
     }
 
-    const userId = await this.resolveUserId(input);
-
-    const existing = await this.membershipRepository.findByUserAndOrgAndFarm(
-      userId,
-      input.organizationId,
-      farmId,
-    );
-
-    if (existing) {
-      throw new ConflictException('Membership already exists');
-    }
-
-    const membership = await this.membershipRepository.create({
+    const role = input.role ?? Role.USER;
+    const rows = targetFarmIds.map((farmId) => ({
       userId,
       organizationId: input.organizationId,
       farmId,
-      role: input.role ?? Role.USER,
-    });
+      role,
+    }));
 
-    return { membership };
+    const memberships = await this.membershipRepository.createMany(rows);
+
+    return { membership: memberships[0] };
+  }
+
+  private async assertFarmsInOrg(
+    organizationId: string,
+    farmIds: string[] | null,
+  ) {
+    if (!farmIds) {
+      return;
+    }
+
+    for (const farmId of farmIds) {
+      const farm = await this.farmRepository.findById(farmId);
+      if (!farm || farm.organizationId !== organizationId) {
+        throw new NotFoundException('Farm does not exist');
+      }
+    }
   }
 
   private async resolveUserId(input: CreateMembershipInput): Promise<string> {
@@ -108,6 +152,7 @@ export class CreateMembershipService {
       email: input.email,
       password: encryptedPassword,
       role: Role.USER,
+      mustChangePassword: true,
     });
 
     return user.id;

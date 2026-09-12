@@ -20,11 +20,14 @@ Marcar com `@Public()` — sem isso, guard exige cookie válido.
 
 Públicas hoje: `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`.
 
+`MustChangePasswordGuard` bloqueia o resto enquanto `User.mustChangePassword` for true, exceto `GET /auth/me` e `POST /auth/change-password` (`@AllowMustChangePassword()`).
+
 **Não há cadastro público.** `POST /users` exige `@PlatformAdmin()`.
 
 ## Decorators
 
 - `@Public()` — `src/modules/auth/decorators/public.decorator.ts`
+- `@AllowMustChangePassword()` — `src/modules/auth/decorators/allow-must-change-password.decorator.ts`
 - `@CurrentUser()` — retorna `{ userId: string }`
 - `@PlatformAdmin()` — `src/common/platform/platform-admin.decorator.ts`
 

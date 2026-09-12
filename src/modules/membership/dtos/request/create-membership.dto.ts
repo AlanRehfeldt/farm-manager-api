@@ -8,6 +8,14 @@ export class CreateMembershipBodyDto {
   @ApiPropertyOptional({ example: 'uuid', nullable: true })
   farmId?: string | null;
 
+  @ApiPropertyOptional({
+    example: ['uuid'],
+    type: [String],
+    description:
+      'Empty or omitted (with farmId omitted) = org-wide. N ids = N farm memberships.',
+  })
+  farmIds?: string[];
+
   @ApiPropertyOptional({ enum: Role, example: Role.USER })
   role?: Role;
 

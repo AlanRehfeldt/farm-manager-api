@@ -10,6 +10,7 @@ import {
 import z from 'zod';
 import { PlatformAdmin } from 'src/common/platform/platform-admin.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
+import { passwordSchema } from 'src/common/validation/password-schema';
 import { CreateUserService } from '../services/create-user.service';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
 import { ConflictDto } from 'src/common/errors/conflict.dto';
@@ -26,22 +27,7 @@ const createUserBodySchema = z.object({
     .email({ message: 'Invalid email address.' })
     .min(10, { message: 'Email must be at least 10 characters long.' })
     .max(100, { message: 'Email must be at most 100 characters long.' }),
-  password: z
-    .string()
-    .min(8, { message: 'Password must be at least 8 characters long.' })
-    .max(20, { message: 'Password must be at most 20 characters long.' })
-    .regex(/[a-z]/, {
-      message: 'Password must contain at least one lowercase letter.',
-    })
-    .regex(/[A-Z]/, {
-      message: 'Password must contain at least one uppercase letter.',
-    })
-    .regex(/[0-9]/, {
-      message: 'Password must contain at least one number.',
-    })
-    .regex(/[^A-Za-z0-9]/, {
-      message: 'Password must contain at least one special character.',
-    }),
+  password: passwordSchema,
   role: z.enum(['ADMIN', 'USER']).optional(),
   employeeId: z.uuid({ message: 'Invalid UUID for employeeId.' }).optional(),
 });

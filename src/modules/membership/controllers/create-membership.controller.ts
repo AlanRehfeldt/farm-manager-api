@@ -16,6 +16,7 @@ import { ForbiddenDto } from 'src/common/errors/forbidden.dto';
 import { NotFoundDto } from 'src/common/errors/not-found.dto';
 import { UnauthorizedDto } from 'src/common/errors/unauthorized.dto';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
+import { passwordSchema } from 'src/common/validation/password-schema';
 import {
   AuthenticatedUser,
   CurrentUser,
@@ -24,27 +25,11 @@ import { CreateMembershipBodyDto } from '../dtos/request/create-membership.dto';
 import { CreateMembershipResponseDto } from '../dtos/response/create-membership.dto';
 import { CreateMembershipService } from '../services/create-membership.service';
 
-const passwordSchema = z
-  .string()
-  .min(8, { message: 'Password must be at least 8 characters long.' })
-  .max(20, { message: 'Password must be at most 20 characters long.' })
-  .regex(/[a-z]/, {
-    message: 'Password must contain at least one lowercase letter.',
-  })
-  .regex(/[A-Z]/, {
-    message: 'Password must contain at least one uppercase letter.',
-  })
-  .regex(/[0-9]/, {
-    message: 'Password must contain at least one number.',
-  })
-  .regex(/[^A-Za-z0-9]/, {
-    message: 'Password must contain at least one special character.',
-  });
-
 const createMembershipBodySchema = z
   .object({
     organizationId: z.uuid(),
     farmId: z.uuid().nullable().optional(),
+    farmIds: z.array(z.uuid()).optional(),
     role: z.enum(['ADMIN', 'USER']).optional(),
     userId: z.uuid().optional(),
     name: z.string().min(5).max(150).optional(),

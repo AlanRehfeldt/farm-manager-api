@@ -5,6 +5,7 @@ import { Server } from 'node:http';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/common/prisma/prisma.service';
+import { changePassword } from './helpers/change-password';
 import { insertUser } from './helpers/insert-user';
 
 type ApiCommandResponse<T> = {
@@ -153,7 +154,12 @@ describe('Onboarding (e2e)', () => {
       .post('/auth/login')
       .send({ email: operatorEmail, password: operatorPassword })
       .expect(201);
-    operatorCookies = cookieHeader(operatorLogin);
+    operatorCookies = await changePassword(
+      server,
+      cookieHeader(operatorLogin),
+      operatorPassword,
+      'OnboardOp2!x',
+    );
   });
 
   afterAll(async () => {

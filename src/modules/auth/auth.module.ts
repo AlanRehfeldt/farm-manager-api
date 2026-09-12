@@ -12,13 +12,16 @@ import { LoginController } from './controllers/login.controller';
 import { RefreshController } from './controllers/refresh.controller';
 import { LogoutController } from './controllers/logout.controller';
 import { MeController } from './controllers/me.controller';
+import { ChangePasswordController } from './controllers/change-password.controller';
 import { LoginService } from './services/login.service';
 import { RefreshService } from './services/refresh.service';
 import { LogoutService } from './services/logout.service';
 import { MeService } from './services/me.service';
+import { ChangePasswordService } from './services/change-password.service';
 import { TokenService } from './services/token.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { MustChangePasswordGuard } from './guards/must-change-password.guard';
 import { REFRESH_TOKEN_REPOSITORY } from './repositories/refresh-token.repository';
 import { PrismaRefreshTokenRepository } from './repositories/prisma-refresh-token.repository';
 
@@ -46,6 +49,7 @@ import { PrismaRefreshTokenRepository } from './repositories/prisma-refresh-toke
     RefreshController,
     LogoutController,
     MeController,
+    ChangePasswordController,
   ],
   providers: [
     {
@@ -57,11 +61,16 @@ import { PrismaRefreshTokenRepository } from './repositories/prisma-refresh-toke
     RefreshService,
     LogoutService,
     MeService,
+    ChangePasswordService,
     JwtStrategy,
     AuthRateLimitGuard,
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: MustChangePasswordGuard,
     },
   ],
 })

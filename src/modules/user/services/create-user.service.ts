@@ -46,6 +46,7 @@ export class CreateUserService {
       password: encryptedPassword,
       role,
       employeeId,
+      mustChangePassword: true,
     });
 
     return { user: { ...user, password: undefined } };

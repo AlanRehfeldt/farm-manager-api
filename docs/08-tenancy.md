@@ -6,7 +6,7 @@
 
 - **Organization** — agrupador de fazendas e catálogos.
 - **Farm** — unidade operacional (header `x-farm-id`). Unique `(organizationId, name)`.
-- **Membership** — `ADMIN` | `USER`. `farmId` null = todas as fazendas da org; preenchido = só aquela.
+- **Membership** — `ADMIN` | `USER`. `farmId` null = todas as fazendas da org; preenchido = só aquela. Várias linhas pontuais por `(user, org)` (PR-24); **não** misturar org-wide com pontual. Índices únicos parciais no Postgres.
 
 `User.role` permanece (legado). Autorização de fazenda = Membership (`ADMIN` | `USER`). **`User.platformRole`** (`NONE` | `PLATFORM_ADMIN`) é ortogonal ao tenant — ADR-018 em `farm-manager-docs`. ACL nomeada (ADR-013) **não** implementada; mutações sensíveis usam `@FarmAdmin()` (membership `ADMIN` org-wide ou na farm do header).
 
@@ -46,8 +46,10 @@ No create de Product/Supplier/Employee, omitir `farmId` = compartilhado; se envi
 | `POST /onboarding` | autenticado sem membership; cria org + primeira farm + ADMIN org-wide |
 | `POST /organizations` | usuário autenticado torna-se ADMIN org-wide |
 | `POST /farms` | ADMIN da org (service) |
-| `POST /memberships` | ADMIN; `userId` existente **ou** name/email/password |
-| `GET /memberships` | ADMIN; inclui `user` (id, name, email) |
+| `POST /memberships` | ADMIN org-wide; `farmIds[]` (vazio = org-wide) ou `farmId` legado; `userId` existente **ou** name/email/password |
+| `PATCH /memberships/users/:userId` | ADMIN org-wide; nome, e-mail, papel, `farmIds` |
+| `DELETE /memberships/users/:userId?organizationId=` | ADMIN org-wide; remove todas as memberships do usuário na org |
+| `GET /memberships` | ADMIN; inclui `user` (id, name, email); **exclui** `platformRole != NONE` |
 | `GET /auth/me` | inclui `memberships` |
 | `POST /users` | `@PlatformAdmin()` — vendor provisiona contas (ADR-018) |
 | `GET /users` | `@PlatformAdmin()` |
@@ -63,7 +65,7 @@ Fluxo piloto (PR-05.1):
 
 Alternativa para usuários dentro da org: ADMIN usa `POST /memberships` (Configurações → Usuários no app).
 
-Settings no app: `GET/PATCH /organizations/:id`, `GET/POST/PATCH /farms`, `GET/POST/DELETE /memberships` (ADMIN).
+Settings no app: `GET/PATCH /organizations/:id`, `GET/POST/PATCH /farms`, `GET/POST /memberships`, `PATCH/DELETE /memberships/users/:userId` (ADMIN org-wide).
 
 ## Operações restritas a ADMIN (`@FarmAdmin()`)
 

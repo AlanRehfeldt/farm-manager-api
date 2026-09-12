@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Membership, Role } from '@prisma/client';
+import { Membership, PlatformRole, Role } from '@prisma/client';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import {
   CreateMembershipData,
@@ -7,6 +7,10 @@ import {
   SearchManyQuery,
 } from './@types';
 import { MembershipRepository } from './membership.repository';
+
+const tenantUserWhere = {
+  user: { platformRole: PlatformRole.NONE },
+};
 
 @Injectable()
 export class PrismaMembershipRepository implements MembershipRepository {
@@ -23,8 +27,58 @@ export class PrismaMembershipRepository implements MembershipRepository {
     });
   }
 
+  async createMany(data: CreateMembershipData[]): Promise<Membership[]> {
+    return this.prisma.$transaction(
+      data.map((row) =>
+        this.prisma.membership.create({
+          data: {
+            userId: row.userId,
+            organizationId: row.organizationId,
+            farmId: row.farmId ?? null,
+            role: row.role,
+          },
+        }),
+      ),
+    );
+  }
+
   async delete(id: string): Promise<void> {
     await this.prisma.membership.delete({ where: { id } });
+  }
+
+  async deleteManyByUserAndOrg(
+    userId: string,
+    organizationId: string,
+  ): Promise<void> {
+    await this.prisma.membership.deleteMany({
+      where: { userId, organizationId },
+    });
+  }
+
+  async replaceForUserOrg(
+    userId: string,
+    organizationId: string,
+    data: CreateMembershipData[],
+  ): Promise<Membership[]> {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.membership.deleteMany({ where: { userId, organizationId } });
+
+      const created: Membership[] = [];
+      for (const row of data) {
+        created.push(
+          await tx.membership.create({
+            data: {
+              userId: row.userId,
+              organizationId: row.organizationId,
+              farmId: row.farmId ?? null,
+              role: row.role,
+            },
+          }),
+        );
+      }
+
+      return created;
+    });
   }
 
   async findById(id: string): Promise<Membership | null> {
@@ -66,6 +120,16 @@ export class PrismaMembershipRepository implements MembershipRepository {
     });
   }
 
+  async findManyByUserAndOrg(
+    userId: string,
+    organizationId: string,
+  ): Promise<Membership[]> {
+    return this.prisma.membership.findMany({
+      where: { userId, organizationId },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
   async searchMany(query: SearchManyQuery): Promise<MembershipWithUser[]> {
     return this.prisma.membership.findMany({
       where: {
@@ -73,6 +137,7 @@ export class PrismaMembershipRepository implements MembershipRepository {
         farmId: query.farmId,
         userId: query.userId,
         role: query.role,
+        ...tenantUserWhere,
       },
       include: {
         user: {
@@ -96,6 +161,7 @@ export class PrismaMembershipRepository implements MembershipRepository {
         farmId: query.farmId,
         userId: query.userId,
         role: query.role,
+        ...tenantUserWhere,
       },
     });
   }
@@ -105,6 +171,8 @@ export class PrismaMembershipRepository implements MembershipRepository {
       where: {
         organizationId,
         role: Role.ADMIN,
+        farmId: null,
+        user: { platformRole: PlatformRole.NONE },
       },
     });
   }

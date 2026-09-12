@@ -11,19 +11,24 @@
 | Método | Rota | Auth | Descrição |
 |--------|------|------|-----------|
 | `POST` | `/auth/login` | `@Public()` | Email + senha → set cookies |
-| `POST` | `/auth/refresh` | `@Public()` | Refresh cookie → novos tokens |
+| `POST` | `/auth/refresh` | `@Public()` | Refresh cookie → novos cookies |
 | `POST` | `/auth/logout` | `@Public()` | Revoga refresh, limpa cookies |
-| `GET` | `/auth/me` | Protegido | Usuário atual + memberships |
+| `GET` | `/auth/me` | Protegido (`@AllowMustChangePassword()`) | Usuário atual + memberships + `mustChangePassword` |
+| `POST` | `/auth/change-password` | Protegido (`@AllowMustChangePassword()`) | Senha atual + nova → limpa a flag e rotaciona cookies |
 
 ## Tenancy
 
 Rotas de catálogo e lançamentos: `@FarmScoped()` + header `x-farm-id`. Ver [08-tenancy.md](./08-tenancy.md).
 
-`GET /auth/me` devolve `memberships` (`farmId` null = org-wide) e `platformRole`.
+`GET /auth/me` devolve `memberships` (`farmId` null = org-wide), `platformRole` e `mustChangePassword`.
+
+`User.mustChangePassword` nasce `true` em `POST /users` e em `POST /memberships` quando a conta é criada (não quando só se anexa `userId`). Contas via seed/`insertUser` ficam `false`.
 
 ## Guard global
 
 `JwtAuthGuard` registrado como `APP_GUARD` em `AuthModule`. Todas as rotas exigem cookie de access válido **exceto** as marcadas com `@Public()`.
+
+`MustChangePasswordGuard` (também `APP_GUARD`) bloqueia rotas autenticadas com 403 (`Password change required`) enquanto a flag estiver verdadeira, **exceto** `@Public()` e `@AllowMustChangePassword()` (`GET /auth/me`, `POST /auth/change-password`). Login ainda emite cookies.
 
 ## Rotas públicas
 
