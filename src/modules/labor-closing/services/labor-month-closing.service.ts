@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Inject,
   Injectable,
 } from '@nestjs/common';
@@ -15,6 +16,10 @@ import {
   COST_CATEGORY_REPOSITORY,
   CostCategoryRepository,
 } from 'src/modules/cost-category/repositories/cost-category.repository';
+import {
+  MEMBERSHIP_REPOSITORY,
+  MembershipRepository,
+} from 'src/modules/membership/repositories/membership.repository';
 import { allocateLaborByHours } from '../domain/allocate-labor-by-hours';
 import {
   CloseEmployeeLaborData,
@@ -65,18 +70,40 @@ function groupByEmployee(
   return map;
 }
 
+async function assertOrgAdmin(
+  membershipRepository: MembershipRepository,
+  userId: string,
+  organizationId: string,
+): Promise<void> {
+  const admin = await membershipRepository.findOrgAdmin(userId, organizationId);
+  if (!admin) {
+    throw new ForbiddenException(
+      'Only organization admins can manage labor month closings',
+    );
+  }
+}
+
 @Injectable()
 export class PreviewLaborMonthClosingService {
   constructor(
     @Inject(LABOR_CLOSING_REPOSITORY)
     private readonly laborClosingRepository: LaborClosingRepository,
+    @Inject(MEMBERSHIP_REPOSITORY)
+    private readonly membershipRepository: MembershipRepository,
   ) {}
 
   async execute(
     organizationId: string,
     year: number,
     month: number,
+    actorUserId: string,
   ): Promise<LaborClosingPreviewResult> {
+    await assertOrgAdmin(
+      this.membershipRepository,
+      actorUserId,
+      organizationId,
+    );
+
     if (month < 1 || month > 12) {
       throw new BadRequestException('month must be between 1 and 12');
     }
@@ -129,6 +156,8 @@ export class CloseLaborMonthService {
     private readonly laborClosingRepository: LaborClosingRepository,
     @Inject(COST_CATEGORY_REPOSITORY)
     private readonly costCategoryRepository: CostCategoryRepository,
+    @Inject(MEMBERSHIP_REPOSITORY)
+    private readonly membershipRepository: MembershipRepository,
   ) {}
 
   async execute(input: {
@@ -138,6 +167,12 @@ export class CloseLaborMonthService {
     closedByUserId: string;
   }): Promise<LaborClosingCloseResult> {
     const { organizationId, year, month, closedByUserId } = input;
+
+    await assertOrgAdmin(
+      this.membershipRepository,
+      closedByUserId,
+      organizationId,
+    );
 
     if (month < 1 || month > 12) {
       throw new BadRequestException('month must be between 1 and 12');

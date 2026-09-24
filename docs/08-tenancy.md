@@ -76,6 +76,10 @@ Cadastros (product, supplier, employee, machine, cost-center, account-plan, uom)
 
 Fechamento de safra (PR-13): `PATCH /crop-seasons/:id/close` cria `SeasonCostingSnapshot`; safra `CLOSED` bloqueia novos lançamentos (atividade, despesa, colheita) via lock transacional (`crop-season-lock.ts`).
 
+## Fechamento de MO CLT (org-wide)
+
+`GET /labor-month-closings/preview` e `POST /labor-month-closings` usam `@FarmScoped()` (header `x-farm-id` para derivar a org) e exigem **ADMIN org-wide** (`farmId: null`), conferido no service via `findOrgAdmin`. Membership pontual com `role: ADMIN` na fazenda do header recebe 403 — o preview expõe folha de toda a org e o fechamento grava `CostEntry` em qualquer fazenda.
+
 ## Fora deste recorte
 
 Permissões nomeadas (ADR-013), join table cadastro × N fazendas, namespace `/platform/*` (PR-18+), reopen de safra fechada (planejado INV-REOPEN).

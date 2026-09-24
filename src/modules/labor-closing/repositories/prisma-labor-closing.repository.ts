@@ -1,10 +1,16 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import {
   CostEntrySourceType,
   CropSeasonStatus,
   EmploymentType,
+  Prisma,
   TransactionType,
 } from '@prisma/client';
+import {
+  DomainConflictCode,
+  domainConflict,
+} from 'src/common/errors/domain-conflict';
+import { assertActiveCropSeasonLocked } from 'src/common/prisma/crop-season-lock';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import {
   CloseEmployeeLaborData,
@@ -23,6 +29,22 @@ function isActivityFullyReversed(
   return (
     original.length > 0 && original.every((entry) => entry.reversedAt != null)
   );
+}
+
+function toClosingRecord(
+  closing: LaborMonthClosingRecord,
+): LaborMonthClosingRecord {
+  return {
+    id: closing.id,
+    organizationId: closing.organizationId,
+    employeeId: closing.employeeId,
+    year: closing.year,
+    month: closing.month,
+    salaryInCents: closing.salaryInCents,
+    totalHours: closing.totalHours,
+    closedByUserId: closing.closedByUserId,
+    closedAt: closing.closedAt,
+  };
 }
 
 @Injectable()
@@ -182,73 +204,125 @@ export class PrismaLaborClosingRepository implements LaborClosingRepository {
       return null;
     }
 
-    return {
-      id: closing.id,
-      organizationId: closing.organizationId,
-      employeeId: closing.employeeId,
-      year: closing.year,
-      month: closing.month,
-      salaryInCents: closing.salaryInCents,
-      totalHours: closing.totalHours,
-      closedByUserId: closing.closedByUserId,
-      closedAt: closing.closedAt,
-    };
+    return toClosingRecord(closing);
   }
 
   async closeOrgMonth(
     employees: CloseEmployeeLaborData[],
   ): Promise<LaborMonthClosingRecord[]> {
-    return await this.prisma.$transaction(async (tx) => {
-      const closings: LaborMonthClosingRecord[] = [];
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const lockKeys = [
+          ...new Map(
+            employees.flatMap((employee) =>
+              employee.allocations.map((allocation) => [
+                `${allocation.farmId}:${allocation.cropSeasonId}`,
+                {
+                  farmId: allocation.farmId,
+                  cropSeasonId: allocation.cropSeasonId,
+                },
+              ]),
+            ),
+          ).values(),
+        ].sort((a, b) =>
+          a.cropSeasonId !== b.cropSeasonId
+            ? a.cropSeasonId.localeCompare(b.cropSeasonId)
+            : a.farmId.localeCompare(b.farmId),
+        );
 
-      for (const data of employees) {
-        for (const allocation of data.allocations) {
-          await tx.activityLabor.update({
-            where: { id: allocation.activityLaborId },
-            data: { costInCents: allocation.amountInCents },
-          });
-
-          await tx.costEntry.create({
-            data: {
-              farmId: allocation.farmId,
-              cropSeasonId: allocation.cropSeasonId,
-              fieldId: allocation.fieldId,
-              activityId: allocation.activityId,
-              sourceType: CostEntrySourceType.ACTIVITY_LABOR,
-              sourceId: allocation.activityLaborId,
-              costCategoryId: data.moFixaCostCategoryId,
-              amountInCents: allocation.amountInCents,
-              date: allocation.activityDate,
-            },
-          });
+        for (const lock of lockKeys) {
+          await assertActiveCropSeasonLocked(
+            tx,
+            lock.cropSeasonId,
+            lock.farmId,
+          );
         }
 
-        const closing = await tx.laborMonthClosing.create({
-          data: {
-            organizationId: data.organizationId,
-            employeeId: data.employeeId,
-            year: data.year,
-            month: data.month,
-            salaryInCents: data.salaryInCents,
-            totalHours: data.totalHours,
-            closedByUserId: data.closedByUserId,
-          },
-        });
+        const closings: LaborMonthClosingRecord[] = [];
 
-        closings.push({
-          id: closing.id,
-          organizationId: closing.organizationId,
-          employeeId: closing.employeeId,
-          year: closing.year,
-          month: closing.month,
-          salaryInCents: closing.salaryInCents,
-          totalHours: closing.totalHours,
-          closedByUserId: closing.closedByUserId,
-          closedAt: closing.closedAt,
-        });
+        for (const data of employees) {
+          const existing = await tx.laborMonthClosing.findUnique({
+            where: {
+              employeeId_year_month: {
+                employeeId: data.employeeId,
+                year: data.year,
+                month: data.month,
+              },
+            },
+          });
+          if (existing) {
+            throw new ConflictException(
+              'Labor month already closed for this competence',
+            );
+          }
+
+          const start = new Date(Date.UTC(data.year, data.month - 1, 1));
+          const end = new Date(Date.UTC(data.year, data.month, 1));
+          const salaryCount = await tx.transactionAllocation.count({
+            where: {
+              transaction: {
+                type: TransactionType.SALARY_PAYMENT,
+                date: { gte: start, lt: end },
+                farm: { organizationId: data.organizationId },
+                salaryTransaction: { employeeId: data.employeeId },
+              },
+            },
+          });
+          if (salaryCount > 0) {
+            throw domainConflict(
+              DomainConflictCode.DOUBLE_COUNT_BLOCKED,
+              'Cannot close labor month: employee already has salary allocated',
+            );
+          }
+
+          for (const allocation of data.allocations) {
+            await tx.activityLabor.update({
+              where: { id: allocation.activityLaborId },
+              data: { costInCents: allocation.amountInCents },
+            });
+
+            await tx.costEntry.create({
+              data: {
+                farmId: allocation.farmId,
+                cropSeasonId: allocation.cropSeasonId,
+                fieldId: allocation.fieldId,
+                activityId: allocation.activityId,
+                sourceType: CostEntrySourceType.ACTIVITY_LABOR,
+                sourceId: allocation.activityLaborId,
+                costCategoryId: data.moFixaCostCategoryId,
+                amountInCents: allocation.amountInCents,
+                date: allocation.activityDate,
+              },
+            });
+          }
+
+          const closing = await tx.laborMonthClosing.create({
+            data: {
+              organizationId: data.organizationId,
+              employeeId: data.employeeId,
+              year: data.year,
+              month: data.month,
+              salaryInCents: data.salaryInCents,
+              totalHours: data.totalHours,
+              closedByUserId: data.closedByUserId,
+            },
+          });
+
+          closings.push(toClosingRecord(closing));
+        }
+
+        return closings;
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          'Labor month already closed for this competence',
+        );
       }
-
-      return closings;
-    });
+      throw error;
+    }
   }
 }

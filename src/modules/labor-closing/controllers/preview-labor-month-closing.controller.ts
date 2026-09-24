@@ -9,8 +9,9 @@ import {
 import z from 'zod';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
-import { FarmAdmin } from 'src/common/tenancy/farm-admin.decorator';
+import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
 import { OrganizationId } from 'src/common/tenancy/organization-id.decorator';
+import { CurrentUser } from 'src/modules/auth/decorators/current-user.decorator';
 import { PreviewLaborMonthClosingService } from '../services/labor-month-closing.service';
 
 const previewQuerySchema = z.object({
@@ -61,7 +62,7 @@ class PreviewLaborMonthClosingResponseDto {
 }
 
 @ApiTags('LaborMonthClosing')
-@FarmAdmin()
+@FarmScoped()
 @Controller('/labor-month-closings')
 export class PreviewLaborMonthClosingController {
   constructor(
@@ -74,6 +75,7 @@ export class PreviewLaborMonthClosingController {
   @Get('preview')
   async preview(
     @OrganizationId() organizationId: string,
+    @CurrentUser() user: { userId: string },
     @Query(new ZodValidationPipe(previewQuerySchema))
     query: z.infer<typeof previewQuerySchema>,
   ) {
@@ -81,6 +83,7 @@ export class PreviewLaborMonthClosingController {
       organizationId,
       query.year,
       query.month,
+      user.userId,
     );
 
     return {

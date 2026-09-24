@@ -11,7 +11,7 @@ import z from 'zod';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
 import { ConflictDto } from 'src/common/errors/conflict.dto';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
-import { FarmAdmin } from 'src/common/tenancy/farm-admin.decorator';
+import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
 import { OrganizationId } from 'src/common/tenancy/organization-id.decorator';
 import { CurrentUser } from 'src/modules/auth/decorators/current-user.decorator';
 import { CloseLaborMonthService } from '../services/labor-month-closing.service';
@@ -72,7 +72,7 @@ class CloseLaborMonthResponseDto {
 }
 
 @ApiTags('LaborMonthClosing')
-@FarmAdmin()
+@FarmScoped()
 @Controller('/labor-month-closings')
 export class CloseLaborMonthClosingController {
   constructor(

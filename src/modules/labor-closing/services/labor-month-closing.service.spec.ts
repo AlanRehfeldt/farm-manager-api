@@ -1,12 +1,17 @@
-import { ConflictException } from '@nestjs/common';
+import { ConflictException, ForbiddenException } from '@nestjs/common';
 import { Decimal } from '@prisma/client/runtime/library';
 import { CostCategoryRepository } from 'src/modules/cost-category/repositories/cost-category.repository';
+import { MembershipRepository } from 'src/modules/membership/repositories/membership.repository';
 import { OpenCltLaborLine } from '../repositories/@types';
 import { LaborClosingRepository } from '../repositories/labor-closing.repository';
-import { CloseLaborMonthService } from './labor-month-closing.service';
+import {
+  CloseLaborMonthService,
+  PreviewLaborMonthClosingService,
+} from './labor-month-closing.service';
 
 function openLine(
-  overrides: Partial<OpenCltLaborLine> & Pick<OpenCltLaborLine, 'activityLaborId' | 'hours'>,
+  overrides: Partial<OpenCltLaborLine> &
+    Pick<OpenCltLaborLine, 'activityLaborId' | 'hours'>,
 ): OpenCltLaborLine {
   return {
     employeeId: 'emp-1',
@@ -21,7 +26,110 @@ function openLine(
   };
 }
 
+describe('labor month closing authorization', () => {
+  const membershipRepository: jest.Mocked<
+    Pick<MembershipRepository, 'findOrgAdmin'>
+  > = {
+    findOrgAdmin: jest.fn(),
+  };
+
+  const laborClosingRepository: jest.Mocked<
+    Pick<
+      LaborClosingRepository,
+      | 'findOpenCltLaborInOrgMonth'
+      | 'hasSalaryAllocationInOrgMonth'
+      | 'findClosing'
+      | 'closeOrgMonth'
+    >
+  > = {
+    findOpenCltLaborInOrgMonth: jest.fn(),
+    hasSalaryAllocationInOrgMonth: jest.fn(),
+    findClosing: jest.fn(),
+    closeOrgMonth: jest.fn(),
+  };
+
+  const costCategoryRepository: jest.Mocked<
+    Pick<CostCategoryRepository, 'findByCode'>
+  > = {
+    findByCode: jest.fn(),
+  };
+
+  const previewService = new PreviewLaborMonthClosingService(
+    laborClosingRepository as unknown as LaborClosingRepository,
+    membershipRepository as unknown as MembershipRepository,
+  );
+
+  const closeService = new CloseLaborMonthService(
+    laborClosingRepository as unknown as LaborClosingRepository,
+    costCategoryRepository as unknown as CostCategoryRepository,
+    membershipRepository as unknown as MembershipRepository,
+  );
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    membershipRepository.findOrgAdmin.mockResolvedValue({
+      id: 'membership-org-admin',
+    } as never);
+    costCategoryRepository.findByCode.mockResolvedValue({
+      id: 'mo-fixa',
+    } as never);
+    laborClosingRepository.findClosing.mockResolvedValue(null);
+    laborClosingRepository.hasSalaryAllocationInOrgMonth.mockResolvedValue(
+      false,
+    );
+    laborClosingRepository.closeOrgMonth.mockImplementation(async (employees) =>
+      employees.map((employee) => ({
+        id: `closing-${employee.employeeId}`,
+        organizationId: employee.organizationId,
+        employeeId: employee.employeeId,
+        year: employee.year,
+        month: employee.month,
+        salaryInCents: employee.salaryInCents,
+        totalHours: employee.totalHours,
+        closedByUserId: employee.closedByUserId,
+        closedAt: new Date(),
+      })),
+    );
+  });
+
+  it('rejects preview when actor is only a farm-scoped admin', async () => {
+    membershipRepository.findOrgAdmin.mockResolvedValue(null);
+
+    await expect(
+      previewService.execute('org-1', 2026, 9, 'user-farm-admin'),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+
+    expect(
+      laborClosingRepository.findOpenCltLaborInOrgMonth,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('rejects close when actor is only a farm-scoped admin', async () => {
+    membershipRepository.findOrgAdmin.mockResolvedValue(null);
+
+    await expect(
+      closeService.execute({
+        organizationId: 'org-1',
+        year: 2026,
+        month: 9,
+        closedByUserId: 'user-farm-admin',
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+
+    expect(
+      laborClosingRepository.findOpenCltLaborInOrgMonth,
+    ).not.toHaveBeenCalled();
+    expect(laborClosingRepository.closeOrgMonth).not.toHaveBeenCalled();
+  });
+});
+
 describe('CloseLaborMonthService', () => {
+  const membershipRepository: jest.Mocked<
+    Pick<MembershipRepository, 'findOrgAdmin'>
+  > = {
+    findOrgAdmin: jest.fn(),
+  };
+
   const laborClosingRepository: jest.Mocked<
     Pick<
       LaborClosingRepository,
@@ -46,10 +154,14 @@ describe('CloseLaborMonthService', () => {
   const service = new CloseLaborMonthService(
     laborClosingRepository as unknown as LaborClosingRepository,
     costCategoryRepository as unknown as CostCategoryRepository,
+    membershipRepository as unknown as MembershipRepository,
   );
 
   beforeEach(() => {
     jest.clearAllMocks();
+    membershipRepository.findOrgAdmin.mockResolvedValue({
+      id: 'membership-org-admin',
+    } as never);
     costCategoryRepository.findByCode.mockResolvedValue({
       id: 'mo-fixa',
     } as never);
