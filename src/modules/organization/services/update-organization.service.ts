@@ -1,9 +1,11 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { cnpj as cnpjValidator } from 'cpf-cnpj-validator';
 import {
   MEMBERSHIP_REPOSITORY,
   MembershipRepository,
@@ -39,6 +41,12 @@ export class UpdateOrganizationService {
       throw new ForbiddenException(
         'Only organization admins can update the organization',
       );
+    }
+
+    if (data.cnpj) {
+      if (!cnpjValidator.isValid(data.cnpj)) {
+        throw new BadRequestException('Invalid CNPJ');
+      }
     }
 
     const updated = await this.organizationRepository.update(data);

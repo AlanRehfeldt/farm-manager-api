@@ -13,12 +13,10 @@ export class PrismaFarmRepository implements FarmRepository {
   }
 
   async update(data: UpdateFarmData): Promise<Farm> {
+    const { id, ...fields } = data;
     return this.prisma.farm.update({
-      where: { id: data.id },
-      data: {
-        name: data.name,
-        timezone: data.timezone,
-      },
+      where: { id },
+      data: fields,
     });
   }
 

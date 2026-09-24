@@ -26,23 +26,47 @@ export class SupplierDto {
   })
   name!: string;
 
-  @ApiProperty({
-    example: '99.999.999/9999-99',
-    description: "Supplier's cnpj",
+  @ApiPropertyOptional({
+    example: '11222333000181',
+    nullable: true,
+    description: "Supplier's CNPJ (digits only); mutually exclusive with CPF",
   })
-  cnpj!: string;
+  cnpj?: string | null;
+
+  @ApiPropertyOptional({
+    example: '52998224725',
+    nullable: true,
+    description: "Supplier's CPF (digits only); mutually exclusive with CNPJ",
+  })
+  cpf?: string | null;
 
   @ApiPropertyOptional({
     example: 'St. Street, 123',
+    nullable: true,
     description: "Supplier's address",
   })
-  address!: string;
+  address?: string | null;
 
   @ApiPropertyOptional({
-    example: '(00) 0 0000-0000',
-    description: "Supplier's phone number",
+    example: 'Salvador',
+    nullable: true,
+    description: "Supplier's city",
   })
-  phoneNumber!: string;
+  city?: string | null;
+
+  @ApiPropertyOptional({
+    example: 'BA',
+    nullable: true,
+    description: "Supplier's state (UF)",
+  })
+  state?: string | null;
+
+  @ApiPropertyOptional({
+    example: '71999999999',
+    nullable: true,
+    description: "Supplier's phone number (digits only)",
+  })
+  phoneNumber?: string | null;
 
   @ApiProperty({
     example: '2023-01-01T00:00:00.000Z',

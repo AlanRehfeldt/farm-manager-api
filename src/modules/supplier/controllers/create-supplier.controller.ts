@@ -18,16 +18,36 @@ import { CreateSupplierBodyDto } from '../dtos/request/create-supplier.dto';
 import { CreateSupplierResponseDto } from '../dtos/response/create-supplier.dto';
 import { CreateSupplierService } from '../services/create-supplier.service';
 
-const createSupplierBodySchema = z.object({
-  name: z
-    .string()
-    .min(5, { message: 'Name must be at least 5 characters long.' })
-    .max(150, { message: 'Name must be at most 150 characters long.' }),
-  cnpj: z.string().length(14, { message: 'CNPJ must be 14 characters long.' }),
-  address: z.string().optional(),
-  phoneNumber: z.string().optional(),
-  farmId: z.uuid().nullable().optional(),
-});
+const createSupplierBodySchema = z
+  .object({
+    name: z
+      .string()
+      .min(5, { message: 'Name must be at least 5 characters long.' })
+      .max(150, { message: 'Name must be at most 150 characters long.' }),
+    cnpj: z
+      .string()
+      .length(14, { message: 'CNPJ must be 14 characters long.' })
+      .optional(),
+    cpf: z
+      .string()
+      .length(11, { message: 'CPF must be 11 characters long.' })
+      .optional(),
+    address: z.string().optional(),
+    city: z.string().max(100).optional(),
+    state: z
+      .string()
+      .length(2, { message: 'State must be a 2-letter UF.' })
+      .optional(),
+    phoneNumber: z
+      .string()
+      .regex(/^\d{10,11}$/, { message: 'Phone must be 10 or 11 digits.' })
+      .optional(),
+    farmId: z.uuid().nullable().optional(),
+  })
+  .refine((data) => Boolean(data.cnpj) !== Boolean(data.cpf), {
+    message: 'Provide exactly one of CNPJ or CPF.',
+    path: ['cnpj'],
+  });
 
 @ApiTags('Supplier')
 @FarmScoped()
@@ -46,7 +66,7 @@ export class CreateSupplierController {
     type: BadRequestDto,
   })
   @ApiConflictResponse({
-    description: 'Conflict: CNPJ already exists',
+    description: 'Conflict: document already exists',
     type: ConflictDto,
   })
   @Post()

@@ -38,6 +38,21 @@ const updateFarmBodySchema = z.object({
     .max(150, { message: 'Name must be at most 150 characters long.' })
     .optional(),
   timezone: z.string().max(64).nullable().optional(),
+  street: z.string().max(200).nullable().optional(),
+  number: z.string().max(20).nullable().optional(),
+  complement: z.string().max(100).nullable().optional(),
+  city: z.string().max(100).nullable().optional(),
+  state: z
+    .string()
+    .length(2, { message: 'State must be a 2-letter UF.' })
+    .nullable()
+    .optional(),
+  country: z.string().max(2).nullable().optional(),
+  zipCode: z
+    .string()
+    .regex(/^\d{8}$/, { message: 'ZIP code must be 8 digits.' })
+    .nullable()
+    .optional(),
 });
 
 @ApiTags('Farm')
@@ -79,8 +94,7 @@ export class UpdateFarmController {
   ) {
     const { farm } = await this.updateFarmService.execute(user.userId, {
       id: param.id,
-      name: data.name,
-      timezone: data.timezone,
+      ...data,
     });
 
     return {

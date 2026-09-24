@@ -61,6 +61,18 @@ export class PrismaSupplierRepository implements SupplierRepository {
     });
   }
 
+  async findByCpf(
+    organizationId: string,
+    cpf: string,
+  ): Promise<Supplier | null> {
+    return await this.prisma.supplier.findFirst({
+      where: {
+        organizationId,
+        cpf,
+      },
+    });
+  }
+
   async searchMany(query: SearchManyQuery): Promise<Supplier[]> {
     return await this.prisma.supplier.findMany({
       where: {
@@ -69,10 +81,18 @@ export class PrismaSupplierRepository implements SupplierRepository {
           contains: query.name,
           mode: 'insensitive',
         },
-        cnpj: {
-          contains: query.cnpj,
-          mode: 'insensitive',
-        },
+        cnpj: query.cnpj
+          ? {
+              contains: query.cnpj,
+              mode: 'insensitive',
+            }
+          : undefined,
+        cpf: query.cpf
+          ? {
+              contains: query.cpf,
+              mode: 'insensitive',
+            }
+          : undefined,
         address: {
           contains: query.address,
           mode: 'insensitive',
@@ -98,10 +118,18 @@ export class PrismaSupplierRepository implements SupplierRepository {
           contains: query.name,
           mode: 'insensitive',
         },
-        cnpj: {
-          contains: query.cnpj,
-          mode: 'insensitive',
-        },
+        cnpj: query.cnpj
+          ? {
+              contains: query.cnpj,
+              mode: 'insensitive',
+            }
+          : undefined,
+        cpf: query.cpf
+          ? {
+              contains: query.cpf,
+              mode: 'insensitive',
+            }
+          : undefined,
         address: {
           contains: query.address,
           mode: 'insensitive',

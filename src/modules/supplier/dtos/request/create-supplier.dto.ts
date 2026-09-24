@@ -7,23 +7,41 @@ export class CreateSupplierBodyDto {
   })
   name!: string;
 
-  @ApiProperty({
-    example: '99.999.999/9999-99',
-    description: "Supplier's cnpj",
+  @ApiPropertyOptional({
+    example: '11222333000181',
+    description: "Supplier's CNPJ (digits only); mutually exclusive with CPF",
   })
-  cnpj!: string;
+  cnpj?: string;
+
+  @ApiPropertyOptional({
+    example: '52998224725',
+    description: "Supplier's CPF (digits only); mutually exclusive with CNPJ",
+  })
+  cpf?: string;
 
   @ApiPropertyOptional({
     example: 'St. Street, 123',
     description: "Supplier's address",
   })
-  address!: string;
+  address?: string;
 
   @ApiPropertyOptional({
-    example: '(00) 0 0000-0000',
-    description: "Supplier's phone number",
+    example: 'Salvador',
+    description: "Supplier's city",
   })
-  phoneNumber!: string;
+  city?: string;
+
+  @ApiPropertyOptional({
+    example: 'BA',
+    description: "Supplier's state (UF)",
+  })
+  state?: string;
+
+  @ApiPropertyOptional({
+    example: '71999999999',
+    description: "Supplier's phone number (digits only)",
+  })
+  phoneNumber?: string;
 
   @ApiPropertyOptional({
     example: 'uuid',

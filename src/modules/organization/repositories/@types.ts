@@ -19,6 +19,13 @@ export type OrganizationWithFirstFarmResult = {
     organizationId: string;
     name: string;
     timezone: string | null;
+    street: string | null;
+    number: string | null;
+    complement: string | null;
+    city: string | null;
+    state: string | null;
+    country: string | null;
+    zipCode: string | null;
     createdAt: Date;
     updatedAt: Date;
   };
@@ -27,6 +34,15 @@ export type OrganizationWithFirstFarmResult = {
 export interface UpdateOrganizationData {
   id: string;
   name?: string;
+  cnpj?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  street?: string | null;
+  number?: string | null;
+  complement?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zipCode?: string | null;
 }
 
 export interface SearchManyQuery {

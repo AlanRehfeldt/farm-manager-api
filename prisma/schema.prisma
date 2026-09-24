@@ -32,10 +32,19 @@ enum UomDimension {
 }
 
 model Organization {
-  id        String   @id @default(uuid())
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(uuid())
+  name       String
+  cnpj       String?
+  phone      String?
+  email      String?
+  street     String?
+  number     String?
+  complement String?
+  city       String?
+  state      String?
+  zipCode    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   farms               Farm[]
   memberships         Membership[]
@@ -56,6 +65,13 @@ model Farm {
   organizationId String
   name           String
   timezone       String?
+  street         String?
+  number         String?
+  complement     String?
+  city           String?
+  state          String?
+  country        String?  @default("BR")
+  zipCode        String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -176,8 +192,11 @@ model Supplier {
   organizationId String
   farmId         String?
   name           String
-  cnpj           String
+  cnpj           String?
+  cpf            String?
   address        String?
+  city           String?
+  state          String?
   phoneNumber    String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -188,6 +207,7 @@ model Supplier {
   purchaseTransactions PurchaseTransaction[]
 
   @@unique([organizationId, cnpj])
+  @@unique([organizationId, cpf])
   @@index([organizationId])
   @@index([farmId])
   @@map("suppliers")

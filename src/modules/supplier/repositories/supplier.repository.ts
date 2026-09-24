@@ -15,6 +15,7 @@ export interface SupplierRepository {
     farmId: string,
   ): Promise<Supplier | null>;
   findByCnpj(organizationId: string, cnpj: string): Promise<Supplier | null>;
+  findByCpf(organizationId: string, cpf: string): Promise<Supplier | null>;
   searchMany(query: SearchManyQuery): Promise<Supplier[]>;
   count(query: SearchManyQuery): Promise<number>;
 }

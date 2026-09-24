@@ -27,19 +27,50 @@ const updateSupplierParamSchema = z.object({
   id: z.uuid(),
 });
 
-const updateSupplierSchema = z.object({
-  name: z
-    .string()
-    .min(5, { message: 'Name must be at least 5 characters long.' })
-    .max(150, { message: 'Name must be at most 150 characters long.' })
-    .optional(),
-  cnpj: z
-    .string()
-    .length(14, { message: 'CNPJ must be 14 characters long.' })
-    .optional(),
-  address: z.string().optional(),
-  phoneNumber: z.string().optional(),
-});
+const updateSupplierSchema = z
+  .object({
+    name: z
+      .string()
+      .min(5, { message: 'Name must be at least 5 characters long.' })
+      .max(150, { message: 'Name must be at most 150 characters long.' })
+      .optional(),
+    cnpj: z
+      .string()
+      .length(14, { message: 'CNPJ must be 14 characters long.' })
+      .nullable()
+      .optional(),
+    cpf: z
+      .string()
+      .length(11, { message: 'CPF must be 11 characters long.' })
+      .nullable()
+      .optional(),
+    address: z.string().nullable().optional(),
+    city: z.string().max(100).nullable().optional(),
+    state: z
+      .string()
+      .length(2, { message: 'State must be a 2-letter UF.' })
+      .nullable()
+      .optional(),
+    phoneNumber: z
+      .string()
+      .regex(/^\d{10,11}$/, { message: 'Phone must be 10 or 11 digits.' })
+      .nullable()
+      .optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.cnpj === undefined && data.cpf === undefined) {
+        return true;
+      }
+      const hasCnpj = data.cnpj != null && data.cnpj !== '';
+      const hasCpf = data.cpf != null && data.cpf !== '';
+      return hasCnpj !== hasCpf;
+    },
+    {
+      message: 'Provide exactly one of CNPJ or CPF.',
+      path: ['cnpj'],
+    },
+  );
 
 @ApiTags('Supplier')
 @FarmScoped()
@@ -58,7 +89,7 @@ export class UpdateSupplierController {
     type: BadRequestDto,
   })
   @ApiConflictResponse({
-    description: 'Conflict: CNPJ already exists',
+    description: 'Conflict: document already exists',
     type: ConflictDto,
   })
   @ApiNotFoundResponse({

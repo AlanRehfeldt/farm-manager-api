@@ -63,9 +63,10 @@ export class PrismaOrganizationRepository implements OrganizationRepository {
   }
 
   async update(data: UpdateOrganizationData): Promise<Organization> {
+    const { id, ...fields } = data;
     return this.prisma.organization.update({
-      where: { id: data.id },
-      data: { name: data.name },
+      where: { id },
+      data: fields,
     });
   }
 

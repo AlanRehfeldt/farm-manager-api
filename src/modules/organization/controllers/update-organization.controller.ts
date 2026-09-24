@@ -29,12 +29,38 @@ const updateOrganizationParamSchema = z.object({
   id: z.uuid(),
 });
 
+const optionalDigits = (length: number, field: string) =>
+  z
+    .string()
+    .regex(new RegExp(`^\\d{${length}}$`), {
+      message: `${field} must be ${length} digits.`,
+    })
+    .nullable()
+    .optional();
+
 const updateOrganizationBodySchema = z.object({
   name: z
     .string()
     .min(2, { message: 'Name must be at least 2 characters long.' })
     .max(150, { message: 'Name must be at most 150 characters long.' })
     .optional(),
+  cnpj: optionalDigits(14, 'CNPJ'),
+  phone: z
+    .string()
+    .regex(/^\d{10,11}$/, { message: 'Phone must be 10 or 11 digits.' })
+    .nullable()
+    .optional(),
+  email: z.email().nullable().optional(),
+  street: z.string().max(200).nullable().optional(),
+  number: z.string().max(20).nullable().optional(),
+  complement: z.string().max(100).nullable().optional(),
+  city: z.string().max(100).nullable().optional(),
+  state: z
+    .string()
+    .length(2, { message: 'State must be a 2-letter UF.' })
+    .nullable()
+    .optional(),
+  zipCode: optionalDigits(8, 'ZIP code'),
 });
 
 @ApiTags('Organization')
@@ -75,7 +101,7 @@ export class UpdateOrganizationController {
   ) {
     const { organization } = await this.updateOrganizationService.execute(
       user.userId,
-      { id: param.id, name: data.name },
+      { id: param.id, ...data },
     );
 
     return {

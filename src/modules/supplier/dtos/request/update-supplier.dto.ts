@@ -11,20 +11,41 @@ export class UpdateSupplierBodyDto {
   @ApiPropertyOptional({
     description: "Supplier's name",
   })
-  name!: string;
+  name?: string;
 
   @ApiPropertyOptional({
-    description: "Supplier's cnpj",
+    description: "Supplier's CNPJ (digits only); mutually exclusive with CPF",
+    nullable: true,
   })
-  cnpj!: string;
+  cnpj?: string | null;
+
+  @ApiPropertyOptional({
+    description: "Supplier's CPF (digits only); mutually exclusive with CNPJ",
+    nullable: true,
+  })
+  cpf?: string | null;
 
   @ApiPropertyOptional({
     description: "Supplier's address",
+    nullable: true,
   })
-  address!: string;
+  address?: string | null;
 
   @ApiPropertyOptional({
-    description: "Supplier's phone number",
+    description: "Supplier's city",
+    nullable: true,
   })
-  phoneNumber!: string;
+  city?: string | null;
+
+  @ApiPropertyOptional({
+    description: "Supplier's state (UF)",
+    nullable: true,
+  })
+  state?: string | null;
+
+  @ApiPropertyOptional({
+    description: "Supplier's phone number (digits only)",
+    nullable: true,
+  })
+  phoneNumber?: string | null;
 }
