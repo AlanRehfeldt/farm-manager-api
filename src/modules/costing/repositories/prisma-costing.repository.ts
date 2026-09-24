@@ -222,6 +222,7 @@ export class PrismaCostingRepository implements CostingRepository {
         season.productionUom.acronym,
         computed,
         closedAt,
+        [],
       );
 
       await tx.seasonCostingSnapshot.create({

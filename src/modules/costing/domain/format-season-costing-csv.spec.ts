@@ -49,6 +49,7 @@ function buildSampleCosting(): SeasonCostingResponse {
         costPerUnitInCents: 60,
       },
     ],
+    openLaborMonths: [],
   };
 }
 

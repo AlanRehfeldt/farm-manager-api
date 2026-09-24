@@ -94,6 +94,20 @@ export class SeasonCostingDto {
 
   @ApiProperty({ type: [FieldCostingDto] })
   byField!: FieldCostingDto[];
+
+  @ApiProperty({
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        year: { type: 'number' },
+        month: { type: 'number' },
+      },
+    },
+    description:
+      'CLT labor months still open (hours without CostEntry) for this season',
+  })
+  openLaborMonths!: { year: number; month: number }[];
 }
 
 export class GetCropSeasonCostingResponseDto {

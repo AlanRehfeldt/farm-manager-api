@@ -22,7 +22,8 @@ export type ActivityLaborData = {
   hours?: string;
   days?: string;
   outputQty?: string;
-  costInCents: number;
+  hourlyRateInCents?: number;
+  costInCents?: number;
 };
 
 export type ActivityMachineHourData = {
@@ -52,6 +53,7 @@ export type CostCategoryIds = {
 
 export type EmployeeMeta = {
   name: string;
+  employmentType: 'CLT' | 'CONTRACTOR';
 };
 
 export type CreateActivityData = {

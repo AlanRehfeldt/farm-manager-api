@@ -25,7 +25,8 @@ export type ActivityLaborResponse = {
   hours: string | null;
   days: string | null;
   outputQty: string | null;
-  costInCents: number;
+  hourlyRateInCents: number | null;
+  costInCents: number | null;
 };
 
 export type ActivityMachineHourResponse = {
@@ -121,21 +122,32 @@ export function toActivityResponse(
     ),
   }));
 
-  const labor = activity.labor.map((line) => ({
-    id: line.id,
-    employeeId: line.employeeId,
-    employeeName: line.employee?.name ?? null,
-    contractorName: line.contractorName,
-    payBasis: line.payBasis,
-    hours: decimalToString(line.hours),
-    days: decimalToString(line.days),
-    outputQty: decimalToString(line.outputQty),
-    costInCents: findCostEntryAmount(
-      activity,
-      CostEntrySourceType.ACTIVITY_LABOR,
-      line.id,
-    ),
-  }));
+  const labor = activity.labor.map((line) => {
+    const laborEntry = activity.costEntries.find(
+      (ce) =>
+        ce.sourceType === CostEntrySourceType.ACTIVITY_LABOR &&
+        ce.sourceId === line.id,
+    );
+
+    return {
+      id: line.id,
+      employeeId: line.employeeId,
+      employeeName: line.employee?.name ?? null,
+      contractorName: line.contractorName,
+      payBasis: line.payBasis,
+      hours: decimalToString(line.hours),
+      days: decimalToString(line.days),
+      outputQty: decimalToString(line.outputQty),
+      hourlyRateInCents: bigintToNumber(line.hourlyRateInCents),
+      costInCents: laborEntry
+        ? findCostEntryAmount(
+            activity,
+            CostEntrySourceType.ACTIVITY_LABOR,
+            line.id,
+          )
+        : bigintToNumber(line.costInCents),
+    };
+  });
 
   const machineHours = activity.machineHours.map((line) => ({
     id: line.id,

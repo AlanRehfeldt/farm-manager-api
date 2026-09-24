@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from 'src/common/prisma/prisma.module';
+import { LaborClosingModule } from 'src/modules/labor-closing/labor-closing.module';
 import { CloseCropSeasonController } from './controllers/close-crop-season.controller';
 import { ExportCropSeasonCostingController } from './controllers/export-crop-season-costing.controller';
 import { GetCropSeasonCostingController } from './controllers/get-crop-season-costing.controller';
@@ -14,7 +15,7 @@ import { ReopenCropSeasonService } from './services/reopen-crop-season.service';
 import { UpdateReferencePriceService } from './services/update-reference-price.service';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, LaborClosingModule],
   controllers: [
     GetCropSeasonCostingController,
     ExportCropSeasonCostingController,

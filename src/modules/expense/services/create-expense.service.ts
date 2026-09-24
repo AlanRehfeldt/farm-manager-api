@@ -262,21 +262,35 @@ export class CreateExpenseService {
       input.type === TransactionType.SALARY_PAYMENT &&
       input.salary?.employeeId
     ) {
-      for (const allocation of resolvedAllocations) {
-        const hasOverlap =
-          await this.activityRepository.hasEmployeeLaborInSeasonMonth(
-            input.salary.employeeId,
-            allocation.cropSeasonId,
-            input.date.getUTCFullYear(),
-            input.date.getUTCMonth() + 1,
-          );
+      const year = input.date.getUTCFullYear();
+      const month = input.date.getUTCMonth() + 1;
 
-        if (hasOverlap) {
-          throw domainConflict(
-            DomainConflictCode.DOUBLE_COUNT_BLOCKED,
-            'Salary allocation blocked: employee already has activity labor in this season and month',
-          );
-        }
+      const monthClosed =
+        await this.activityRepository.hasLaborMonthClosing(
+          input.salary.employeeId,
+          year,
+          month,
+        );
+      if (monthClosed) {
+        throw domainConflict(
+          DomainConflictCode.DOUBLE_COUNT_BLOCKED,
+          'Salary allocation blocked: labor month is already closed for this employee',
+        );
+      }
+
+      const hasOverlap =
+        await this.activityRepository.hasEmployeeLaborInOrgMonth(
+          input.salary.employeeId,
+          input.organizationId,
+          year,
+          month,
+        );
+
+      if (hasOverlap) {
+        throw domainConflict(
+          DomainConflictCode.DOUBLE_COUNT_BLOCKED,
+          'Salary allocation blocked: employee already has activity labor in this month',
+        );
       }
     }
 

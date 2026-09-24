@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { EmployeeType } from '@prisma/client';
+import { EmployeeType, EmploymentType } from '@prisma/client';
 
 export class EmployeeDto {
   @ApiProperty({
@@ -39,6 +39,27 @@ export class EmployeeDto {
     enum: EmployeeType,
   })
   type!: EmployeeType;
+
+  @ApiProperty({
+    example: EmploymentType.CONTRACTOR,
+    description: 'Employment contract type (CLT or CONTRACTOR)',
+    enum: EmploymentType,
+  })
+  employmentType!: EmploymentType;
+
+  @ApiPropertyOptional({
+    example: 320000,
+    nullable: true,
+    description: 'Monthly salary in cents (CLT only)',
+  })
+  monthlySalaryInCents!: number | null;
+
+  @ApiPropertyOptional({
+    example: '160',
+    nullable: true,
+    description: 'Expected monthly hours reference (CLT only)',
+  })
+  expectedMonthlyHours!: string | null;
 
   @ApiProperty({
     example: '2023-01-01T00:00:00.000Z',

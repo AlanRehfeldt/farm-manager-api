@@ -1,9 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { SearchManyQuery, toEmployeeResponse } from '../repositories/@types';
 import {
   EMPLOYEE_REPOSITORY,
   EmployeeRepository,
 } from '../repositories/employee.repository';
-import { SearchManyQuery } from '../repositories/@types';
 
 @Injectable()
 export class FetchEmployeesService {
@@ -17,7 +17,7 @@ export class FetchEmployeesService {
     const total = await this.employeeRepository.count(params);
 
     return {
-      results: employees,
+      results: employees.map(toEmployeeResponse),
       total,
       page: params.page,
       perPage: params.perPage,

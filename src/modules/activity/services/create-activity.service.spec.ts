@@ -28,8 +28,9 @@ describe('CreateActivityService', () => {
     findById: jest.fn(),
     searchMany: jest.fn(),
     count: jest.fn(),
-    hasEmployeeLaborInSeasonMonth: jest.fn(),
-    hasSalaryAllocationInSeasonMonth: jest.fn().mockResolvedValue(false),
+    hasEmployeeLaborInOrgMonth: jest.fn(),
+    hasSalaryAllocationInOrgMonth: jest.fn().mockResolvedValue(false),
+    hasLaborMonthClosing: jest.fn().mockResolvedValue(false),
   };
 
   const cropSeasonRepository: jest.Mocked<CropSeasonRepository> = {
@@ -172,7 +173,8 @@ describe('CreateActivityService', () => {
       hours?: string;
       days?: string;
       outputQty?: string;
-      costInCents: number;
+      hourlyRateInCents?: number;
+      costInCents?: number;
     }>,
     machineHours: [] as Array<{ machineId: string; hours: string }>,
   };
@@ -211,6 +213,8 @@ describe('CreateActivityService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    activityRepository.hasSalaryAllocationInOrgMonth.mockResolvedValue(false);
+    activityRepository.hasLaborMonthClosing.mockResolvedValue(false);
     cropSeasonRepository.findById.mockResolvedValue({
       id: cropSeasonId,
       farmId,
@@ -450,6 +454,9 @@ describe('CreateActivityService', () => {
       name: 'João',
       registration: '001',
       type: 'FIELD_WORKER',
+      employmentType: 'CONTRACTOR',
+      monthlySalaryInCents: null,
+      expectedMonthlyHours: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -467,6 +474,7 @@ describe('CreateActivityService', () => {
             hours: { toString: () => '4' } as never,
             days: null,
             outputQty: null,
+            hourlyRateInCents: 5000n,
             costInCents: 20000n,
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -504,7 +512,7 @@ describe('CreateActivityService', () => {
           employeeId,
           payBasis: 'HOUR',
           hours: '4',
-          costInCents: 20000,
+          hourlyRateInCents: 5000,
         },
       ],
     });
@@ -602,10 +610,13 @@ describe('CreateActivityService', () => {
       name: 'João',
       registration: '001',
       type: 'FIELD_WORKER',
+      employmentType: 'CONTRACTOR',
+      monthlySalaryInCents: null,
+      expectedMonthlyHours: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-    activityRepository.hasSalaryAllocationInSeasonMonth.mockResolvedValue(true);
+    activityRepository.hasSalaryAllocationInOrgMonth.mockResolvedValue(true);
 
     await expect(
       service.execute({
@@ -615,11 +626,108 @@ describe('CreateActivityService', () => {
             employeeId,
             payBasis: 'HOUR',
             hours: '4',
-            costInCents: 20000,
+            hourlyRateInCents: 5000,
           },
         ],
       }),
     ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('blocks new CLT hours when the labor month is already closed', async () => {
+    employeeRepository.findById.mockResolvedValue({
+      id: employeeId,
+      organizationId,
+      farmId,
+      name: 'João CLT',
+      registration: '001',
+      type: 'FIELD_WORKER',
+      employmentType: 'CLT',
+      monthlySalaryInCents: 320000n,
+      expectedMonthlyHours: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    activityRepository.hasLaborMonthClosing.mockResolvedValue(true);
+
+    await expect(
+      service.execute({
+        ...baseInput,
+        labor: [
+          {
+            employeeId,
+            payBasis: 'HOUR',
+            hours: '4',
+          },
+        ],
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(createActivity).not.toHaveBeenCalled();
+  });
+
+  it('creates CLT labor without costInCents or CostEntry', async () => {
+    employeeRepository.findById.mockResolvedValue({
+      id: employeeId,
+      organizationId,
+      farmId,
+      name: 'João CLT',
+      registration: '001',
+      type: 'FIELD_WORKER',
+      employmentType: 'CLT',
+      monthlySalaryInCents: 320000n,
+      expectedMonthlyHours: new Decimal(160),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    createActivity.mockResolvedValue({
+      activity: {
+        ...emptyActivity,
+        labor: [
+          {
+            id: 'labor-id',
+            activityId: 'activity-id',
+            employeeId,
+            contractorName: null,
+            payBasis: 'HOUR',
+            hours: { toString: () => '4' } as never,
+            days: null,
+            outputQty: null,
+            hourlyRateInCents: null,
+            costInCents: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            employee: { id: employeeId, name: 'João CLT' },
+          },
+        ],
+        costEntries: [],
+      },
+      stockEffects: [],
+    });
+
+    const result = await service.execute({
+      ...baseInput,
+      labor: [
+        {
+          employeeId,
+          payBasis: 'HOUR',
+          hours: '4',
+        },
+      ],
+    });
+
+    expect(createActivity).toHaveBeenCalledWith(
+      expect.objectContaining({
+        labor: [
+          {
+            employeeId,
+            payBasis: 'HOUR',
+            hours: '4',
+          },
+        ],
+      }),
+    );
+    expect(result.activity.labor[0].costInCents).toBeNull();
+    expect(result.activity.totalCostInCents).toBe(0);
   });
 
   it('blocks fuel input when machine hourly cost includes fuel (DC-03)', async () => {

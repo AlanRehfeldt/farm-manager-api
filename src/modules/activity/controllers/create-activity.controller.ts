@@ -47,7 +47,8 @@ const laborLineSchema = z
     hours: z.string().optional(),
     days: z.string().optional(),
     outputQty: z.string().optional(),
-    costInCents: z.number().int().positive(),
+    hourlyRateInCents: z.number().int().positive().optional(),
+    costInCents: z.number().int().positive().optional(),
   })
   .superRefine((data, ctx) => {
     const hasEmployee = Boolean(data.employeeId);
@@ -79,6 +80,17 @@ const laborLineSchema = z
         code: 'custom',
         message: 'outputQty is required for OUTPUT pay basis',
         path: ['outputQty'],
+      });
+    }
+
+    if (
+      (data.payBasis === 'DAY' || data.payBasis === 'OUTPUT') &&
+      data.costInCents == null
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'costInCents is required for DAY/OUTPUT pay basis',
+        path: ['costInCents'],
       });
     }
   });

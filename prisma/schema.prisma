@@ -56,6 +56,7 @@ model Organization {
   products            Product[]
   crops               Crop[]
   costCategories      CostCategory[]
+  laborMonthClosings  LaborMonthClosing[]
 
   @@map("organizations")
 }
@@ -132,6 +133,7 @@ model User {
   memberships   Membership[]
   activities    Activity[]
   seasonCostingSnapshotsClosed SeasonCostingSnapshot[]
+  laborMonthClosingsClosed     LaborMonthClosing[]
 
   @@map("users")
 }
@@ -165,15 +167,23 @@ enum EmployeeType {
   OTHER
 }
 
+enum EmploymentType {
+  CLT
+  CONTRACTOR
+}
+
 model Employee {
-  id             String       @id @default(uuid())
-  organizationId String
-  farmId         String?
-  name           String
-  registration   String
-  type           EmployeeType
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  id                    String         @id @default(uuid())
+  organizationId        String
+  farmId                String?
+  name                  String
+  registration          String
+  type                  EmployeeType
+  employmentType        EmploymentType @default(CONTRACTOR)
+  monthlySalaryInCents  BigInt?
+  expectedMonthlyHours  Decimal?       @db.Decimal(18, 6)
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id])
   farm         Farm?        @relation(fields: [farmId], references: [id])
@@ -181,11 +191,34 @@ model Employee {
   users              User[]
   salaryTransactions SalaryTransaction[]
   activityLabor      ActivityLabor[]
+  laborMonthClosings LaborMonthClosing[]
 
   @@unique([organizationId, registration])
   @@index([organizationId])
   @@index([farmId])
   @@map("employees")
+}
+
+model LaborMonthClosing {
+  id                   String   @id @default(uuid())
+  organizationId       String
+  employeeId           String
+  year                 Int
+  month                Int
+  salaryInCents        BigInt
+  totalHours           Decimal  @db.Decimal(18, 6)
+  closedByUserId       String
+  closedAt             DateTime @default(now())
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  employee     Employee     @relation(fields: [employeeId], references: [id])
+  closedBy     User         @relation(fields: [closedByUserId], references: [id])
+
+  @@unique([employeeId, year, month])
+  @@index([organizationId, year, month])
+  @@map("labor_month_closings")
 }
 
 model Supplier {
@@ -739,22 +772,24 @@ model ActivityInput {
 }
 
 model ActivityLabor {
-  id             String        @id @default(uuid())
-  activityId     String
-  employeeId     String?
-  contractorName String?
-  payBasis       LaborPayBasis
-  hours          Decimal?      @db.Decimal(18, 6)
-  days           Decimal?      @db.Decimal(18, 6)
-  outputQty      Decimal?      @db.Decimal(18, 6)
-  costInCents    BigInt
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id                String        @id @default(uuid())
+  activityId        String
+  employeeId        String?
+  contractorName    String?
+  payBasis          LaborPayBasis
+  hours             Decimal?      @db.Decimal(18, 6)
+  days              Decimal?      @db.Decimal(18, 6)
+  outputQty         Decimal?      @db.Decimal(18, 6)
+  hourlyRateInCents BigInt?
+  costInCents       BigInt?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 
   activity Activity  @relation(fields: [activityId], references: [id], onDelete: Cascade)
   employee Employee? @relation(fields: [employeeId], references: [id])
 
   @@index([activityId])
+  @@index([employeeId])
   @@map("activity_labor")
 }
 

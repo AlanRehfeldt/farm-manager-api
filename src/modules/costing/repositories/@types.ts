@@ -39,6 +39,7 @@ export type SeasonCostingSnapshotRecord = {
     closedAt: string | null;
     productionUomId: string;
     productionUomAcronym: string;
+    openLaborMonths?: { year: number; month: number }[];
   };
   closedAt: Date;
   closedByUserId: string;

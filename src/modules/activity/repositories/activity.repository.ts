@@ -15,15 +15,20 @@ export interface ActivityRepository {
     query: SearchManyActivitiesQuery,
   ): Promise<ActivityWithRelations[]>;
   count(query: SearchManyActivitiesQuery): Promise<number>;
-  hasEmployeeLaborInSeasonMonth(
+  hasEmployeeLaborInOrgMonth(
     employeeId: string,
-    cropSeasonId: string,
+    organizationId: string,
     year: number,
     month: number,
   ): Promise<boolean>;
-  hasSalaryAllocationInSeasonMonth(
+  hasSalaryAllocationInOrgMonth(
     employeeId: string,
-    cropSeasonId: string,
+    organizationId: string,
+    year: number,
+    month: number,
+  ): Promise<boolean>;
+  hasLaborMonthClosing(
+    employeeId: string,
     year: number,
     month: number,
   ): Promise<boolean>;

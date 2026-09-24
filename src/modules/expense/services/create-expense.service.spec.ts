@@ -99,8 +99,9 @@ describe('CreateExpenseService', () => {
     findById: jest.fn(),
     searchMany: jest.fn(),
     count: jest.fn(),
-    hasEmployeeLaborInSeasonMonth: jest.fn(),
-    hasSalaryAllocationInSeasonMonth: jest.fn(),
+    hasEmployeeLaborInOrgMonth: jest.fn(),
+    hasSalaryAllocationInOrgMonth: jest.fn(),
+    hasLaborMonthClosing: jest.fn(),
   };
 
   const findAccessibleByUser = jest.fn<
@@ -256,7 +257,7 @@ describe('CreateExpenseService', () => {
 
   it('blocks salary when employee already has activity labor (DC-02)', async () => {
     employeeRepository.findById.mockResolvedValue({ id: 'emp-1' } as never);
-    activityRepository.hasEmployeeLaborInSeasonMonth.mockResolvedValue(true);
+    activityRepository.hasEmployeeLaborInOrgMonth.mockResolvedValue(true);
 
     await expect(
       service.execute({
@@ -266,6 +267,21 @@ describe('CreateExpenseService', () => {
         generic: undefined,
       }),
     ).rejects.toThrow(ConflictException);
+  });
+
+  it('blocks salary when the labor month is already closed (DC-02)', async () => {
+    employeeRepository.findById.mockResolvedValue({ id: 'emp-1' } as never);
+    activityRepository.hasLaborMonthClosing.mockResolvedValue(true);
+
+    await expect(
+      service.execute({
+        ...baseInput,
+        type: 'SALARY_PAYMENT',
+        salary: { employeeId: 'emp-1' },
+        generic: undefined,
+      }),
+    ).rejects.toThrow(ConflictException);
+    expect(expenseRepository.create).not.toHaveBeenCalled();
   });
 
   it('throws when field is not planted in season', async () => {

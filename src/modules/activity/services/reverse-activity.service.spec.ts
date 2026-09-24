@@ -13,8 +13,9 @@ describe('ReverseActivityService', () => {
     findById: jest.fn(),
     searchMany: jest.fn(),
     count: jest.fn(),
-    hasEmployeeLaborInSeasonMonth: jest.fn(),
-    hasSalaryAllocationInSeasonMonth: jest.fn(),
+    hasEmployeeLaborInOrgMonth: jest.fn(),
+    hasSalaryAllocationInOrgMonth: jest.fn(),
+    hasLaborMonthClosing: jest.fn(),
   };
 
   let service: ReverseActivityService;

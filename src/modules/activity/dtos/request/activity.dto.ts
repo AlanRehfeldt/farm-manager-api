@@ -39,8 +39,18 @@ export class CreateActivityLaborBodyDto {
   @ApiPropertyOptional({ example: '100' })
   outputQty?: string;
 
-  @ApiProperty({ example: 20000 })
-  costInCents!: number;
+  @ApiPropertyOptional({
+    example: 2500,
+    description: 'Hourly rate in cents (CONTRACTOR / empreita HOUR)',
+  })
+  hourlyRateInCents?: number;
+
+  @ApiPropertyOptional({
+    example: 20000,
+    description:
+      'Line total in cents (required for DAY/OUTPUT; optional when hourlyRateInCents is set)',
+  })
+  costInCents?: number;
 }
 
 export class CreateActivityMachineHourBodyDto {

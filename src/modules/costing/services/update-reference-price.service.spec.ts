@@ -1,5 +1,6 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { CropSeasonStatus } from '@prisma/client';
+import { LaborClosingRepository } from 'src/modules/labor-closing/repositories/labor-closing.repository';
 import { UpdateReferencePriceService } from './update-reference-price.service';
 import { CostingRepository } from '../repositories/costing.repository';
 
@@ -20,7 +21,14 @@ describe('UpdateReferencePriceService', () => {
     updateReferencePrice,
   };
 
-  const service = new UpdateReferencePriceService(costingRepository);
+  const laborClosingRepository = {
+    findOpenCltLaborMonthsForSeason: jest.fn().mockResolvedValue([]),
+  };
+
+  const service = new UpdateReferencePriceService(
+    costingRepository,
+    laborClosingRepository as unknown as LaborClosingRepository,
+  );
 
   const farmId = 'farm-id';
   const seasonId = 'season-id';

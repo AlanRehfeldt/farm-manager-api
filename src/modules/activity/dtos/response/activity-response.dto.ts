@@ -1,5 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class ActivityInputDto {
   @ApiProperty()
@@ -40,17 +40,23 @@ export class ActivityLaborDto {
   @ApiProperty()
   payBasis!: string;
 
-  @ApiProperty({ nullable: true })
+  @ApiPropertyOptional({ nullable: true })
   hours!: string | null;
 
-  @ApiProperty({ nullable: true })
+  @ApiPropertyOptional({ nullable: true })
   days!: string | null;
 
-  @ApiProperty({ nullable: true })
+  @ApiPropertyOptional({ nullable: true })
   outputQty!: string | null;
 
-  @ApiProperty()
-  costInCents!: number;
+  @ApiPropertyOptional({ nullable: true })
+  hourlyRateInCents!: number | null;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'Null while CLT hours are open (pending month close)',
+  })
+  costInCents!: number | null;
 }
 
 export class ActivityMachineHourDto {

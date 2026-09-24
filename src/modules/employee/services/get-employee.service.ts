@@ -1,4 +1,5 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { toEmployeeResponse } from '../repositories/@types';
 import {
   EMPLOYEE_REPOSITORY,
   EmployeeRepository,
@@ -22,6 +23,6 @@ export class GetEmployeeService {
       throw new NotFoundException('Employee does not exist');
     }
 
-    return { employee };
+    return { employee: toEmployeeResponse(employee) };
   }
 }

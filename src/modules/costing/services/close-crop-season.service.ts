@@ -6,6 +6,10 @@ import {
 } from '@nestjs/common';
 import { CropSeasonStatus } from '@prisma/client';
 import {
+  LABOR_CLOSING_REPOSITORY,
+  LaborClosingRepository,
+} from 'src/modules/labor-closing/repositories/labor-closing.repository';
+import {
   COSTING_REPOSITORY,
   CostingRepository,
 } from '../repositories/costing.repository';
@@ -15,6 +19,8 @@ export class CloseCropSeasonService {
   constructor(
     @Inject(COSTING_REPOSITORY)
     private readonly costingRepository: CostingRepository,
+    @Inject(LABOR_CLOSING_REPOSITORY)
+    private readonly laborClosingRepository: LaborClosingRepository,
   ) {}
 
   async execute(cropSeasonId: string, farmId: string, closedByUserId: string) {
@@ -34,12 +40,31 @@ export class CloseCropSeasonService {
       throw new ConflictException('Only active crop seasons can be closed');
     }
 
+    const openLaborMonths =
+      await this.laborClosingRepository.findOpenCltLaborMonthsForSeason(
+        cropSeasonId,
+      );
+
+    if (openLaborMonths.length > 0) {
+      const list = openLaborMonths
+        .map((m) => `${String(m.month).padStart(2, '0')}/${m.year}`)
+        .join(', ');
+      throw new ConflictException(
+        `Cannot close crop season while CLT labor months are open: ${list}`,
+      );
+    }
+
     const payload = await this.costingRepository.closeSeason({
       cropSeasonId,
       farmId,
       closedByUserId,
     });
 
-    return { costing: payload };
+    return {
+      costing: {
+        ...payload,
+        openLaborMonths: payload.openLaborMonths ?? [],
+      },
+    };
   }
 }

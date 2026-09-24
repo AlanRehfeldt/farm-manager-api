@@ -45,6 +45,16 @@ const updateEmployeeSchema = z.object({
       message: 'Employee type is not supported in the agricultural MVP.',
     })
     .optional(),
+  employmentType: z.enum(['CLT', 'CONTRACTOR']).optional(),
+  monthlySalaryInCents: z.number().int().positive().nullable().optional(),
+  expectedMonthlyHours: z
+    .string()
+    .min(1)
+    .refine((value) => !Number.isNaN(Number(value)) && Number(value) > 0, {
+      message: 'expectedMonthlyHours must be greater than zero',
+    })
+    .nullable()
+    .optional(),
 });
 
 @ApiTags('Employee')

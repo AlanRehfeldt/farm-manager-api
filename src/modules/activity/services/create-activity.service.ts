@@ -9,7 +9,13 @@ import {
   DomainConflictCode,
   domainConflict,
 } from 'src/common/errors/domain-conflict';
-import { ActivityType, CropSeasonStatus, LaborPayBasis } from '@prisma/client';
+import {
+  ActivityType,
+  CropSeasonStatus,
+  EmploymentType,
+  LaborPayBasis,
+} from '@prisma/client';
+import { computeHourlyAmountInCents } from '../domain/hourly-cost';
 import {
   COST_CATEGORY_REPOSITORY,
   CostCategoryRepository,
@@ -60,7 +66,8 @@ type CreateActivityLaborItem = {
   hours?: string;
   days?: string;
   outputQty?: string;
-  costInCents: number;
+  hourlyRateInCents?: number;
+  costInCents?: number;
 };
 
 type CreateActivityMachineHourItem = {
@@ -206,13 +213,17 @@ export class CreateActivityService {
       };
     }
 
-    const employeeMeta: Record<string, { name: string }> = {};
+    const employeeMeta: Record<
+      string,
+      { name: string; employmentType: 'CLT' | 'CONTRACTOR' }
+    > = {};
+
+    const year = input.date.getUTCFullYear();
+    const month = input.date.getUTCMonth() + 1;
+
+    const resolvedLabor: CreateActivityLaborItem[] = [];
 
     for (const item of input.labor) {
-      if (item.costInCents <= 0) {
-        throw new BadRequestException('Labor cost must be greater than zero');
-      }
-
       const hasEmployee = Boolean(item.employeeId);
       const hasContractor = Boolean(item.contractorName?.trim());
 
@@ -251,22 +262,112 @@ export class CreateActivityService {
         if (!employee) {
           throw new NotFoundException(`Employee not found: ${item.employeeId}`);
         }
-        employeeMeta[item.employeeId] = { name: employee.name };
+        employeeMeta[item.employeeId] = {
+          name: employee.name,
+          employmentType: employee.employmentType,
+        };
 
+        if (employee.employmentType === EmploymentType.CLT) {
+          if (item.payBasis !== LaborPayBasis.HOUR) {
+            throw new BadRequestException(
+              'CLT labor must use HOUR pay basis',
+            );
+          }
+          if (item.costInCents != null || item.hourlyRateInCents != null) {
+            throw new BadRequestException(
+              'CLT labor must not include costInCents or hourlyRateInCents',
+            );
+          }
+          if (
+            employee.monthlySalaryInCents == null ||
+            employee.monthlySalaryInCents <= 0n
+          ) {
+            throw new BadRequestException(
+              'CLT employee requires monthlySalaryInCents before pointing hours',
+            );
+          }
+
+          const monthClosed =
+            await this.activityRepository.hasLaborMonthClosing(
+              item.employeeId,
+              year,
+              month,
+            );
+          if (monthClosed) {
+            throw new ConflictException(
+              'Cannot point CLT hours: labor month is already closed',
+            );
+          }
+
+          const hasSalaryAllocation =
+            await this.activityRepository.hasSalaryAllocationInOrgMonth(
+              item.employeeId,
+              input.organizationId,
+              year,
+              month,
+            );
+          if (hasSalaryAllocation) {
+            throw domainConflict(
+              DomainConflictCode.DOUBLE_COUNT_BLOCKED,
+              'Activity labor blocked: employee already has salary allocated in this month',
+            );
+          }
+
+          resolvedLabor.push({
+            employeeId: item.employeeId,
+            payBasis: LaborPayBasis.HOUR,
+            hours: item.hours,
+          });
+          continue;
+        }
+
+        // CONTRACTOR employee
         const hasSalaryAllocation =
-          await this.activityRepository.hasSalaryAllocationInSeasonMonth(
+          await this.activityRepository.hasSalaryAllocationInOrgMonth(
             item.employeeId,
-            input.cropSeasonId,
-            input.date.getUTCFullYear(),
-            input.date.getUTCMonth() + 1,
+            input.organizationId,
+            year,
+            month,
           );
-
         if (hasSalaryAllocation) {
           throw domainConflict(
             DomainConflictCode.DOUBLE_COUNT_BLOCKED,
-            'Activity labor blocked: employee already has salary allocated in this season and month',
+            'Activity labor blocked: employee already has salary allocated in this month',
           );
         }
+      }
+
+      // CONTRACTOR employee or free-text contractor
+      if (item.payBasis === LaborPayBasis.HOUR) {
+        if (item.hourlyRateInCents == null || item.hourlyRateInCents <= 0) {
+          throw new BadRequestException(
+            'CONTRACTOR HOUR labor requires hourlyRateInCents',
+          );
+        }
+        const costInCents = Number(
+          computeHourlyAmountInCents(
+            item.hours!,
+            BigInt(item.hourlyRateInCents),
+          ),
+        );
+        if (costInCents <= 0) {
+          throw new BadRequestException('Labor cost must be greater than zero');
+        }
+        resolvedLabor.push({
+          employeeId: item.employeeId,
+          contractorName: item.contractorName,
+          payBasis: item.payBasis,
+          hours: item.hours,
+          hourlyRateInCents: item.hourlyRateInCents,
+          costInCents,
+        });
+      } else {
+        if (item.costInCents == null || item.costInCents <= 0) {
+          throw new BadRequestException(
+            'Labor cost must be greater than zero for DAY/OUTPUT',
+          );
+        }
+        resolvedLabor.push(item);
       }
     }
 
@@ -328,7 +429,7 @@ export class CreateActivityService {
       note: input.note,
       createdByUserId: input.createdByUserId,
       inputs: input.inputs,
-      labor: input.labor,
+      labor: resolvedLabor,
       machineHours: input.machineHours,
       productMeta,
       machineMeta,

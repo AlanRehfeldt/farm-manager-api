@@ -24,7 +24,14 @@ export class PrismaEmployeeRepository implements EmployeeRepository {
       where: {
         id: data.id,
       },
-      data,
+      data: {
+        name: data.name,
+        registration: data.registration,
+        type: data.type,
+        employmentType: data.employmentType,
+        monthlySalaryInCents: data.monthlySalaryInCents,
+        expectedMonthlyHours: data.expectedMonthlyHours,
+      },
     });
   }
 

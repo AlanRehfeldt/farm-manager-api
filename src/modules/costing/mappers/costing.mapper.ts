@@ -8,6 +8,7 @@ export type SeasonCostingResponse = SeasonCostingResult & {
   closedAt: string | null;
   productionUomId: string;
   productionUomAcronym: string;
+  openLaborMonths: { year: number; month: number }[];
 };
 
 export function toSeasonCostingResponse(
@@ -18,6 +19,7 @@ export function toSeasonCostingResponse(
   productionUomAcronym: string,
   costing: SeasonCostingResult,
   closedAt: Date | null = null,
+  openLaborMonths: { year: number; month: number }[] = [],
 ): SeasonCostingResponse {
   return {
     cropSeasonId,
@@ -26,6 +28,7 @@ export function toSeasonCostingResponse(
     closedAt: closedAt?.toISOString() ?? null,
     productionUomId,
     productionUomAcronym,
+    openLaborMonths,
     ...costing,
   };
 }

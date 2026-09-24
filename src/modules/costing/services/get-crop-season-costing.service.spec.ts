@@ -2,6 +2,7 @@ import { ConflictException, NotFoundException } from '@nestjs/common';
 import { CropSeasonStatus } from '@prisma/client';
 import { GetCropSeasonCostingService } from './get-crop-season-costing.service';
 import { CostingRepository } from '../repositories/costing.repository';
+import { LaborClosingRepository } from 'src/modules/labor-closing/repositories/labor-closing.repository';
 
 describe('GetCropSeasonCostingService', () => {
   const findCostEntries = jest.fn<
@@ -20,13 +21,25 @@ describe('GetCropSeasonCostingService', () => {
     updateReferencePrice: jest.fn(),
   };
 
-  const service = new GetCropSeasonCostingService(costingRepository);
+  const laborClosingRepository: jest.Mocked<
+    Pick<LaborClosingRepository, 'findOpenCltLaborMonthsForSeason'>
+  > = {
+    findOpenCltLaborMonthsForSeason: jest.fn().mockResolvedValue([]),
+  };
+
+  const service = new GetCropSeasonCostingService(
+    costingRepository,
+    laborClosingRepository as unknown as LaborClosingRepository,
+  );
 
   const farmId = 'farm-id';
   const seasonId = 'season-id';
 
   beforeEach(() => {
     jest.clearAllMocks();
+    laborClosingRepository.findOpenCltLaborMonthsForSeason.mockResolvedValue(
+      [],
+    );
   });
 
   it('throws NotFoundException when crop season does not exist', async () => {
@@ -55,6 +68,7 @@ describe('GetCropSeasonCostingService', () => {
       breakdownByCategory: [],
       breakdownBySource: [],
       byField: [],
+      openLaborMonths: [],
     };
 
     costingRepository.findSeasonContext.mockResolvedValue({
@@ -94,7 +108,7 @@ describe('GetCropSeasonCostingService', () => {
     );
   });
 
-  it('returns live costing for active season', async () => {
+  it('returns live costing for active season with open labor months', async () => {
     costingRepository.findSeasonContext.mockResolvedValue({
       id: seasonId,
       farmId,
@@ -106,11 +120,15 @@ describe('GetCropSeasonCostingService', () => {
     costingRepository.findCostEntries.mockResolvedValue([]);
     costingRepository.findPlantings.mockResolvedValue([]);
     costingRepository.findFieldHarvests.mockResolvedValue([]);
+    laborClosingRepository.findOpenCltLaborMonthsForSeason.mockResolvedValue([
+      { year: 2026, month: 9 },
+    ]);
 
     const result = await service.execute(seasonId, farmId);
 
     expect(result.costing.source).toBe('LIVE');
     expect(result.costing.status).toBe('ACTIVE');
     expect(result.costing.totalCostInCents).toBe(0);
+    expect(result.costing.openLaborMonths).toEqual([{ year: 2026, month: 9 }]);
   });
 });

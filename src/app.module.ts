@@ -30,6 +30,7 @@ import { ActivityModule } from './modules/activity/activity.module';
 import { ExpenseModule } from './modules/expense/expense.module';
 import { HarvestModule } from './modules/harvest/harvest.module';
 import { CostingModule } from './modules/costing/costing.module';
+import { LaborClosingModule } from './modules/labor-closing/labor-closing.module';
 import { IdempotencyModule } from './common/idempotency/idempotency.module';
 
 @Module({
@@ -67,6 +68,7 @@ import { IdempotencyModule } from './common/idempotency/idempotency.module';
     ExpenseModule,
     HarvestModule,
     CostingModule,
+    LaborClosingModule,
   ],
   controllers: [],
   providers: [],

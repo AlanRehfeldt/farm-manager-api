@@ -2,6 +2,7 @@ import { ConflictException, NotFoundException } from '@nestjs/common';
 import { CropSeasonStatus } from '@prisma/client';
 import { CloseCropSeasonService } from './close-crop-season.service';
 import { CostingRepository } from '../repositories/costing.repository';
+import { LaborClosingRepository } from 'src/modules/labor-closing/repositories/labor-closing.repository';
 
 describe('CloseCropSeasonService', () => {
   const closeSeason = jest.fn<
@@ -20,7 +21,16 @@ describe('CloseCropSeasonService', () => {
     updateReferencePrice: jest.fn(),
   };
 
-  const service = new CloseCropSeasonService(costingRepository);
+  const laborClosingRepository: jest.Mocked<
+    Pick<LaborClosingRepository, 'findOpenCltLaborMonthsForSeason'>
+  > = {
+    findOpenCltLaborMonthsForSeason: jest.fn().mockResolvedValue([]),
+  };
+
+  const service = new CloseCropSeasonService(
+    costingRepository,
+    laborClosingRepository as unknown as LaborClosingRepository,
+  );
 
   const farmId = 'farm-id';
   const seasonId = 'season-id';
@@ -28,6 +38,9 @@ describe('CloseCropSeasonService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    laborClosingRepository.findOpenCltLaborMonthsForSeason.mockResolvedValue(
+      [],
+    );
   });
 
   it('throws NotFoundException when crop season does not exist', async () => {
@@ -68,6 +81,25 @@ describe('CloseCropSeasonService', () => {
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
+  it('throws ConflictException when CLT labor months are open', async () => {
+    costingRepository.findSeasonContext.mockResolvedValue({
+      id: seasonId,
+      farmId,
+      status: CropSeasonStatus.ACTIVE,
+      productionUomId: 'uom-id',
+      productionUomAcronym: 'kg',
+      referenceSalePriceInCents: null,
+    });
+    laborClosingRepository.findOpenCltLaborMonthsForSeason.mockResolvedValue([
+      { year: 2026, month: 9 },
+    ]);
+
+    await expect(
+      service.execute(seasonId, farmId, userId),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(closeSeason).not.toHaveBeenCalled();
+  });
+
   it('closes active season with zero harvest', async () => {
     costingRepository.findSeasonContext.mockResolvedValue({
       id: seasonId,
@@ -94,6 +126,7 @@ describe('CloseCropSeasonService', () => {
       breakdownByCategory: [],
       breakdownBySource: [],
       byField: [],
+      openLaborMonths: [],
     });
 
     const result = await service.execute(seasonId, farmId, userId);

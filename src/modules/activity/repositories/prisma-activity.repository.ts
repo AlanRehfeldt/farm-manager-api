@@ -160,6 +160,11 @@ export class PrismaActivityRepository implements ActivityRepository {
           ? data.costCategoryIds.moFixa
           : data.costCategoryIds.moTemporaria;
 
+        const isOpenClt =
+          item.employeeId != null &&
+          data.employeeMeta[item.employeeId]?.employmentType === 'CLT' &&
+          item.costInCents == null;
+
         const activityLabor = await tx.activityLabor.create({
           data: {
             activityId: activity.id,
@@ -169,23 +174,30 @@ export class PrismaActivityRepository implements ActivityRepository {
             hours: item.hours ? parseDecimal(item.hours) : null,
             days: item.days ? parseDecimal(item.days) : null,
             outputQty: item.outputQty ? parseDecimal(item.outputQty) : null,
-            costInCents: BigInt(item.costInCents),
+            hourlyRateInCents:
+              item.hourlyRateInCents != null
+                ? BigInt(item.hourlyRateInCents)
+                : null,
+            costInCents:
+              item.costInCents != null ? BigInt(item.costInCents) : null,
           },
         });
 
-        await tx.costEntry.create({
-          data: {
-            farmId: data.farmId,
-            cropSeasonId: data.cropSeasonId,
-            fieldId: data.fieldId,
-            activityId: activity.id,
-            sourceType: CostEntrySourceType.ACTIVITY_LABOR,
-            sourceId: activityLabor.id,
-            costCategoryId,
-            amountInCents: BigInt(item.costInCents),
-            date: data.date,
-          },
-        });
+        if (!isOpenClt && item.costInCents != null) {
+          await tx.costEntry.create({
+            data: {
+              farmId: data.farmId,
+              cropSeasonId: data.cropSeasonId,
+              fieldId: data.fieldId,
+              activityId: activity.id,
+              sourceType: CostEntrySourceType.ACTIVITY_LABOR,
+              sourceId: activityLabor.id,
+              costCategoryId,
+              amountInCents: BigInt(item.costInCents),
+              date: data.date,
+            },
+          });
+        }
       }
 
       for (const item of data.machineHours) {
@@ -242,6 +254,7 @@ export class PrismaActivityRepository implements ActivityRepository {
               product: { select: { id: true, name: true } },
             },
           },
+          labor: true,
           costEntries: true,
         },
       });
@@ -256,16 +269,28 @@ export class PrismaActivityRepository implements ActivityRepository {
         data.farmId,
       );
 
+      const openCltLabor = activity.labor.filter(
+        (line) => line.costInCents == null && line.employeeId != null,
+      );
+
       const originalEntries = activity.costEntries.filter(
         (entry) => entry.sourceType !== CostEntrySourceType.REVERSAL,
       );
 
-      if (originalEntries.length === 0) {
+      if (
+        originalEntries.length === 0 &&
+        openCltLabor.length === 0 &&
+        activity.inputs.length === 0
+      ) {
         throw new ConflictException('Activity has no cost entries to reverse');
       }
 
       if (originalEntries.some((entry) => entry.reversedAt !== null)) {
         throw new ConflictException('Activity has already been reversed');
+      }
+
+      for (const line of openCltLabor) {
+        await tx.activityLabor.delete({ where: { id: line.id } });
       }
 
       for (const input of activity.inputs) {
@@ -382,9 +407,9 @@ export class PrismaActivityRepository implements ActivityRepository {
     });
   }
 
-  async hasEmployeeLaborInSeasonMonth(
+  async hasEmployeeLaborInOrgMonth(
     employeeId: string,
-    cropSeasonId: string,
+    organizationId: string,
     year: number,
     month: number,
   ): Promise<boolean> {
@@ -395,10 +420,12 @@ export class PrismaActivityRepository implements ActivityRepository {
       where: {
         employeeId,
         activity: {
-          cropSeasonId,
           date: {
             gte: start,
             lt: end,
+          },
+          farm: {
+            organizationId,
           },
         },
       },
@@ -407,9 +434,9 @@ export class PrismaActivityRepository implements ActivityRepository {
     return count > 0;
   }
 
-  async hasSalaryAllocationInSeasonMonth(
+  async hasSalaryAllocationInOrgMonth(
     employeeId: string,
-    cropSeasonId: string,
+    organizationId: string,
     year: number,
     month: number,
   ): Promise<boolean> {
@@ -418,12 +445,14 @@ export class PrismaActivityRepository implements ActivityRepository {
 
     const count = await this.prisma.transactionAllocation.count({
       where: {
-        cropSeasonId,
         transaction: {
           type: TransactionType.SALARY_PAYMENT,
           date: {
             gte: start,
             lt: end,
+          },
+          farm: {
+            organizationId,
           },
           salaryTransaction: {
             employeeId,
@@ -432,6 +461,17 @@ export class PrismaActivityRepository implements ActivityRepository {
       },
     });
 
+    return count > 0;
+  }
+
+  async hasLaborMonthClosing(
+    employeeId: string,
+    year: number,
+    month: number,
+  ): Promise<boolean> {
+    const count = await this.prisma.laborMonthClosing.count({
+      where: { employeeId, year, month },
+    });
     return count > 0;
   }
 }

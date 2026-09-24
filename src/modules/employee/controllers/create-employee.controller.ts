@@ -20,20 +20,59 @@ import { CreateEmployeeService } from '../services/create-employee.service';
 
 import { SUPPORTED_EMPLOYEE_TYPES } from '../constants/employee-type';
 
-const createEmployeeBodySchema = z.object({
-  name: z
-    .string()
-    .min(5, { message: 'Name must be at least 5 characters long.' })
-    .max(150, { message: 'Name must be at most 150 characters long.' }),
-  registration: z
-    .string()
-    .min(3, { message: 'Registration must be at least 3 characters long.' })
-    .max(20, { message: 'Registration must be at most 20 characters long.' }),
-  type: z.enum(SUPPORTED_EMPLOYEE_TYPES, {
-    message: 'Employee type is not supported in the agricultural MVP.',
-  }),
-  farmId: z.uuid().nullable().optional(),
-});
+const createEmployeeBodySchema = z
+  .object({
+    name: z
+      .string()
+      .min(5, { message: 'Name must be at least 5 characters long.' })
+      .max(150, { message: 'Name must be at most 150 characters long.' }),
+    registration: z
+      .string()
+      .min(3, { message: 'Registration must be at least 3 characters long.' })
+      .max(20, { message: 'Registration must be at most 20 characters long.' }),
+    type: z.enum(SUPPORTED_EMPLOYEE_TYPES, {
+      message: 'Employee type is not supported in the agricultural MVP.',
+    }),
+    employmentType: z.enum(['CLT', 'CONTRACTOR']),
+    monthlySalaryInCents: z.number().int().positive().optional(),
+    expectedMonthlyHours: z
+      .string()
+      .min(1)
+      .refine((value) => !Number.isNaN(Number(value)) && Number(value) > 0, {
+        message: 'expectedMonthlyHours must be greater than zero',
+      })
+      .optional(),
+    farmId: z.uuid().nullable().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.employmentType === 'CLT' && data.monthlySalaryInCents == null) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'monthlySalaryInCents is required for CLT',
+        path: ['monthlySalaryInCents'],
+      });
+    }
+    if (
+      data.employmentType === 'CONTRACTOR' &&
+      data.monthlySalaryInCents != null
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'monthlySalaryInCents is not allowed for CONTRACTOR',
+        path: ['monthlySalaryInCents'],
+      });
+    }
+    if (
+      data.employmentType === 'CONTRACTOR' &&
+      data.expectedMonthlyHours != null
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'expectedMonthlyHours is not allowed for CONTRACTOR',
+        path: ['expectedMonthlyHours'],
+      });
+    }
+  });
 
 @ApiTags('Employee')
 @FarmScoped()

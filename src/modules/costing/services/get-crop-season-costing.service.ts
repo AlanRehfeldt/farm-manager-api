@@ -5,6 +5,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { CropSeasonStatus } from '@prisma/client';
+import {
+  LABOR_CLOSING_REPOSITORY,
+  LaborClosingRepository,
+} from 'src/modules/labor-closing/repositories/labor-closing.repository';
 import { computeSeasonCosting } from '../domain/compute-season-costing';
 import { toSeasonCostingResponse } from '../mappers/costing.mapper';
 import {
@@ -17,6 +21,8 @@ export class GetCropSeasonCostingService {
   constructor(
     @Inject(COSTING_REPOSITORY)
     private readonly costingRepository: CostingRepository,
+    @Inject(LABOR_CLOSING_REPOSITORY)
+    private readonly laborClosingRepository: LaborClosingRepository,
   ) {}
 
   async execute(cropSeasonId: string, farmId: string) {
@@ -31,7 +37,12 @@ export class GetCropSeasonCostingService {
     if (context.status === CropSeasonStatus.CLOSED) {
       const snapshot = await this.costingRepository.findSnapshot(cropSeasonId);
       if (snapshot) {
-        return { costing: snapshot.payload };
+        return {
+          costing: {
+            ...snapshot.payload,
+            openLaborMonths: snapshot.payload.openLaborMonths ?? [],
+          },
+        };
       }
 
       throw new ConflictException(
@@ -39,15 +50,19 @@ export class GetCropSeasonCostingService {
       );
     }
 
-    const [costEntries, plantings, fieldHarvests] = await Promise.all([
-      this.costingRepository.findCostEntries(cropSeasonId),
-      this.costingRepository.findPlantings(cropSeasonId),
-      this.costingRepository.findFieldHarvests(
-        farmId,
-        cropSeasonId,
-        context.productionUomId,
-      ),
-    ]);
+    const [costEntries, plantings, fieldHarvests, openLaborMonths] =
+      await Promise.all([
+        this.costingRepository.findCostEntries(cropSeasonId),
+        this.costingRepository.findPlantings(cropSeasonId),
+        this.costingRepository.findFieldHarvests(
+          farmId,
+          cropSeasonId,
+          context.productionUomId,
+        ),
+        this.laborClosingRepository.findOpenCltLaborMonthsForSeason(
+          cropSeasonId,
+        ),
+      ]);
 
     const computed = computeSeasonCosting({
       costEntries,
@@ -64,6 +79,8 @@ export class GetCropSeasonCostingService {
         context.productionUomId,
         context.productionUomAcronym,
         computed,
+        null,
+        openLaborMonths,
       ),
     };
   }
