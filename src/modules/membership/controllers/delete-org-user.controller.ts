@@ -51,7 +51,8 @@ export class DeleteOrgUserController {
     type: UnauthorizedDto,
   })
   @ApiForbiddenResponse({
-    description: 'Only organization admins can delete memberships',
+    description:
+      'Only organization admins can delete memberships, or self-removal is forbidden',
     type: ForbiddenDto,
   })
   @ApiConflictResponse({

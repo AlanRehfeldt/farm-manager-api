@@ -6,6 +6,10 @@ import { Server } from 'node:http';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/common/prisma/prisma.service';
+import {
+  MEMBERSHIP_REPOSITORY,
+  MembershipRepository,
+} from '../src/modules/membership/repositories/membership.repository';
 import { changePassword } from './helpers/change-password';
 import { insertUser } from './helpers/insert-user';
 
@@ -242,7 +246,7 @@ describe('Org users (e2e)', () => {
     expect(userIds).not.toContain(platformUser.id);
   });
 
-  it('protects the last organization admin', async () => {
+  it('rejects self-removal from the organization', async () => {
     const adminMe = await request(server)
       .get('/auth/me')
       .set('Cookie', adminCookies)
@@ -253,6 +257,151 @@ describe('Org users (e2e)', () => {
       .delete(`/memberships/users/${adminUserId}`)
       .query({ organizationId })
       .set('Cookie', adminCookies)
+      .expect(403);
+  });
+
+  it('rejects demoting the last organization admin', async () => {
+    const adminMe = await request(server)
+      .get('/auth/me')
+      .set('Cookie', adminCookies)
+      .expect(200);
+    const adminUserId = commandResult<{ id: string }>(adminMe).id;
+
+    await request(server)
+      .patch(`/memberships/users/${adminUserId}`)
+      .set('Cookie', adminCookies)
+      .send({
+        organizationId,
+        name: 'Org Users Admin',
+        email: adminEmail,
+        role: 'USER',
+        farmIds: [farmAId],
+      })
       .expect(409);
+  });
+
+  it('allows another admin to remove an admin while blocking self-removal', async () => {
+    const secondAdminEmail = `orgusers.admin2.${suffix}@example.com`;
+    const secondAdminPassword = 'Admin2!x';
+
+    const createRes = await request(server)
+      .post('/memberships')
+      .set('Cookie', adminCookies)
+      .send({
+        organizationId,
+        farmIds: [],
+        role: 'ADMIN',
+        name: 'Second Admin Name',
+        email: secondAdminEmail,
+        password: secondAdminPassword,
+      })
+      .expect(201);
+
+    const secondAdminUserId = commandResult<{ userId: string }>(
+      createRes,
+    ).userId;
+
+    const adminMe = await request(server)
+      .get('/auth/me')
+      .set('Cookie', adminCookies)
+      .expect(200);
+    const adminUserId = commandResult<{ id: string }>(adminMe).id;
+
+    await request(server)
+      .delete(`/memberships/users/${adminUserId}`)
+      .query({ organizationId })
+      .set('Cookie', adminCookies)
+      .expect(403);
+
+    await request(server)
+      .delete(`/memberships/users/${secondAdminUserId}`)
+      .query({ organizationId })
+      .set('Cookie', adminCookies)
+      .expect(200);
+
+    const membershipsRes = await request(server)
+      .get('/memberships')
+      .query({ organizationId, userId: secondAdminUserId, perPage: 100 })
+      .set('Cookie', adminCookies)
+      .expect(200);
+
+    expect(listResults(membershipsRes)).toHaveLength(0);
+  });
+
+  it('rolls back when createUserWithMemberships fails on invalid farm', async () => {
+    const membershipRepository = app.get<MembershipRepository>(
+      MEMBERSHIP_REPOSITORY,
+    );
+    const orphanEmail = `orphan.create.${suffix}@example.com`;
+    const fakeFarmId = '00000000-0000-4000-8000-000000000001';
+
+    await expect(
+      membershipRepository.createUserWithMemberships(
+        {
+          name: 'Orphan Create User',
+          email: orphanEmail,
+          password: 'hashed-password',
+          role: Role.USER,
+          mustChangePassword: true,
+        },
+        [
+          {
+            organizationId,
+            farmId: fakeFarmId,
+            role: Role.USER,
+          },
+        ],
+      ),
+    ).rejects.toBeDefined();
+
+    const orphan = await prisma.user.findUnique({
+      where: { email: orphanEmail },
+    });
+    expect(orphan).toBeNull();
+  });
+
+  it('rolls back profile update when replaceProfileAndMemberships fails', async () => {
+    const membershipRepository = app.get<MembershipRepository>(
+      MEMBERSHIP_REPOSITORY,
+    );
+    const adminMe = await request(server)
+      .get('/auth/me')
+      .set('Cookie', adminCookies)
+      .expect(200);
+    const adminUserId = commandResult<{ id: string }>(adminMe).id;
+
+    const before = await prisma.user.findUniqueOrThrow({
+      where: { id: adminUserId },
+    });
+
+    const fakeFarmId = '00000000-0000-4000-8000-000000000002';
+
+    await expect(
+      membershipRepository.replaceProfileAndMemberships({
+        userId: adminUserId,
+        name: 'Should Not Persist',
+        email: `rollback.${suffix}@example.com`,
+        organizationId,
+        memberships: [
+          {
+            userId: adminUserId,
+            organizationId,
+            farmId: fakeFarmId,
+            role: Role.ADMIN,
+          },
+        ],
+      }),
+    ).rejects.toBeDefined();
+
+    const after = await prisma.user.findUniqueOrThrow({
+      where: { id: adminUserId },
+    });
+    expect(after.name).toBe(before.name);
+    expect(after.email).toBe(before.email);
+
+    const memberships = await prisma.membership.findMany({
+      where: { userId: adminUserId, organizationId },
+    });
+    expect(memberships.some((item) => item.farmId === null)).toBe(true);
   });
 });

@@ -7,6 +7,27 @@ export type CreateMembershipData = {
   role: Role;
 };
 
+export type CreateUserWithMembershipsData = {
+  name: string;
+  email: string;
+  password: string;
+  role: Role;
+  mustChangePassword: boolean;
+};
+
+export type ReplaceProfileAndMembershipsData = {
+  userId: string;
+  name: string;
+  email: string;
+  organizationId: string;
+  memberships: CreateMembershipData[];
+};
+
+export type CreateUserWithMembershipsResult = {
+  userId: string;
+  memberships: Membership[];
+};
+
 export interface SearchManyQuery {
   organizationId: string;
   farmId?: string;

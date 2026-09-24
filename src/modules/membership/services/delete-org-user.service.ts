@@ -50,6 +50,12 @@ export class DeleteOrgUserService {
       throw new NotFoundException('User does not exist');
     }
 
+    if (actorUserId === userId) {
+      throw new ForbiddenException(
+        'You cannot remove yourself from the organization',
+      );
+    }
+
     const isOrgAdmin = existing.some(
       (item) => item.role === Role.ADMIN && item.farmId === null,
     );

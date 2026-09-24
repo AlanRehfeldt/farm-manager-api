@@ -3,7 +3,10 @@ import { Membership, PlatformRole, Role } from '@prisma/client';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import {
   CreateMembershipData,
+  CreateUserWithMembershipsData,
+  CreateUserWithMembershipsResult,
   MembershipWithUser,
+  ReplaceProfileAndMembershipsData,
   SearchManyQuery,
 } from './@types';
 import { MembershipRepository } from './membership.repository';
@@ -42,8 +45,37 @@ export class PrismaMembershipRepository implements MembershipRepository {
     );
   }
 
-  async delete(id: string): Promise<void> {
-    await this.prisma.membership.delete({ where: { id } });
+  async createUserWithMemberships(
+    user: CreateUserWithMembershipsData,
+    memberships: Omit<CreateMembershipData, 'userId'>[],
+  ): Promise<CreateUserWithMembershipsResult> {
+    return this.prisma.$transaction(async (tx) => {
+      const createdUser = await tx.user.create({
+        data: {
+          name: user.name,
+          email: user.email,
+          password: user.password,
+          role: user.role,
+          mustChangePassword: user.mustChangePassword,
+        },
+      });
+
+      const created: Membership[] = [];
+      for (const row of memberships) {
+        created.push(
+          await tx.membership.create({
+            data: {
+              userId: createdUser.id,
+              organizationId: row.organizationId,
+              farmId: row.farmId ?? null,
+              role: row.role,
+            },
+          }),
+        );
+      }
+
+      return { userId: createdUser.id, memberships: created };
+    });
   }
 
   async deleteManyByUserAndOrg(
@@ -55,16 +87,27 @@ export class PrismaMembershipRepository implements MembershipRepository {
     });
   }
 
-  async replaceForUserOrg(
-    userId: string,
-    organizationId: string,
-    data: CreateMembershipData[],
+  async replaceProfileAndMemberships(
+    data: ReplaceProfileAndMembershipsData,
   ): Promise<Membership[]> {
     return this.prisma.$transaction(async (tx) => {
-      await tx.membership.deleteMany({ where: { userId, organizationId } });
+      await tx.user.update({
+        where: { id: data.userId },
+        data: {
+          name: data.name,
+          email: data.email,
+        },
+      });
+
+      await tx.membership.deleteMany({
+        where: {
+          userId: data.userId,
+          organizationId: data.organizationId,
+        },
+      });
 
       const created: Membership[] = [];
-      for (const row of data) {
+      for (const row of data.memberships) {
         created.push(
           await tx.membership.create({
             data: {
@@ -79,10 +122,6 @@ export class PrismaMembershipRepository implements MembershipRepository {
 
       return created;
     });
-  }
-
-  async findById(id: string): Promise<Membership | null> {
-    return this.prisma.membership.findUnique({ where: { id } });
   }
 
   async findOrgAdmin(

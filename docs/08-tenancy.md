@@ -49,9 +49,9 @@ No create de Product/Supplier/Employee, omitir `farmId` = compartilhado; se envi
 | `POST /onboarding` | autenticado sem membership; cria org + primeira farm + ADMIN org-wide |
 | `POST /organizations` | usuário autenticado torna-se ADMIN org-wide |
 | `POST /farms` | ADMIN da org (service) |
-| `POST /memberships` | ADMIN org-wide; `farmIds[]` (vazio = org-wide) ou `farmId` legado; `userId` existente **ou** name/email/password |
-| `PATCH /memberships/users/:userId` | ADMIN org-wide; nome, e-mail, papel, `farmIds` |
-| `DELETE /memberships/users/:userId?organizationId=` | ADMIN org-wide; remove todas as memberships do usuário na org |
+| `POST /memberships` | ADMIN org-wide; `farmIds[]` (vazio = org-wide) ou `farmId` legado; `userId` existente **ou** name/email/password; criação de usuário + memberships é atômica |
+| `PATCH /memberships/users/:userId` | ADMIN org-wide; nome, e-mail, papel, `farmIds` (replace); perfil + memberships em uma transação |
+| `DELETE /memberships/users/:userId?organizationId=` | ADMIN org-wide; remove todas as memberships do usuário na org; **403** se o ator remove a si mesmo |
 | `GET /memberships` | ADMIN; inclui `user` (id, name, email); **exclui** `platformRole != NONE` |
 | `GET /auth/me` | inclui `memberships` |
 | `POST /users` | `@PlatformAdmin()` — vendor provisiona contas (ADR-018) |
@@ -69,6 +69,8 @@ Fluxo piloto (PR-05.1):
 Alternativa para usuários dentro da org: ADMIN usa `POST /memberships` (Configurações → Usuários no app).
 
 Settings no app: `GET/PATCH /organizations/:id`, `GET/POST/PATCH /farms`, `GET/POST /memberships`, `PATCH/DELETE /memberships/users/:userId` (ADMIN org-wide).
+
+`DELETE /memberships/:id` (por id de membership) foi removido — o subset de fazendas só muda via replace no `PATCH /memberships/users/:userId`.
 
 ## Operações restritas a ADMIN (`@FarmAdmin()`)
 

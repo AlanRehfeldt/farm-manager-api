@@ -5,7 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PlatformRole, Role } from '@prisma/client';
+import { PlatformRole, Prisma, Role } from '@prisma/client';
 import {
   FARM_REPOSITORY,
   FarmRepository,
@@ -93,12 +93,6 @@ export class UpdateOrgUserService {
       }
     }
 
-    await this.userRepository.update({
-      id: userId,
-      name: input.name,
-      email: input.email,
-    });
-
     const targetFarmIds: Array<string | null> =
       farmIds === null ? [null] : farmIds;
     const rows = targetFarmIds.map((farmId) => ({
@@ -108,13 +102,26 @@ export class UpdateOrgUserService {
       role: input.role,
     }));
 
-    const memberships = await this.membershipRepository.replaceForUserOrg(
-      userId,
-      input.organizationId,
-      rows,
-    );
+    try {
+      const memberships =
+        await this.membershipRepository.replaceProfileAndMemberships({
+          userId,
+          name: input.name,
+          email: input.email,
+          organizationId: input.organizationId,
+          memberships: rows,
+        });
 
-    return { memberships };
+      return { memberships };
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException('Email or membership already exists');
+      }
+      throw error;
+    }
   }
 
   private async assertFarmsInOrg(

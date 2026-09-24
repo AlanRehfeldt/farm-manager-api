@@ -7,7 +7,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { hashPassword } from 'src/common/crypto/bcrypt';
-import { Role } from '@prisma/client';
+import { Prisma, Role } from '@prisma/client';
 import {
   FARM_REPOSITORY,
   FarmRepository,
@@ -59,14 +59,107 @@ export class CreateMembershipService {
     const farmIds = resolveFarmIds(input);
     await this.assertFarmsInOrg(input.organizationId, farmIds);
 
-    const userId = await this.resolveUserId(input);
+    const role = input.role ?? Role.USER;
+    const targetFarmIds: Array<string | null> = farmIds ?? [null];
+
+    if (input.userId) {
+      return this.attachExistingUser(input.userId, input, role, targetFarmIds);
+    }
+
+    return this.createNewUser(input, role, targetFarmIds);
+  }
+
+  private async attachExistingUser(
+    userId: string,
+    input: CreateMembershipInput,
+    role: Role,
+    targetFarmIds: Array<string | null>,
+  ) {
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User does not exist');
+    }
+
     const existing = await this.membershipRepository.findManyByUserAndOrg(
       userId,
       input.organizationId,
     );
 
+    this.assertNoMembershipConflict(existing, targetFarmIds);
+
+    const rows = targetFarmIds.map((farmId) => ({
+      userId,
+      organizationId: input.organizationId,
+      farmId,
+      role,
+    }));
+
+    try {
+      const memberships = await this.membershipRepository.createMany(rows);
+      return { membership: memberships[0] };
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException('Membership already exists');
+      }
+      throw error;
+    }
+  }
+
+  private async createNewUser(
+    input: CreateMembershipInput,
+    role: Role,
+    targetFarmIds: Array<string | null>,
+  ) {
+    if (!input.name || !input.email || !input.password) {
+      throw new ConflictException('Provide userId or name, email and password');
+    }
+
+    const emailTaken = await this.userRepository.findByEmail(input.email);
+    if (emailTaken) {
+      throw new ConflictException('Email already exists');
+    }
+
+    const encryptedPassword = await hashPassword(input.password);
+    const membershipRows = targetFarmIds.map((farmId) => ({
+      organizationId: input.organizationId,
+      farmId,
+      role,
+    }));
+
+    try {
+      const { memberships } =
+        await this.membershipRepository.createUserWithMemberships(
+          {
+            name: input.name,
+            email: input.email,
+            password: encryptedPassword,
+            role: Role.USER,
+            mustChangePassword: true,
+          },
+          membershipRows,
+        );
+
+      return { membership: memberships[0] };
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException('Email or membership already exists');
+      }
+      throw error;
+    }
+  }
+
+  private assertNoMembershipConflict(
+    existing: Array<{ farmId: string | null }>,
+    targetFarmIds: Array<string | null>,
+  ) {
     const existingHasOrgWide = existing.some((item) => item.farmId === null);
-    const creatingOrgWide = farmIds === null;
+    const creatingOrgWide = targetFarmIds.includes(null);
 
     if (existingHasOrgWide && !creatingOrgWide) {
       throw new BadRequestException(
@@ -84,8 +177,6 @@ export class CreateMembershipService {
       existing.map((item) => item.farmId).filter((id): id is string => !!id),
     );
 
-    const targetFarmIds: Array<string | null> = farmIds ?? [null];
-
     for (const farmId of targetFarmIds) {
       if (farmId === null) {
         if (existingHasOrgWide) {
@@ -98,18 +189,6 @@ export class CreateMembershipService {
         throw new ConflictException('Membership already exists');
       }
     }
-
-    const role = input.role ?? Role.USER;
-    const rows = targetFarmIds.map((farmId) => ({
-      userId,
-      organizationId: input.organizationId,
-      farmId,
-      role,
-    }));
-
-    const memberships = await this.membershipRepository.createMany(rows);
-
-    return { membership: memberships[0] };
   }
 
   private async assertFarmsInOrg(
@@ -126,35 +205,5 @@ export class CreateMembershipService {
         throw new NotFoundException('Farm does not exist');
       }
     }
-  }
-
-  private async resolveUserId(input: CreateMembershipInput): Promise<string> {
-    if (input.userId) {
-      const user = await this.userRepository.findById(input.userId);
-      if (!user) {
-        throw new NotFoundException('User does not exist');
-      }
-      return user.id;
-    }
-
-    if (!input.name || !input.email || !input.password) {
-      throw new ConflictException('Provide userId or name, email and password');
-    }
-
-    const emailTaken = await this.userRepository.findByEmail(input.email);
-    if (emailTaken) {
-      throw new ConflictException('Email already exists');
-    }
-
-    const encryptedPassword = await hashPassword(input.password);
-    const user = await this.userRepository.create({
-      name: input.name,
-      email: input.email,
-      password: encryptedPassword,
-      role: Role.USER,
-      mustChangePassword: true,
-    });
-
-    return user.id;
   }
 }

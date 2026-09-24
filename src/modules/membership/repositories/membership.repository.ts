@@ -1,21 +1,24 @@
 import { Membership } from '@prisma/client';
 import {
   CreateMembershipData,
+  CreateUserWithMembershipsData,
+  CreateUserWithMembershipsResult,
   MembershipWithUser,
+  ReplaceProfileAndMembershipsData,
   SearchManyQuery,
 } from './@types';
 
 export interface MembershipRepository {
   create(data: CreateMembershipData): Promise<Membership>;
   createMany(data: CreateMembershipData[]): Promise<Membership[]>;
-  delete(id: string): Promise<void>;
+  createUserWithMemberships(
+    user: CreateUserWithMembershipsData,
+    memberships: Omit<CreateMembershipData, 'userId'>[],
+  ): Promise<CreateUserWithMembershipsResult>;
   deleteManyByUserAndOrg(userId: string, organizationId: string): Promise<void>;
-  replaceForUserOrg(
-    userId: string,
-    organizationId: string,
-    data: CreateMembershipData[],
+  replaceProfileAndMemberships(
+    data: ReplaceProfileAndMembershipsData,
   ): Promise<Membership[]>;
-  findById(id: string): Promise<Membership | null>;
   findOrgAdmin(
     userId: string,
     organizationId: string,
