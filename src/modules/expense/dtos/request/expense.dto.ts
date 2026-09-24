@@ -46,6 +46,12 @@ export class CreateExpenseInstallmentBodyDto {
 }
 
 export class CreateExpenseAllocationBodyDto {
+  @ApiPropertyOptional({
+    description:
+      'Destination farm for costing (defaults to payer farm from x-farm-id)',
+  })
+  farmId?: string;
+
   @ApiProperty()
   costCenterId!: string;
 
@@ -58,11 +64,25 @@ export class CreateExpenseAllocationBodyDto {
   @ApiProperty()
   cropSeasonId!: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({
+    description:
+      'Single field (PR-12 compat). Prefer fieldIds for multi-field.',
+  })
   fieldId?: string;
 
-  @ApiProperty({ example: 500000 })
-  allocatedValueInCents!: number;
+  @ApiPropertyOptional({
+    type: [String],
+    description:
+      'Subset of planted fields; omit with no fieldId = all plantings of the season',
+  })
+  fieldIds?: string[];
+
+  @ApiPropertyOptional({
+    example: 500000,
+    description:
+      'Explicit share (compat). Omit on all allocations to split installment total by area (PR-29)',
+  })
+  allocatedValueInCents?: number;
 }
 
 export class CreateExpenseGenericBodyDto {

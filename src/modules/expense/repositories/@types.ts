@@ -4,6 +4,7 @@ import {
   AccountPlan,
   CropSeason,
   Employee,
+  Farm,
   Field,
   GenericTransactionDetails,
   GenericTransactionSubtype,
@@ -23,18 +24,40 @@ export type ExpenseInstallmentInput = {
   paymentForm: PaymentForm;
 };
 
+/** Payload bruto do cliente (antes da resolução no service). */
 export type ExpenseAllocationInput = {
+  farmId?: string | null;
   costCenterId: string;
   accountPlanId: string;
   costCategoryId: string;
   cropSeasonId: string;
+  /** Compat PR-12: um talhão. */
   fieldId?: string | null;
-  allocatedValueInCents: number;
+  /** PR-29: subset de talhões; omitir = todos os plantios da safra. */
+  fieldIds?: string[];
+  /** Compat: valor explícito. Omitir em todas = rateio PR-29 do total. */
+  allocatedValueInCents?: number;
 };
 
-export type PlantingAreaMeta = {
+export type ResolvedCostEntrySplit = {
+  farmId: string;
+  cropSeasonId: string;
   fieldId: string;
-  areaHa: string;
+  amountInCents: bigint;
+  costCategoryId: string;
+};
+
+/** Alocação pronta para persistir (uma por safra destino). */
+export type ResolvedExpenseAllocation = {
+  farmId: string;
+  costCenterId: string;
+  accountPlanId: string;
+  costCategoryId: string;
+  cropSeasonId: string;
+  /** Preenchido só quando o destino resolve a um único talhão. */
+  fieldId: string | null;
+  allocatedValueInCents: bigint;
+  costEntries: ResolvedCostEntrySplit[];
 };
 
 export type CreateExpenseData = {
@@ -45,8 +68,7 @@ export type CreateExpenseData = {
   genericSubtype?: GenericTransactionSubtype;
   employeeId?: string;
   installments: ExpenseInstallmentInput[];
-  allocations: ExpenseAllocationInput[];
-  plantingAreasBySeason: Record<string, PlantingAreaMeta[]>;
+  allocations: ResolvedExpenseAllocation[];
 };
 
 export type CostEntrySummary = CostEntry & {
@@ -55,6 +77,7 @@ export type CostEntrySummary = CostEntry & {
 };
 
 export type AllocationWithRelations = TransactionAllocation & {
+  farm: Pick<Farm, 'id' | 'name'>;
   costCenter: Pick<CostCenter, 'id' | 'name' | 'code'>;
   accountPlan: Pick<AccountPlan, 'id' | 'name' | 'code'>;
   costCategory: Pick<CostCategory, 'id' | 'code' | 'name'>;

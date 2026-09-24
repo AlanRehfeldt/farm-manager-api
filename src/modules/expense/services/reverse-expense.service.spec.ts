@@ -45,6 +45,7 @@ describe('ReverseExpenseService', () => {
           {
             id: 'alloc-1',
             transactionId: 'expense-1',
+            farmId: 'farm-1',
             costCenterId: 'cc-1',
             accountPlanId: 'ap-1',
             costCategoryId: 'cat-1',
@@ -53,6 +54,7 @@ describe('ReverseExpenseService', () => {
             allocatedValueInCents: BigInt(10000),
             createdAt: new Date(),
             updatedAt: new Date(),
+            farm: { id: 'farm-1', name: 'Fazenda 1' },
             costCenter: { id: 'cc-1', name: 'CC', code: '01' },
             accountPlan: { id: 'ap-1', name: 'AP', code: '01' },
             costCategory: { id: 'cat-1', code: 'outros', name: 'Outros' },

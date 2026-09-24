@@ -20,6 +20,8 @@ export type ExpenseCostEntryResponse = {
 
 export type ExpenseAllocationResponse = {
   id: string;
+  farmId: string;
+  farmName: string;
   costCenterId: string;
   costCenterName: string;
   accountPlanId: string;
@@ -89,6 +91,8 @@ export function toExpenseResponse(
 
   const allocations = expense.transactionAllocations.map((allocation) => ({
     id: allocation.id,
+    farmId: allocation.farmId,
+    farmName: allocation.farm.name,
     costCenterId: allocation.costCenterId,
     costCenterName: allocation.costCenter.name,
     accountPlanId: allocation.accountPlanId,

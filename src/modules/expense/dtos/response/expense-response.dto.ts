@@ -43,6 +43,12 @@ export class ExpenseAllocationDto {
   id!: string;
 
   @ApiProperty()
+  farmId!: string;
+
+  @ApiProperty()
+  farmName!: string;
+
+  @ApiProperty()
   costCenterId!: string;
 
   @ApiProperty()

@@ -23,11 +23,12 @@ Detalhe: `docs/08-tenancy.md`. ADR-005 em `farm-manager-docs`.
 | Org + visibilidade | Product, Supplier, Employee | org + (`farmId` null **ou** farm ativa) |
 | Sempre farm | Transaction, StockMovement, ProductStockBalance, Field, Machine, CropSeason | `farmId` do header |
 | Farm via season | CropPlanting | via `cropSeason.farmId` |
+| Destino de alocação | TransactionAllocation / CostEntry (despesa) | `farmId` destino (mesma org; pode ≠ pagadora) |
 
 `farmId` null em Product/Supplier/Employee/Membership = todas as fazendas da org. Se enviado no create, tem de igualar o header.
 
 ## Não fazer
 
 - Não filtrar UoM/CC/plano por `farmId`.
-- Não aceitar `farmId` no body de Transaction.
+- Não aceitar `farmId` no body de **Transaction** (pagadora = header). Em `TransactionAllocation`, `farmId` é destino explícito (PR-29).
 - Não implementar ACL nomeada (ADR-013) nem tabela N:N cadastro×fazendas neste estágio.

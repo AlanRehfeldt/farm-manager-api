@@ -16,6 +16,7 @@ import {
   Role,
   TransactionType,
 } from '@prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
 import {
   ACCOUNT_PLAN_REPOSITORY,
   AccountPlanRepository,
@@ -44,7 +45,12 @@ import {
   EMPLOYEE_REPOSITORY,
   EmployeeRepository,
 } from 'src/modules/employee/repositories/employee.repository';
+import {
+  FARM_REPOSITORY,
+  FarmRepository,
+} from 'src/modules/farm/repositories/farm.repository';
 import { decimalToString } from 'src/common/serialization/decimal';
+import { allocateByArea } from '../domain/allocate-by-area';
 import { toExpenseResponse } from '../mappers/expense.mapper';
 import {
   EXPENSE_REPOSITORY,
@@ -53,12 +59,13 @@ import {
 import {
   ExpenseAllocationInput,
   ExpenseInstallmentInput,
-  PlantingAreaMeta,
+  ResolvedExpenseAllocation,
 } from '../repositories/@types';
 
 type CreateExpenseInput = {
-  farmId: string;
+  payerFarmId: string;
   organizationId: string;
+  userId: string;
   membershipRole: Role;
   type: TransactionType;
   date: Date;
@@ -67,6 +74,21 @@ type CreateExpenseInput = {
   salary?: { employeeId: string };
   installments: ExpenseInstallmentInput[];
   allocations: ExpenseAllocationInput[];
+};
+
+function allocationPoolKey(cropSeasonId: string, fieldId: string): string {
+  return `${cropSeasonId}:${fieldId}`;
+}
+
+type DestinationField = {
+  allocationIndex: number;
+  farmId: string;
+  cropSeasonId: string;
+  fieldId: string;
+  areaHa: Decimal;
+  costCenterId: string;
+  accountPlanId: string;
+  costCategoryId: string;
 };
 
 @Injectable()
@@ -88,6 +110,8 @@ export class CreateExpenseService {
     private readonly employeeRepository: EmployeeRepository,
     @Inject(ACTIVITY_REPOSITORY)
     private readonly activityRepository: ActivityRepository,
+    @Inject(FARM_REPOSITORY)
+    private readonly farmRepository: FarmRepository,
   ) {}
 
   async execute(input: CreateExpenseInput) {
@@ -125,15 +149,32 @@ export class CreateExpenseService {
       (sum, inst) => sum + BigInt(inst.valueInCents),
       0n,
     );
-    const allocationTotal = input.allocations.reduce(
-      (sum, alloc) => sum + BigInt(alloc.allocatedValueInCents),
-      0n,
+
+    const withValue = input.allocations.filter(
+      (a) => a.allocatedValueInCents !== undefined,
+    );
+    const withoutValue = input.allocations.filter(
+      (a) => a.allocatedValueInCents === undefined,
     );
 
-    if (installmentTotal !== allocationTotal) {
+    if (withValue.length > 0 && withoutValue.length > 0) {
       throw new BadRequestException(
-        'Installments total must equal allocations total',
+        'Cannot mix allocations with and without allocatedValueInCents',
       );
+    }
+
+    const isCompatMode = withValue.length === input.allocations.length;
+
+    if (isCompatMode) {
+      const allocationTotal = input.allocations.reduce(
+        (sum, alloc) => sum + BigInt(alloc.allocatedValueInCents!),
+        0n,
+      );
+      if (installmentTotal !== allocationTotal) {
+        throw new BadRequestException(
+          'Installments total must equal allocations total',
+        );
+      }
     }
 
     if (
@@ -143,46 +184,85 @@ export class CreateExpenseService {
       const employee = await this.employeeRepository.findById(
         input.salary.employeeId,
         input.organizationId,
-        input.farmId,
+        input.payerFarmId,
       );
       if (!employee) {
         throw new NotFoundException('Employee not found');
       }
     }
 
-    const plantingAreasBySeason: Record<string, PlantingAreaMeta[]> = {};
-    const seasonIdsNeedingPlantings = new Set<string>();
+    const resolvedDestinations: DestinationField[][] = [];
 
-    for (const allocation of input.allocations) {
-      await this.validateAllocation(input, allocation);
-
-      if (
-        !allocation.fieldId &&
-        !plantingAreasBySeason[allocation.cropSeasonId]
-      ) {
-        seasonIdsNeedingPlantings.add(allocation.cropSeasonId);
-      }
+    for (let i = 0; i < input.allocations.length; i++) {
+      const fields = await this.resolveAllocationDestinations(
+        input,
+        input.allocations[i],
+        i,
+      );
+      resolvedDestinations.push(fields);
     }
 
-    for (const seasonId of seasonIdsNeedingPlantings) {
-      const plantings = await this.cropPlantingRepository.findAllBySeason(
-        seasonId,
-        input.farmId,
+    this.assertNoDuplicateFields(resolvedDestinations.flat());
+
+    let resolvedAllocations: ResolvedExpenseAllocation[];
+
+    if (isCompatMode) {
+      resolvedAllocations = [];
+      for (let i = 0; i < input.allocations.length; i++) {
+        const allocation = input.allocations[i];
+        const fields = resolvedDestinations[i];
+        const amount = BigInt(allocation.allocatedValueInCents!);
+        resolvedAllocations.push(
+          this.buildResolvedAllocation(allocation, fields, amount),
+        );
+      }
+    } else {
+      const allFields = resolvedDestinations.flat();
+      if (allFields.length === 0) {
+        throw new BadRequestException(
+          'No fields to allocate; select at least one planted field',
+        );
+      }
+
+      const splits = allocateByArea(
+        installmentTotal,
+        allFields.map((f) => ({
+          fieldId: allocationPoolKey(f.cropSeasonId, f.fieldId),
+          areaHa: f.areaHa,
+        })),
+      );
+      const amountByPoolKey = new Map(
+        splits.map((s) => [s.fieldId, s.amountInCents]),
       );
 
-      plantingAreasBySeason[seasonId] = plantings.map((planting) => ({
-        fieldId: planting.fieldId,
-        areaHa:
-          decimalToString(planting.plantedAreaHa) ??
-          decimalToString(planting.field.areaHa)!,
-      }));
+      resolvedAllocations = [];
+      for (let i = 0; i < input.allocations.length; i++) {
+        const allocation = input.allocations[i];
+        const fields = resolvedDestinations[i];
+        const seasonTotal = fields.reduce(
+          (sum, f) =>
+            sum +
+            (amountByPoolKey.get(
+              allocationPoolKey(f.cropSeasonId, f.fieldId),
+            ) ?? 0n),
+          0n,
+        );
+        resolvedAllocations.push(
+          this.buildResolvedAllocationFromSplits(
+            allocation,
+            fields,
+            amountByPoolKey,
+            seasonTotal,
+          ),
+        );
+      }
     }
 
     if (
       input.type === TransactionType.SALARY_PAYMENT &&
       input.salary?.employeeId
     ) {
-      for (const allocation of input.allocations) {
+      for (const allocation of resolvedAllocations) {
         const hasOverlap =
           await this.activityRepository.hasEmployeeLaborInSeasonMonth(
             input.salary.employeeId,
@@ -201,33 +281,145 @@ export class CreateExpenseService {
     }
 
     const { expense } = await this.expenseRepository.create({
-      farmId: input.farmId,
+      farmId: input.payerFarmId,
       type: input.type,
       date: input.date,
       note: input.note,
       genericSubtype: input.generic?.subtype,
       employeeId: input.salary?.employeeId,
       installments: input.installments,
-      allocations: input.allocations,
-      plantingAreasBySeason,
+      allocations: resolvedAllocations,
     });
 
     return { expense: toExpenseResponse(expense) };
   }
 
-  private async validateAllocation(
+  private buildResolvedAllocation(
+    allocation: ExpenseAllocationInput,
+    fields: DestinationField[],
+    amount: bigint,
+  ): ResolvedExpenseAllocation {
+    const destinationFarmId = fields[0].farmId;
+    const cropSeasonId = fields[0].cropSeasonId;
+
+    if (fields.length === 1) {
+      return {
+        farmId: destinationFarmId,
+        costCenterId: allocation.costCenterId,
+        accountPlanId: allocation.accountPlanId,
+        costCategoryId: allocation.costCategoryId,
+        cropSeasonId,
+        fieldId: fields[0].fieldId,
+        allocatedValueInCents: amount,
+        costEntries: [
+          {
+            farmId: destinationFarmId,
+            cropSeasonId,
+            fieldId: fields[0].fieldId,
+            amountInCents: amount,
+            costCategoryId: allocation.costCategoryId,
+          },
+        ],
+      };
+    }
+
+    const splits = allocateByArea(
+      amount,
+      fields.map((f) => ({ fieldId: f.fieldId, areaHa: f.areaHa })),
+    );
+
+    return {
+      farmId: destinationFarmId,
+      costCenterId: allocation.costCenterId,
+      accountPlanId: allocation.accountPlanId,
+      costCategoryId: allocation.costCategoryId,
+      cropSeasonId,
+      fieldId: null,
+      allocatedValueInCents: amount,
+      costEntries: splits.map((split) => ({
+        farmId: destinationFarmId,
+        cropSeasonId,
+        fieldId: split.fieldId,
+        amountInCents: split.amountInCents,
+        costCategoryId: allocation.costCategoryId,
+      })),
+    };
+  }
+
+  private buildResolvedAllocationFromSplits(
+    allocation: ExpenseAllocationInput,
+    fields: DestinationField[],
+    amountByField: Map<string, bigint>,
+    seasonTotal: bigint,
+  ): ResolvedExpenseAllocation {
+    const destinationFarmId = fields[0].farmId;
+    const cropSeasonId = fields[0].cropSeasonId;
+
+    return {
+      farmId: destinationFarmId,
+      costCenterId: allocation.costCenterId,
+      accountPlanId: allocation.accountPlanId,
+      costCategoryId: allocation.costCategoryId,
+      cropSeasonId,
+      fieldId: fields.length === 1 ? fields[0].fieldId : null,
+      allocatedValueInCents: seasonTotal,
+      costEntries: fields.map((f) => ({
+        farmId: f.farmId,
+        cropSeasonId: f.cropSeasonId,
+        fieldId: f.fieldId,
+        amountInCents:
+          amountByField.get(allocationPoolKey(f.cropSeasonId, f.fieldId)) ?? 0n,
+        costCategoryId: allocation.costCategoryId,
+      })),
+    };
+  }
+
+  private assertNoDuplicateFields(fields: DestinationField[]) {
+    const seen = new Set<string>();
+    for (const field of fields) {
+      const key = `${field.cropSeasonId}:${field.fieldId}`;
+      if (seen.has(key)) {
+        throw new BadRequestException(
+          'Duplicate field across allocation destinations',
+        );
+      }
+      seen.add(key);
+    }
+  }
+
+  private async resolveAllocationDestinations(
     input: CreateExpenseInput,
     allocation: ExpenseAllocationInput,
-  ) {
-    if (allocation.allocatedValueInCents <= 0) {
+    allocationIndex: number,
+  ): Promise<DestinationField[]> {
+    if (
+      allocation.fieldId &&
+      allocation.fieldIds &&
+      allocation.fieldIds.length > 0
+    ) {
       throw new BadRequestException(
-        'Allocation value must be greater than zero',
+        'Cannot combine fieldId and fieldIds on the same allocation',
       );
+    }
+
+    const destinationFarmId = allocation.farmId ?? input.payerFarmId;
+
+    if (destinationFarmId !== input.payerFarmId) {
+      const accessible = await this.farmRepository.findAccessibleByUser(
+        destinationFarmId,
+        input.userId,
+      );
+      if (!accessible) {
+        throw new NotFoundException('Farm not found');
+      }
+      if (accessible.organizationId !== input.organizationId) {
+        throw new NotFoundException('Farm not found');
+      }
     }
 
     const cropSeason = await this.cropSeasonRepository.findById(
       allocation.cropSeasonId,
-      input.farmId,
+      destinationFarmId,
     );
     if (!cropSeason) {
       throw new NotFoundException('Crop season not found');
@@ -264,16 +456,67 @@ export class CreateExpenseService {
       throw new NotFoundException('Cost category not found');
     }
 
+    const plantings = await this.cropPlantingRepository.findAllBySeason(
+      allocation.cropSeasonId,
+      destinationFarmId,
+    );
+
+    let selectedFieldIds: string[];
+
     if (allocation.fieldId) {
-      const planting = await this.cropPlantingRepository.findBySeasonAndField(
-        allocation.cropSeasonId,
-        allocation.fieldId,
-      );
+      const planting = plantings.find((p) => p.fieldId === allocation.fieldId);
       if (!planting) {
         throw new BadRequestException(
           'Field is not planted in this crop season',
         );
       }
+      selectedFieldIds = [allocation.fieldId];
+    } else if (allocation.fieldIds && allocation.fieldIds.length > 0) {
+      selectedFieldIds = [...new Set(allocation.fieldIds)];
+      for (const fieldId of selectedFieldIds) {
+        if (!plantings.some((p) => p.fieldId === fieldId)) {
+          throw new BadRequestException(
+            'Field is not planted in this crop season',
+          );
+        }
+      }
+    } else {
+      selectedFieldIds = plantings.map((p) => p.fieldId);
     }
+
+    if (selectedFieldIds.length === 0) {
+      throw new BadRequestException(
+        'Crop season has no planted fields to allocate',
+      );
+    }
+
+    const destinations: DestinationField[] = [];
+
+    for (const fieldId of selectedFieldIds) {
+      const planting = plantings.find((p) => p.fieldId === fieldId)!;
+      const areaHaStr =
+        decimalToString(planting.plantedAreaHa) ??
+        decimalToString(planting.field.areaHa);
+      if (!areaHaStr) {
+        throw new BadRequestException('Field area must be positive');
+      }
+      const areaHa = new Decimal(areaHaStr);
+      if (areaHa.lte(0)) {
+        throw new BadRequestException('Field area must be positive');
+      }
+
+      destinations.push({
+        allocationIndex,
+        farmId: destinationFarmId,
+        cropSeasonId: allocation.cropSeasonId,
+        fieldId,
+        areaHa,
+        costCenterId: allocation.costCenterId,
+        accountPlanId: allocation.accountPlanId,
+        costCategoryId: allocation.costCategoryId,
+      });
+    }
+
+    return destinations;
   }
 }

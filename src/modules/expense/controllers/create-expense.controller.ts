@@ -8,6 +8,10 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import z from 'zod';
+import {
+  AuthenticatedUser,
+  CurrentUser,
+} from 'src/modules/auth/decorators/current-user.decorator';
 import { FarmId } from 'src/common/tenancy/farm-id.decorator';
 import { FarmScoped } from 'src/common/tenancy/farm-scoped.decorator';
 import { MembershipRole } from 'src/common/tenancy/membership-role.decorator';
@@ -72,12 +76,14 @@ const createExpenseBodySchema = z
     allocations: z
       .array(
         z.object({
+          farmId: z.uuid().optional(),
           costCenterId: z.uuid(),
           accountPlanId: z.uuid(),
           costCategoryId: z.uuid(),
           cropSeasonId: z.uuid(),
           fieldId: z.uuid().optional(),
-          allocatedValueInCents: z.coerce.number().int().positive(),
+          fieldIds: z.array(z.uuid()).optional(),
+          allocatedValueInCents: z.coerce.number().int().positive().optional(),
         }),
       )
       .min(1),
@@ -96,6 +102,36 @@ const createExpenseBodySchema = z
         message: 'Salary payment requires employeeId',
         path: ['salary', 'employeeId'],
       });
+    }
+
+    const withValue = data.allocations.filter(
+      (a) => a.allocatedValueInCents !== undefined,
+    );
+    const withoutValue = data.allocations.filter(
+      (a) => a.allocatedValueInCents === undefined,
+    );
+    if (withValue.length > 0 && withoutValue.length > 0) {
+      ctx.addIssue({
+        code: 'custom',
+        message:
+          'Cannot mix allocations with and without allocatedValueInCents',
+        path: ['allocations'],
+      });
+    }
+
+    for (let i = 0; i < data.allocations.length; i++) {
+      const allocation = data.allocations[i];
+      if (
+        allocation.fieldId &&
+        allocation.fieldIds &&
+        allocation.fieldIds.length > 0
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Cannot combine fieldId and fieldIds on the same allocation',
+          path: ['allocations', i],
+        });
+      }
     }
   });
 
@@ -129,6 +165,7 @@ export class CreateExpenseController {
   async create(
     @OrganizationId() organizationId: string,
     @FarmId() farmId: string,
+    @CurrentUser() user: AuthenticatedUser,
     @MembershipRole() membershipRole: import('@prisma/client').Role,
     @Body(new ZodValidationPipe(createExpenseBodySchema))
     data: CreateExpenseBodyDto,
@@ -136,7 +173,8 @@ export class CreateExpenseController {
     const { expense } = await this.createExpenseService.execute({
       ...data,
       organizationId,
-      farmId,
+      payerFarmId: farmId,
+      userId: user.userId,
       membershipRole,
     });
 

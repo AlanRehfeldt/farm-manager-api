@@ -6,6 +6,7 @@ import { CostCategoryModule } from '../cost-category/cost-category.module';
 import { CostCenterModule } from '../cost-center/cost-center.module';
 import { CropSeasonModule } from '../crop-season/crop-season.module';
 import { EmployeeModule } from '../employee/employee.module';
+import { FarmModule } from '../farm/farm.module';
 import { CreateExpenseController } from './controllers/create-expense.controller';
 import { FetchExpensesController } from './controllers/fetch-expenses.controller';
 import { GetExpenseController } from './controllers/get-expense.controller';
@@ -26,6 +27,7 @@ import { ReverseExpenseService } from './services/reverse-expense.service';
     CostCategoryModule,
     EmployeeModule,
     ActivityModule,
+    FarmModule,
   ],
   controllers: [
     CreateExpenseController,

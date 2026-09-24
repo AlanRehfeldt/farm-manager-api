@@ -13,9 +13,14 @@ import { AccountPlanRepository } from 'src/modules/account-plan/repositories/acc
 import { CostCategoryRepository } from 'src/modules/cost-category/repositories/cost-category.repository';
 import { EmployeeRepository } from 'src/modules/employee/repositories/employee.repository';
 import { ActivityRepository } from 'src/modules/activity/repositories/activity.repository';
+import { FarmRepository } from 'src/modules/farm/repositories/farm.repository';
+import { CreateExpenseData, CreateExpenseResult } from '../repositories/@types';
 
 describe('CreateExpenseService', () => {
-  const createExpense = jest.fn();
+  const createExpense = jest.fn<
+    Promise<CreateExpenseResult>,
+    [CreateExpenseData]
+  >();
   const expenseRepository: jest.Mocked<ExpenseRepository> = {
     create: createExpense,
     reverse: jest.fn(),
@@ -98,6 +103,21 @@ describe('CreateExpenseService', () => {
     hasSalaryAllocationInSeasonMonth: jest.fn(),
   };
 
+  const findAccessibleByUser = jest.fn<
+    ReturnType<FarmRepository['findAccessibleByUser']>,
+    Parameters<FarmRepository['findAccessibleByUser']>
+  >();
+
+  const farmRepository: jest.Mocked<FarmRepository> = {
+    create: jest.fn(),
+    update: jest.fn(),
+    findById: jest.fn(),
+    findByOrganizationAndName: jest.fn(),
+    findAccessibleByUser,
+    searchAccessibleByUser: jest.fn(),
+    countAccessibleByUser: jest.fn(),
+  };
+
   const service = new CreateExpenseService(
     expenseRepository,
     cropSeasonRepository,
@@ -107,11 +127,13 @@ describe('CreateExpenseService', () => {
     costCategoryRepository,
     employeeRepository,
     activityRepository,
+    farmRepository,
   );
 
   const baseInput = {
-    farmId: 'farm-1',
+    payerFarmId: 'farm-1',
     organizationId: 'org-1',
+    userId: 'user-1',
     membershipRole: Role.ADMIN,
     type: 'GENERIC' as const,
     date: new Date('2026-08-15T12:00:00.000Z'),
@@ -134,6 +156,19 @@ describe('CreateExpenseService', () => {
     ],
   };
 
+  const plantingsFarm1 = [
+    {
+      fieldId: 'field-a',
+      plantedAreaHa: { toString: () => '2' },
+      field: { areaHa: { toString: () => '2' } },
+    },
+    {
+      fieldId: 'field-b',
+      plantedAreaHa: null,
+      field: { areaHa: { toString: () => '1' } },
+    },
+  ];
+
   beforeEach(() => {
     jest.clearAllMocks();
     cropSeasonRepository.findById.mockResolvedValue({
@@ -145,18 +180,9 @@ describe('CreateExpenseService', () => {
     costCategoryRepository.searchMany.mockResolvedValue([
       { id: 'cat-1' },
     ] as never);
-    cropPlantingRepository.findAllBySeason.mockResolvedValue([
-      {
-        fieldId: 'field-a',
-        plantedAreaHa: { toString: () => '2' },
-        field: { areaHa: { toString: () => '2' } },
-      },
-      {
-        fieldId: 'field-b',
-        plantedAreaHa: null,
-        field: { areaHa: { toString: () => '1' } },
-      },
-    ] as never);
+    cropPlantingRepository.findAllBySeason.mockResolvedValue(
+      plantingsFarm1 as never,
+    );
     createExpense.mockResolvedValue({
       expense: {
         id: 'expense-1',
@@ -171,27 +197,40 @@ describe('CreateExpenseService', () => {
         salaryTransaction: null,
         genericDetails: { subtype: 'SERVICE_PAYMENT' },
       },
-    });
+    } as unknown as CreateExpenseResult);
   });
 
-  it('creates generic expense with season allocation and area split metadata', async () => {
+  it('creates generic expense with season allocation and area split (compat)', async () => {
     await service.execute(baseInput);
 
-    expect(createExpense).toHaveBeenCalledWith(
+    const payload = createExpense.mock.calls[0][0];
+    expect(payload.farmId).toBe('farm-1');
+    expect(payload.type).toBe('GENERIC');
+    expect(payload.allocations[0]).toEqual(
       expect.objectContaining({
         farmId: 'farm-1',
-        type: 'GENERIC',
-        plantingAreasBySeason: {
-          'season-1': [
-            { fieldId: 'field-a', areaHa: '2' },
-            { fieldId: 'field-b', areaHa: '1' },
-          ],
-        },
+        cropSeasonId: 'season-1',
+        fieldId: null,
+        allocatedValueInCents: 500000n,
       }),
+    );
+    expect(payload.allocations[0].costEntries).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          fieldId: 'field-a',
+          amountInCents: 333333n,
+          farmId: 'farm-1',
+        }),
+        expect.objectContaining({
+          fieldId: 'field-b',
+          amountInCents: 166667n,
+          farmId: 'farm-1',
+        }),
+      ]),
     );
   });
 
-  it('throws when installments total differs from allocations total', async () => {
+  it('throws when installments total differs from allocations total (compat)', async () => {
     await expect(
       service.execute({
         ...baseInput,
@@ -230,8 +269,6 @@ describe('CreateExpenseService', () => {
   });
 
   it('throws when field is not planted in season', async () => {
-    cropPlantingRepository.findBySeasonAndField.mockResolvedValue(null);
-
     await expect(
       service.execute({
         ...baseInput,
@@ -249,5 +286,232 @@ describe('CreateExpenseService', () => {
     costCenterRepository.findById.mockResolvedValue(null);
 
     await expect(service.execute(baseInput)).rejects.toThrow(NotFoundException);
+  });
+
+  it('rejects mixing allocations with and without value', async () => {
+    await expect(
+      service.execute({
+        ...baseInput,
+        allocations: [
+          {
+            costCenterId: 'cc-1',
+            accountPlanId: 'ap-1',
+            costCategoryId: 'cat-1',
+            cropSeasonId: 'season-1',
+            allocatedValueInCents: 250000,
+          },
+          {
+            costCenterId: 'cc-1',
+            accountPlanId: 'ap-1',
+            costCategoryId: 'cat-1',
+            cropSeasonId: 'season-1',
+            fieldIds: ['field-a'],
+          },
+        ],
+      }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('rateia cross-farm por área sem allocatedValueInCents (PR-29)', async () => {
+    findAccessibleByUser.mockResolvedValue({
+      id: 'farm-2',
+      organizationId: 'org-1',
+    } as never);
+
+    cropSeasonRepository.findById.mockImplementation(
+      (id: string, farmId: string) => {
+        if (id === 'season-1' && farmId === 'farm-1') {
+          return Promise.resolve({
+            id: 'season-1',
+            status: CropSeasonStatus.ACTIVE,
+          } as never);
+        }
+        if (id === 'season-2' && farmId === 'farm-2') {
+          return Promise.resolve({
+            id: 'season-2',
+            status: CropSeasonStatus.ACTIVE,
+          } as never);
+        }
+        return Promise.resolve(null);
+      },
+    );
+
+    cropPlantingRepository.findAllBySeason.mockImplementation(
+      (seasonId: string) => {
+        if (seasonId === 'season-1') {
+          return Promise.resolve([
+            {
+              fieldId: 'field-a',
+              plantedAreaHa: { toString: () => '2' },
+              field: { areaHa: { toString: () => '2' } },
+            },
+          ] as never);
+        }
+        return Promise.resolve([
+          {
+            fieldId: 'field-c',
+            plantedAreaHa: { toString: () => '1' },
+            field: { areaHa: { toString: () => '1' } },
+          },
+        ] as never);
+      },
+    );
+
+    await service.execute({
+      ...baseInput,
+      installments: [
+        {
+          valueInCents: 10000,
+          dueDate: new Date('2026-08-20'),
+          paymentForm: 'PIX',
+        },
+      ],
+      allocations: [
+        {
+          costCenterId: 'cc-1',
+          accountPlanId: 'ap-1',
+          costCategoryId: 'cat-1',
+          cropSeasonId: 'season-1',
+          fieldIds: ['field-a'],
+        },
+        {
+          farmId: 'farm-2',
+          costCenterId: 'cc-1',
+          accountPlanId: 'ap-1',
+          costCategoryId: 'cat-1',
+          cropSeasonId: 'season-2',
+          fieldIds: ['field-c'],
+        },
+      ],
+    });
+
+    expect(findAccessibleByUser).toHaveBeenCalledWith('farm-2', 'user-1');
+
+    const createArg = createExpense.mock.calls[0][0];
+    expect(createArg.farmId).toBe('farm-1');
+    expect(createArg.allocations).toHaveLength(2);
+
+    const entryA = createArg.allocations[0].costEntries[0];
+    const entryC = createArg.allocations[1].costEntries[0];
+    expect(entryA.amountInCents).toBe(6667n);
+    expect(entryA.farmId).toBe('farm-1');
+    expect(entryC.amountInCents).toBe(3333n);
+    expect(entryC.farmId).toBe('farm-2');
+    expect(entryA.amountInCents + entryC.amountInCents).toBe(10000n);
+  });
+
+  it('rateia o mesmo talhão em duas safras sem colidir a cota', async () => {
+    cropSeasonRepository.findById.mockImplementation((id: string) => {
+      return Promise.resolve({
+        id,
+        status: CropSeasonStatus.ACTIVE,
+      } as never);
+    });
+
+    cropPlantingRepository.findAllBySeason.mockImplementation(
+      (seasonId: string) => {
+        const area = seasonId === 'season-1' ? '2' : '1';
+        return Promise.resolve([
+          {
+            fieldId: 'field-shared',
+            plantedAreaHa: { toString: () => area },
+            field: { areaHa: { toString: () => area } },
+          },
+        ] as never);
+      },
+    );
+
+    await service.execute({
+      ...baseInput,
+      installments: [
+        {
+          valueInCents: 10000,
+          dueDate: new Date('2026-08-20'),
+          paymentForm: 'PIX',
+        },
+      ],
+      allocations: [
+        {
+          costCenterId: 'cc-1',
+          accountPlanId: 'ap-1',
+          costCategoryId: 'cat-1',
+          cropSeasonId: 'season-1',
+          fieldIds: ['field-shared'],
+        },
+        {
+          costCenterId: 'cc-1',
+          accountPlanId: 'ap-1',
+          costCategoryId: 'cat-1',
+          cropSeasonId: 'season-2',
+          fieldIds: ['field-shared'],
+        },
+      ],
+    });
+
+    const payload = createExpense.mock.calls[0][0];
+    const amounts = payload.allocations.map(
+      (allocation) => allocation.costEntries[0].amountInCents,
+    );
+    expect(amounts).toEqual([6667n, 3333n]);
+    expect(amounts[0] + amounts[1]).toBe(10000n);
+  });
+
+  it('rejects inaccessible destination farm', async () => {
+    findAccessibleByUser.mockResolvedValue(null);
+
+    await expect(
+      service.execute({
+        ...baseInput,
+        installments: [
+          {
+            valueInCents: 10000,
+            dueDate: new Date('2026-08-20'),
+            paymentForm: 'PIX',
+          },
+        ],
+        allocations: [
+          {
+            farmId: 'farm-other',
+            costCenterId: 'cc-1',
+            accountPlanId: 'ap-1',
+            costCategoryId: 'cat-1',
+            cropSeasonId: 'season-x',
+          },
+        ],
+      }),
+    ).rejects.toThrow(NotFoundException);
+  });
+
+  it('rejects closed destination season in PR-29 mode', async () => {
+    findAccessibleByUser.mockResolvedValue({
+      id: 'farm-2',
+      organizationId: 'org-1',
+    } as never);
+    cropSeasonRepository.findById.mockResolvedValue({
+      id: 'season-2',
+      status: CropSeasonStatus.CLOSED,
+    } as never);
+
+    await expect(
+      service.execute({
+        ...baseInput,
+        installments: [
+          {
+            valueInCents: 10000,
+            dueDate: new Date('2026-08-20'),
+            paymentForm: 'PIX',
+          },
+        ],
+        allocations: [
+          {
+            farmId: 'farm-2',
+            costCenterId: 'cc-1',
+            accountPlanId: 'ap-1',
+            costCategoryId: 'cat-1',
+            cropSeasonId: 'season-2',
+          },
+        ],
+      }),
+    ).rejects.toThrow(ConflictException);
   });
 });

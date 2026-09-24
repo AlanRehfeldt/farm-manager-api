@@ -45,6 +45,7 @@ describe('CreateStockAdjustmentService', () => {
       name: 'Ureia',
       description: null,
       unitOfMeasurementId: 'uom-id',
+      costCategoryId: 'cat-id',
       createdAt: new Date(),
       updatedAt: new Date(),
     });

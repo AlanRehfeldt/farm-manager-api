@@ -32,8 +32,11 @@ Decorators: `@FarmId()`, `@OrganizationId()` em `src/common/tenancy/`.
 | Org + visibilidade | `Product`, `Supplier`, `Employee` | `organizationId` + `farmId` opcional | org **e** (`farmId` IS NULL OR `farmId` = farm ativa) |
 | Sempre farm | `Transaction`, `StockMovement`, `ProductStockBalance`, `Field`, `Machine`, `CropSeason` | `farmId` obrigatório | `farmId` do header |
 | Farm via season | `CropPlanting` | via `cropSeason.farmId` | farm da safra no header |
+| Destino de alocação | `TransactionAllocation`, `CostEntry` (path B) | `farmId` destino (pode ≠ pagadora; mesma org) | ledger/custeio pela fazenda da safra |
 
 Installment / Purchase / Salary isolados via `transaction.farmId`.
+
+**Alocação de despesa (PR-29):** `Transaction.farmId` = fazenda **pagadora** (sempre o `x-farm-id` do header; **não** aceitar `farmId` no body da Transaction). `TransactionAllocation.farmId` = fazenda **destino** do custeio — pode diferir da pagadora, desde que seja da mesma organização e acessível ao usuário (`findAccessibleByUser`). `CostEntry.farmId` segue o destino da alocação (ledger do objeto de custo).
 
 Identidade de catálogo é da **org**: `(organizationId, acronym)`, `(organizationId, code)`, `(organizationId, cnpj)`, `(organizationId, registration)`. Saldo de estoque é `(farmId, productId)`.
 

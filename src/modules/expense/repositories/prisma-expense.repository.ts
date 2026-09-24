@@ -4,10 +4,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { CostEntrySourceType, TransactionType } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
 import { assertActiveCropSeasonLocked } from 'src/common/prisma/crop-season-lock';
 import { PrismaService } from 'src/common/prisma/prisma.service';
-import { allocateByArea } from '../domain/allocate-by-area';
 import {
   CreateExpenseData,
   CreateExpenseResult,
@@ -22,6 +20,9 @@ const expenseInclude = {
   installments: true,
   transactionAllocations: {
     include: {
+      farm: {
+        select: { id: true, name: true },
+      },
       costCenter: {
         select: { id: true, name: true, code: true },
       },
@@ -55,14 +56,20 @@ export class PrismaExpenseRepository implements ExpenseRepository {
 
   async create(data: CreateExpenseData): Promise<CreateExpenseResult> {
     return await this.prisma.$transaction(async (tx) => {
-      const seasonIds = [
-        ...new Set(
-          data.allocations.map((allocation) => allocation.cropSeasonId),
-        ),
+      const lockKeys = [
+        ...new Map(
+          data.allocations.map((allocation) => [
+            `${allocation.farmId}:${allocation.cropSeasonId}`,
+            {
+              farmId: allocation.farmId,
+              cropSeasonId: allocation.cropSeasonId,
+            },
+          ]),
+        ).values(),
       ];
 
-      for (const cropSeasonId of seasonIds) {
-        await assertActiveCropSeasonLocked(tx, cropSeasonId, data.farmId);
+      for (const lock of lockKeys) {
+        await assertActiveCropSeasonLocked(tx, lock.cropSeasonId, lock.farmId);
       }
 
       const transaction = await tx.transaction.create({
@@ -108,70 +115,29 @@ export class PrismaExpenseRepository implements ExpenseRepository {
         const createdAllocation = await tx.transactionAllocation.create({
           data: {
             transactionId: transaction.id,
+            farmId: allocation.farmId,
             costCenterId: allocation.costCenterId,
             accountPlanId: allocation.accountPlanId,
             costCategoryId: allocation.costCategoryId,
             cropSeasonId: allocation.cropSeasonId,
-            fieldId: allocation.fieldId ?? null,
-            allocatedValueInCents: BigInt(allocation.allocatedValueInCents),
+            fieldId: allocation.fieldId,
+            allocatedValueInCents: allocation.allocatedValueInCents,
           },
         });
 
-        const amount = BigInt(allocation.allocatedValueInCents);
-
-        if (allocation.fieldId) {
+        for (const entry of allocation.costEntries) {
           await tx.costEntry.create({
             data: {
-              farmId: data.farmId,
-              cropSeasonId: allocation.cropSeasonId,
-              fieldId: allocation.fieldId,
+              farmId: entry.farmId,
+              cropSeasonId: entry.cropSeasonId,
+              fieldId: entry.fieldId,
               sourceType: CostEntrySourceType.ALLOCATION,
               sourceId: createdAllocation.id,
-              costCategoryId: allocation.costCategoryId,
-              amountInCents: amount,
+              costCategoryId: entry.costCategoryId,
+              amountInCents: entry.amountInCents,
               date: data.date,
             },
           });
-        } else {
-          const plantings =
-            data.plantingAreasBySeason[allocation.cropSeasonId] ?? [];
-
-          if (plantings.length === 0) {
-            await tx.costEntry.create({
-              data: {
-                farmId: data.farmId,
-                cropSeasonId: allocation.cropSeasonId,
-                fieldId: null,
-                sourceType: CostEntrySourceType.ALLOCATION,
-                sourceId: createdAllocation.id,
-                costCategoryId: allocation.costCategoryId,
-                amountInCents: amount,
-                date: data.date,
-              },
-            });
-          } else {
-            const fieldAreas = plantings.map((planting) => ({
-              fieldId: planting.fieldId,
-              areaHa: new Decimal(planting.areaHa),
-            }));
-
-            const splits = allocateByArea(amount, fieldAreas);
-
-            for (const split of splits) {
-              await tx.costEntry.create({
-                data: {
-                  farmId: data.farmId,
-                  cropSeasonId: allocation.cropSeasonId,
-                  fieldId: split.fieldId,
-                  sourceType: CostEntrySourceType.ALLOCATION,
-                  sourceId: createdAllocation.id,
-                  costCategoryId: allocation.costCategoryId,
-                  amountInCents: split.amountInCents,
-                  date: data.date,
-                },
-              });
-            }
-          }
         }
       }
 
@@ -310,16 +276,20 @@ export class PrismaExpenseRepository implements ExpenseRepository {
         throw new NotFoundException('Expense not found');
       }
 
-      const seasonIds = [
-        ...new Set(
-          expense.transactionAllocations.map(
-            (allocation) => allocation.cropSeasonId,
-          ),
-        ),
+      const lockKeys = [
+        ...new Map(
+          expense.transactionAllocations.map((allocation) => [
+            `${allocation.farmId}:${allocation.cropSeasonId}`,
+            {
+              farmId: allocation.farmId,
+              cropSeasonId: allocation.cropSeasonId,
+            },
+          ]),
+        ).values(),
       ];
 
-      for (const cropSeasonId of seasonIds) {
-        await assertActiveCropSeasonLocked(tx, cropSeasonId, data.farmId);
+      for (const lock of lockKeys) {
+        await assertActiveCropSeasonLocked(tx, lock.cropSeasonId, lock.farmId);
       }
 
       const allocationIds = expense.transactionAllocations.map((a) => a.id);
