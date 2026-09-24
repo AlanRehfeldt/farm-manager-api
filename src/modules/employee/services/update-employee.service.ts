@@ -55,6 +55,30 @@ export class UpdateEmployeeService {
 
     const employmentType = input.employmentType ?? existing.employmentType;
 
+    if (
+      input.employmentType != null &&
+      input.employmentType !== existing.employmentType
+    ) {
+      const hasOpenLabor = await this.employeeRepository.hasOpenLabor(input.id);
+      if (hasOpenLabor) {
+        throw new ConflictException(
+          'Cannot change employment type while the employee has open labor hours. Reverse those activities or close the month first.',
+        );
+      }
+
+      const now = new Date();
+      const hasClosing = await this.employeeRepository.hasClosingInMonth(
+        input.id,
+        now.getUTCFullYear(),
+        now.getUTCMonth() + 1,
+      );
+      if (hasClosing) {
+        throw new ConflictException(
+          'Cannot change employment type while the current month is closed. Reopen the labor month closing first.',
+        );
+      }
+    }
+
     let monthlySalaryInCents: bigint | null | undefined =
       input.monthlySalaryInCents === undefined
         ? undefined

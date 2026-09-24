@@ -39,6 +39,26 @@ class LaborClosingPreviewEmployeeDto {
   lineCount!: number;
 }
 
+class LaborClosingPreviewClosingDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  employeeId!: string;
+
+  @ApiProperty()
+  employeeName!: string;
+
+  @ApiProperty()
+  salaryInCents!: number;
+
+  @ApiProperty()
+  totalHours!: string;
+
+  @ApiProperty()
+  closedAt!: string;
+}
+
 class LaborClosingPreviewResultDto {
   @ApiProperty()
   year!: number;
@@ -48,6 +68,9 @@ class LaborClosingPreviewResultDto {
 
   @ApiProperty({ type: [LaborClosingPreviewEmployeeDto] })
   employees!: LaborClosingPreviewEmployeeDto[];
+
+  @ApiProperty({ type: [LaborClosingPreviewClosingDto] })
+  closings!: LaborClosingPreviewClosingDto[];
 }
 
 class PreviewLaborMonthClosingResponseDto {

@@ -25,6 +25,10 @@ export type LaborMonthClosingRecord = {
   closedAt: Date;
 };
 
+export type LaborMonthClosingWithEmployee = LaborMonthClosingRecord & {
+  employeeName: string;
+};
+
 export type CloseLaborLineAllocation = {
   activityLaborId: string;
   amountInCents: bigint;

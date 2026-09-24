@@ -39,10 +39,20 @@ export type LaborClosingPreviewEmployee = {
   lineCount: number;
 };
 
+export type LaborClosingPreviewClosing = {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  salaryInCents: number;
+  totalHours: string;
+  closedAt: string;
+};
+
 export type LaborClosingPreviewResult = {
   year: number;
   month: number;
   employees: LaborClosingPreviewEmployee[];
+  closings: LaborClosingPreviewClosing[];
 };
 
 export type LaborClosingCloseResult = {
@@ -108,12 +118,18 @@ export class PreviewLaborMonthClosingService {
       throw new BadRequestException('month must be between 1 and 12');
     }
 
-    const lines =
-      await this.laborClosingRepository.findOpenCltLaborInOrgMonth(
+    const [lines, closingRows] = await Promise.all([
+      this.laborClosingRepository.findOpenCltLaborInOrgMonth(
         organizationId,
         year,
         month,
-      );
+      ),
+      this.laborClosingRepository.findClosingsInOrgMonth(
+        organizationId,
+        year,
+        month,
+      ),
+    ]);
 
     const byEmployee = groupByEmployee(lines);
     const employees: LaborClosingPreviewEmployee[] = [];
@@ -145,7 +161,18 @@ export class PreviewLaborMonthClosingService {
 
     employees.sort((a, b) => a.employeeName.localeCompare(b.employeeName));
 
-    return { year, month, employees };
+    const closings: LaborClosingPreviewClosing[] = closingRows.map(
+      (closing) => ({
+        id: closing.id,
+        employeeId: closing.employeeId,
+        employeeName: closing.employeeName,
+        salaryInCents: bigintToNumber(closing.salaryInCents)!,
+        totalHours: decimalToString(closing.totalHours)!,
+        closedAt: closing.closedAt.toISOString(),
+      }),
+    );
+
+    return { year, month, employees, closings };
   }
 }
 

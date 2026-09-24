@@ -1,4 +1,4 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import {
   CostEntrySourceType,
   CropSeasonStatus,
@@ -15,21 +15,10 @@ import { PrismaService } from 'src/common/prisma/prisma.service';
 import {
   CloseEmployeeLaborData,
   LaborMonthClosingRecord,
+  LaborMonthClosingWithEmployee,
   OpenCltLaborLine,
 } from './@types';
 import { LaborClosingRepository } from './labor-closing.repository';
-
-function isActivityFullyReversed(
-  costEntries: { sourceType: CostEntrySourceType; reversedAt: Date | null }[],
-): boolean {
-  const original = costEntries.filter(
-    (entry) => entry.sourceType !== CostEntrySourceType.REVERSAL,
-  );
-
-  return (
-    original.length > 0 && original.every((entry) => entry.reversedAt != null)
-  );
-}
 
 function toClosingRecord(
   closing: LaborMonthClosingRecord,
@@ -89,21 +78,13 @@ export class PrismaLaborClosingRepository implements LaborClosingRepository {
             farmId: true,
             cropSeasonId: true,
             fieldId: true,
-            costEntries: {
-              select: { sourceType: true, reversedAt: true },
-            },
           },
         },
       },
     });
 
     return rows
-      .filter(
-        (row) =>
-          row.employee != null &&
-          row.hours != null &&
-          !isActivityFullyReversed(row.activity.costEntries),
-      )
+      .filter((row) => row.employee != null && row.hours != null)
       .map((row) => ({
         activityLaborId: row.id,
         employeeId: row.employee!.id,
@@ -137,9 +118,6 @@ export class PrismaLaborClosingRepository implements LaborClosingRepository {
         activity: {
           select: {
             date: true,
-            costEntries: {
-              select: { sourceType: true, reversedAt: true },
-            },
           },
         },
       },
@@ -149,9 +127,6 @@ export class PrismaLaborClosingRepository implements LaborClosingRepository {
     const result: { year: number; month: number }[] = [];
 
     for (const row of rows) {
-      if (isActivityFullyReversed(row.activity.costEntries)) {
-        continue;
-      }
       const year = row.activity.date.getUTCFullYear();
       const month = row.activity.date.getUTCMonth() + 1;
       const key = `${year}-${month}`;
@@ -205,6 +180,40 @@ export class PrismaLaborClosingRepository implements LaborClosingRepository {
     }
 
     return toClosingRecord(closing);
+  }
+
+  async findClosingById(
+    id: string,
+    organizationId: string,
+  ): Promise<LaborMonthClosingRecord | null> {
+    const closing = await this.prisma.laborMonthClosing.findFirst({
+      where: { id, organizationId },
+    });
+
+    if (!closing) {
+      return null;
+    }
+
+    return toClosingRecord(closing);
+  }
+
+  async findClosingsInOrgMonth(
+    organizationId: string,
+    year: number,
+    month: number,
+  ): Promise<LaborMonthClosingWithEmployee[]> {
+    const closings = await this.prisma.laborMonthClosing.findMany({
+      where: { organizationId, year, month },
+      include: {
+        employee: { select: { name: true } },
+      },
+      orderBy: { employee: { name: 'asc' } },
+    });
+
+    return closings.map((closing) => ({
+      ...toClosingRecord(closing),
+      employeeName: closing.employee.name,
+    }));
   }
 
   async closeOrgMonth(
@@ -324,5 +333,135 @@ export class PrismaLaborClosingRepository implements LaborClosingRepository {
       }
       throw error;
     }
+  }
+
+  async reopenClosing(data: {
+    closingId: string;
+    organizationId: string;
+    reason: string;
+    reopenedAt: Date;
+  }): Promise<LaborMonthClosingRecord> {
+    return await this.prisma.$transaction(async (tx) => {
+      const closing = await tx.laborMonthClosing.findFirst({
+        where: {
+          id: data.closingId,
+          organizationId: data.organizationId,
+        },
+      });
+
+      if (!closing) {
+        throw new NotFoundException('Labor month closing not found');
+      }
+
+      const start = new Date(Date.UTC(closing.year, closing.month - 1, 1));
+      const end = new Date(Date.UTC(closing.year, closing.month, 1));
+
+      const laborLines = await tx.activityLabor.findMany({
+        where: {
+          employeeId: closing.employeeId,
+          costInCents: { not: null },
+          hourlyRateInCents: null,
+          activity: {
+            date: { gte: start, lt: end },
+          },
+        },
+        include: {
+          activity: {
+            select: {
+              id: true,
+              farmId: true,
+              cropSeasonId: true,
+              fieldId: true,
+              note: true,
+            },
+          },
+        },
+      });
+
+      const lockKeys = [
+        ...new Map(
+          laborLines.map((line) => [
+            `${line.activity.farmId}:${line.activity.cropSeasonId}`,
+            {
+              farmId: line.activity.farmId,
+              cropSeasonId: line.activity.cropSeasonId,
+            },
+          ]),
+        ).values(),
+      ].sort((a, b) =>
+        a.cropSeasonId !== b.cropSeasonId
+          ? a.cropSeasonId.localeCompare(b.cropSeasonId)
+          : a.farmId.localeCompare(b.farmId),
+      );
+
+      for (const lock of lockKeys) {
+        await assertActiveCropSeasonLocked(tx, lock.cropSeasonId, lock.farmId);
+      }
+
+      const affectedActivityIds = new Set<string>();
+
+      for (const line of laborLines) {
+        const entries = await tx.costEntry.findMany({
+          where: {
+            sourceType: CostEntrySourceType.ACTIVITY_LABOR,
+            sourceId: line.id,
+            reversedAt: null,
+          },
+        });
+
+        for (const entry of entries) {
+          await tx.costEntry.update({
+            where: { id: entry.id },
+            data: { reversedAt: data.reopenedAt },
+          });
+
+          await tx.costEntry.create({
+            data: {
+              farmId: entry.farmId,
+              cropSeasonId: entry.cropSeasonId,
+              fieldId: entry.fieldId,
+              activityId: entry.activityId,
+              sourceType: CostEntrySourceType.REVERSAL,
+              sourceId: entry.id,
+              costCategoryId: entry.costCategoryId,
+              amountInCents: -entry.amountInCents,
+              quantity: entry.quantity,
+              uomId: entry.uomId,
+              date: data.reopenedAt,
+              reversalOfId: entry.id,
+            },
+          });
+        }
+
+        await tx.activityLabor.update({
+          where: { id: line.id },
+          data: { costInCents: null },
+        });
+
+        affectedActivityIds.add(line.activity.id);
+      }
+
+      const reopenNote = `[Reabertura MO ${closing.year}-${String(closing.month).padStart(2, '0')} em ${data.reopenedAt.toISOString()}] ${data.reason}`;
+
+      for (const activityId of affectedActivityIds) {
+        const activity = await tx.activity.findUniqueOrThrow({
+          where: { id: activityId },
+          select: { note: true },
+        });
+        const updatedNote = activity.note
+          ? `${activity.note}\n${reopenNote}`
+          : reopenNote;
+        await tx.activity.update({
+          where: { id: activityId },
+          data: { note: updatedNote },
+        });
+      }
+
+      await tx.laborMonthClosing.delete({
+        where: { id: closing.id },
+      });
+
+      return toClosingRecord(closing);
+    });
   }
 }

@@ -111,6 +111,8 @@ describe('CreateActivityService', () => {
     findByRegistration: jest.fn(),
     searchMany: jest.fn(),
     count: jest.fn(),
+    hasOpenLabor: jest.fn(),
+    hasClosingInMonth: jest.fn(),
   };
 
   const machineRepository: jest.Mocked<MachineRepository> = {
@@ -490,7 +492,7 @@ describe('CreateActivityService', () => {
             activityId: 'activity-id',
             sourceType: 'ACTIVITY_LABOR',
             sourceId: 'labor-id',
-            costCategoryId: 'mo-fixa-id',
+            costCategoryId: 'mo-temp-id',
             amountInCents: 20000n,
             quantity: null,
             uomId: null,

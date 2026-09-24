@@ -112,4 +112,25 @@ export class PrismaEmployeeRepository implements EmployeeRepository {
       },
     });
   }
+
+  async hasOpenLabor(employeeId: string): Promise<boolean> {
+    const count = await this.prisma.activityLabor.count({
+      where: {
+        employeeId,
+        costInCents: null,
+      },
+    });
+    return count > 0;
+  }
+
+  async hasClosingInMonth(
+    employeeId: string,
+    year: number,
+    month: number,
+  ): Promise<boolean> {
+    const count = await this.prisma.laborMonthClosing.count({
+      where: { employeeId, year, month },
+    });
+    return count > 0;
+  }
 }

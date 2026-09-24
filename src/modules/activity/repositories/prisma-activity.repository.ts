@@ -11,6 +11,7 @@ import {
   applyCompensatoryStockIn,
   applyStockOut as applyStockOutLedger,
 } from 'src/modules/inventory/domain/stock-ledger';
+import { isActivityFullyReversed } from '../domain/is-activity-fully-reversed';
 import { computeConsumptionAmountInCents } from '../domain/consumption-cost';
 import { computeHourlyAmountInCents } from '../domain/hourly-cost';
 import {
@@ -156,9 +157,11 @@ export class PrismaActivityRepository implements ActivityRepository {
       }
 
       for (const item of data.labor) {
-        const costCategoryId = item.employeeId
-          ? data.costCategoryIds.moFixa
-          : data.costCategoryIds.moTemporaria;
+        const costCategoryId =
+          item.employeeId != null &&
+          data.employeeMeta[item.employeeId]?.employmentType === 'CLT'
+            ? data.costCategoryIds.moFixa
+            : data.costCategoryIds.moTemporaria;
 
         const isOpenClt =
           item.employeeId != null &&
@@ -276,37 +279,42 @@ export class PrismaActivityRepository implements ActivityRepository {
       const originalEntries = activity.costEntries.filter(
         (entry) => entry.sourceType !== CostEntrySourceType.REVERSAL,
       );
+      const openOriginalEntries = originalEntries.filter(
+        (entry) => entry.reversedAt === null,
+      );
 
-      if (
-        originalEntries.length === 0 &&
-        openCltLabor.length === 0 &&
-        activity.inputs.length === 0
-      ) {
-        throw new ConflictException('Activity has no cost entries to reverse');
-      }
-
-      if (originalEntries.some((entry) => entry.reversedAt !== null)) {
-        throw new ConflictException('Activity has already been reversed');
+      if (openOriginalEntries.length === 0 && openCltLabor.length === 0) {
+        throw new ConflictException(
+          originalEntries.length > 0
+            ? 'Activity has already been reversed'
+            : 'Activity has no cost entries to reverse',
+        );
       }
 
       for (const line of openCltLabor) {
         await tx.activityLabor.delete({ where: { id: line.id } });
       }
 
-      for (const input of activity.inputs) {
-        const quantity = parseDecimal(input.quantity.toString());
+      if (
+        openOriginalEntries.some(
+          (entry) => entry.sourceType === CostEntrySourceType.ACTIVITY_INPUT,
+        )
+      ) {
+        for (const input of activity.inputs) {
+          const quantity = parseDecimal(input.quantity.toString());
 
-        await applyCompensatoryStockIn(tx, {
-          farmId: data.farmId,
-          productId: input.productId,
-          quantity,
-          date: data.reversedAt,
-          sourceId: activity.id,
-          note: `Estorno: ${data.reason}`,
-        });
+          await applyCompensatoryStockIn(tx, {
+            farmId: data.farmId,
+            productId: input.productId,
+            quantity,
+            date: data.reversedAt,
+            sourceId: activity.id,
+            note: `Estorno: ${data.reason}`,
+          });
+        }
       }
 
-      for (const entry of originalEntries) {
+      for (const entry of openOriginalEntries) {
         await tx.costEntry.update({
           where: { id: entry.id },
           data: { reversedAt: data.reversedAt },
@@ -328,6 +336,15 @@ export class PrismaActivityRepository implements ActivityRepository {
             reversalOfId: entry.id,
           },
         });
+      }
+
+      // Linhas MO já custeadas (fechamento CLT ou empreitada): removidas após
+      // estornar CostEntry, para não reaparecerem como horas abertas na reabertura.
+      const closedLabor = activity.labor.filter(
+        (line) => line.costInCents != null,
+      );
+      for (const line of closedLabor) {
+        await tx.activityLabor.delete({ where: { id: line.id } });
       }
 
       const reversalNote = `[Estornado em ${data.reversedAt.toISOString()}] ${data.reason}`;
@@ -416,7 +433,7 @@ export class PrismaActivityRepository implements ActivityRepository {
     const start = new Date(Date.UTC(year, month - 1, 1));
     const end = new Date(Date.UTC(year, month, 1));
 
-    const count = await this.prisma.activityLabor.count({
+    const rows = await this.prisma.activityLabor.findMany({
       where: {
         employeeId,
         activity: {
@@ -429,9 +446,25 @@ export class PrismaActivityRepository implements ActivityRepository {
           },
         },
       },
+      select: {
+        costInCents: true,
+        activity: {
+          select: {
+            costEntries: {
+              select: { sourceType: true, reversedAt: true },
+            },
+          },
+        },
+      },
     });
 
-    return count > 0;
+    return rows.some((row) => {
+      // Horas CLT abertas (estorno F9 apaga a linha; reabertura zera costInCents)
+      if (row.costInCents == null) {
+        return true;
+      }
+      return !isActivityFullyReversed(row.activity.costEntries);
+    });
   }
 
   async hasSalaryAllocationInOrgMonth(

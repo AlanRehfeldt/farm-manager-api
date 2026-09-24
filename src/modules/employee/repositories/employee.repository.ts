@@ -21,6 +21,12 @@ export interface EmployeeRepository {
   ): Promise<Employee | null>;
   searchMany(query: SearchManyQuery): Promise<Employee[]>;
   count(query: SearchManyQuery): Promise<number>;
+  hasOpenLabor(employeeId: string): Promise<boolean>;
+  hasClosingInMonth(
+    employeeId: string,
+    year: number,
+    month: number,
+  ): Promise<boolean>;
 }
 
 export const EMPLOYEE_REPOSITORY = 'EMPLOYEE_REPOSITORY';

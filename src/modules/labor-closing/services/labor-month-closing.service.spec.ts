@@ -37,12 +37,14 @@ describe('labor month closing authorization', () => {
     Pick<
       LaborClosingRepository,
       | 'findOpenCltLaborInOrgMonth'
+      | 'findClosingsInOrgMonth'
       | 'hasSalaryAllocationInOrgMonth'
       | 'findClosing'
       | 'closeOrgMonth'
     >
   > = {
     findOpenCltLaborInOrgMonth: jest.fn(),
+    findClosingsInOrgMonth: jest.fn(),
     hasSalaryAllocationInOrgMonth: jest.fn(),
     findClosing: jest.fn(),
     closeOrgMonth: jest.fn(),
@@ -74,6 +76,7 @@ describe('labor month closing authorization', () => {
       id: 'mo-fixa',
     } as never);
     laborClosingRepository.findClosing.mockResolvedValue(null);
+    laborClosingRepository.findClosingsInOrgMonth.mockResolvedValue([]);
     laborClosingRepository.hasSalaryAllocationInOrgMonth.mockResolvedValue(
       false,
     );
@@ -134,12 +137,14 @@ describe('CloseLaborMonthService', () => {
     Pick<
       LaborClosingRepository,
       | 'findOpenCltLaborInOrgMonth'
+      | 'findClosingsInOrgMonth'
       | 'hasSalaryAllocationInOrgMonth'
       | 'findClosing'
       | 'closeOrgMonth'
     >
   > = {
     findOpenCltLaborInOrgMonth: jest.fn(),
+    findClosingsInOrgMonth: jest.fn(),
     hasSalaryAllocationInOrgMonth: jest.fn(),
     findClosing: jest.fn(),
     closeOrgMonth: jest.fn(),

@@ -91,6 +91,8 @@ describe('CreateExpenseService', () => {
     findByRegistration: jest.fn(),
     searchMany: jest.fn(),
     count: jest.fn(),
+    hasOpenLabor: jest.fn(),
+    hasClosingInMonth: jest.fn(),
   };
 
   const activityRepository: jest.Mocked<ActivityRepository> = {
