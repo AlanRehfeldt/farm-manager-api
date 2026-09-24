@@ -532,4 +532,135 @@ describe('CreateExpenseService', () => {
       }),
     ).rejects.toThrow(ConflictException);
   });
+
+  it('aceita duas alocações na mesma safra com categorias distintas (compat PR-34)', async () => {
+    await service.execute({
+      ...baseInput,
+      installments: [
+        {
+          valueInCents: 10000,
+          dueDate: new Date('2026-08-20'),
+          paymentForm: 'PIX',
+        },
+      ],
+      allocations: [
+        {
+          costCenterId: 'cc-1',
+          accountPlanId: 'ap-1',
+          costCategoryId: 'cat-1',
+          cropSeasonId: 'season-1',
+          fieldIds: ['field-a'],
+          allocatedValueInCents: 6000,
+        },
+        {
+          costCenterId: 'cc-1',
+          accountPlanId: 'ap-1',
+          costCategoryId: 'cat-2',
+          cropSeasonId: 'season-1',
+          fieldIds: ['field-a'],
+          allocatedValueInCents: 4000,
+        },
+      ],
+    });
+
+    const payload = createExpense.mock.calls[0][0];
+    expect(payload.allocations).toHaveLength(2);
+    expect(payload.allocations[0].costEntries[0]).toEqual(
+      expect.objectContaining({
+        fieldId: 'field-a',
+        costCategoryId: 'cat-1',
+        amountInCents: 6000n,
+      }),
+    );
+    expect(payload.allocations[1].costEntries[0]).toEqual(
+      expect.objectContaining({
+        fieldId: 'field-a',
+        costCategoryId: 'cat-2',
+        amountInCents: 4000n,
+      }),
+    );
+    const totalEntries = payload.allocations.reduce(
+      (sum, allocation) =>
+        sum +
+        allocation.costEntries.reduce(
+          (entrySum, entry) => entrySum + entry.amountInCents,
+          0n,
+        ),
+      0n,
+    );
+    expect(totalEntries).toBe(10000n);
+  });
+
+  it('rateia duas alocações na mesma safra com categorias distintas por área (PR-34)', async () => {
+    await service.execute({
+      ...baseInput,
+      installments: [
+        {
+          valueInCents: 10000,
+          dueDate: new Date('2026-08-20'),
+          paymentForm: 'PIX',
+        },
+      ],
+      allocations: [
+        {
+          costCenterId: 'cc-1',
+          accountPlanId: 'ap-1',
+          costCategoryId: 'cat-1',
+          cropSeasonId: 'season-1',
+          fieldIds: ['field-a'],
+        },
+        {
+          costCenterId: 'cc-1',
+          accountPlanId: 'ap-1',
+          costCategoryId: 'cat-2',
+          cropSeasonId: 'season-1',
+          fieldIds: ['field-a'],
+        },
+      ],
+    });
+
+    const payload = createExpense.mock.calls[0][0];
+    expect(payload.allocations).toHaveLength(2);
+    expect(payload.allocations[0].costEntries[0].costCategoryId).toBe('cat-1');
+    expect(payload.allocations[1].costEntries[0].costCategoryId).toBe('cat-2');
+
+    const amount0 = payload.allocations[0].costEntries[0].amountInCents;
+    const amount1 = payload.allocations[1].costEntries[0].amountInCents;
+    // Mesma área nos dois destinos → cotas iguais (5000 + 5000).
+    expect(amount0).toBe(5000n);
+    expect(amount1).toBe(5000n);
+    expect(amount0 + amount1).toBe(10000n);
+  });
+
+  it('rejeita alocação duplicada com mesma safra, talhão e natureza (PR-34)', async () => {
+    await expect(
+      service.execute({
+        ...baseInput,
+        installments: [
+          {
+            valueInCents: 10000,
+            dueDate: new Date('2026-08-20'),
+            paymentForm: 'PIX',
+          },
+        ],
+        allocations: [
+          {
+            costCenterId: 'cc-1',
+            accountPlanId: 'ap-1',
+            costCategoryId: 'cat-1',
+            cropSeasonId: 'season-1',
+            fieldIds: ['field-a'],
+          },
+          {
+            costCenterId: 'cc-1',
+            accountPlanId: 'ap-1',
+            costCategoryId: 'cat-1',
+            cropSeasonId: 'season-1',
+            fieldIds: ['field-a'],
+          },
+        ],
+      }),
+    ).rejects.toThrow(BadRequestException);
+    expect(createExpense).not.toHaveBeenCalled();
+  });
 });

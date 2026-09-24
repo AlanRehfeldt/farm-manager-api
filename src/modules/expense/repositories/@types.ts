@@ -47,7 +47,7 @@ export type ResolvedCostEntrySplit = {
   costCategoryId: string;
 };
 
-/** Alocação pronta para persistir (uma por safra destino). */
+/** Alocação pronta para persistir (várias por safra quando a natureza difere). */
 export type ResolvedExpenseAllocation = {
   farmId: string;
   costCenterId: string;

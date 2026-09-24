@@ -76,8 +76,12 @@ type CreateExpenseInput = {
   allocations: ExpenseAllocationInput[];
 };
 
-function allocationPoolKey(cropSeasonId: string, fieldId: string): string {
-  return `${cropSeasonId}:${fieldId}`;
+function allocationPoolKey(
+  allocationIndex: number,
+  cropSeasonId: string,
+  fieldId: string,
+): string {
+  return `${allocationIndex}:${cropSeasonId}:${fieldId}`;
 }
 
 type DestinationField = {
@@ -227,7 +231,11 @@ export class CreateExpenseService {
       const splits = allocateByArea(
         installmentTotal,
         allFields.map((f) => ({
-          fieldId: allocationPoolKey(f.cropSeasonId, f.fieldId),
+          fieldId: allocationPoolKey(
+            f.allocationIndex,
+            f.cropSeasonId,
+            f.fieldId,
+          ),
           areaHa: f.areaHa,
         })),
       );
@@ -243,7 +251,7 @@ export class CreateExpenseService {
           (sum, f) =>
             sum +
             (amountByPoolKey.get(
-              allocationPoolKey(f.cropSeasonId, f.fieldId),
+              allocationPoolKey(f.allocationIndex, f.cropSeasonId, f.fieldId),
             ) ?? 0n),
           0n,
         );
@@ -382,7 +390,9 @@ export class CreateExpenseService {
         cropSeasonId: f.cropSeasonId,
         fieldId: f.fieldId,
         amountInCents:
-          amountByField.get(allocationPoolKey(f.cropSeasonId, f.fieldId)) ?? 0n,
+          amountByField.get(
+            allocationPoolKey(f.allocationIndex, f.cropSeasonId, f.fieldId),
+          ) ?? 0n,
         costCategoryId: allocation.costCategoryId,
       })),
     };
@@ -391,7 +401,13 @@ export class CreateExpenseService {
   private assertNoDuplicateFields(fields: DestinationField[]) {
     const seen = new Set<string>();
     for (const field of fields) {
-      const key = `${field.cropSeasonId}:${field.fieldId}`;
+      const key = [
+        field.cropSeasonId,
+        field.fieldId,
+        field.costCenterId,
+        field.accountPlanId,
+        field.costCategoryId,
+      ].join(':');
       if (seen.has(key)) {
         throw new BadRequestException(
           'Duplicate field across allocation destinations',
