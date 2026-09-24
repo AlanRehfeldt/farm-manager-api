@@ -6,6 +6,7 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { EmploymentType } from '@prisma/client';
 import z from 'zod';
 import { FarmId } from 'src/common/tenancy/farm-id.decorator';
 import { FarmAdmin } from 'src/common/tenancy/farm-admin.decorator';
@@ -33,7 +34,7 @@ const createEmployeeBodySchema = z
     type: z.enum(SUPPORTED_EMPLOYEE_TYPES, {
       message: 'Employee type is not supported in the agricultural MVP.',
     }),
-    employmentType: z.enum(['CLT', 'CONTRACTOR']),
+    employmentType: z.enum(['CLT', 'CONTRACTOR']).default('CONTRACTOR'),
     monthlySalaryInCents: z.number().int().positive().optional(),
     expectedMonthlyHours: z
       .string()
@@ -103,6 +104,7 @@ export class CreateEmployeeController {
   ) {
     const { employee } = await this.createEmployeeService.execute({
       ...data,
+      employmentType: data.employmentType ?? EmploymentType.CONTRACTOR,
       organizationId,
       activeFarmId: farmId,
     });

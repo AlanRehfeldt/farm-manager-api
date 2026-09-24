@@ -21,12 +21,13 @@ export class CreateEmployeeBodyDto {
   })
   type!: EmployeeType;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: EmploymentType.CONTRACTOR,
     description: 'Employment contract type',
     enum: EmploymentType,
+    default: EmploymentType.CONTRACTOR,
   })
-  employmentType!: EmploymentType;
+  employmentType?: EmploymentType;
 
   @ApiPropertyOptional({
     example: 320000,

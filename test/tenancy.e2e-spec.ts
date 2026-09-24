@@ -331,11 +331,14 @@ describe('Tenancy (e2e)', () => {
         type: 'FIELD_WORKER',
       })
       .expect(201);
-    const joaoResult = commandResult<{ id: string; farmId: string | null }>(
-      joao,
-    );
+    const joaoResult = commandResult<{
+      id: string;
+      farmId: string | null;
+      employmentType: string;
+    }>(joao);
     joaoId = joaoResult.id;
     expect(joaoResult.farmId).toBeNull();
+    expect(joaoResult.employmentType).toBe('CONTRACTOR');
 
     const maria = await request(server)
       .post('/employees')
@@ -348,11 +351,14 @@ describe('Tenancy (e2e)', () => {
         farmId: sedeId,
       })
       .expect(201);
-    const mariaResult = commandResult<{ id: string; farmId: string | null }>(
-      maria,
-    );
+    const mariaResult = commandResult<{
+      id: string;
+      farmId: string | null;
+      employmentType: string;
+    }>(maria);
     mariaId = mariaResult.id;
     expect(mariaResult.farmId).toBe(sedeId);
+    expect(mariaResult.employmentType).toBe('CONTRACTOR');
 
     const norteList = await request(server)
       .get('/employees')
@@ -373,20 +379,31 @@ describe('Tenancy (e2e)', () => {
       .expect(404);
   });
 
-  it('isolates transactions by farm (INV-TEN)', async () => {
-    const created = await request(server)
-      .post('/transactions')
+  it('rejects CLT employee without monthlySalaryInCents', async () => {
+    await request(server)
+      .post('/employees')
       .set('Cookie', adminCookies)
       .set('x-farm-id', sedeId)
       .send({
-        type: 'GENERIC',
-        date: '2026-08-01T00:00:00.000Z',
-        note: `Sede tx ${suffix}`,
+        name: 'Clt Sem Salario',
+        registration: `C${suffix}`.slice(0, 20),
+        type: 'FIELD_WORKER',
+        employmentType: 'CLT',
       })
-      .expect(201);
-    const txResult = commandResult<{ id: string; farmId: string }>(created);
-    sedeTxId = txResult.id;
-    expect(txResult.farmId).toBe(sedeId);
+      .expect(400);
+  });
+
+  it('isolates transactions by farm (INV-TEN)', async () => {
+    const created = await prisma.transaction.create({
+      data: {
+        farmId: sedeId,
+        type: 'GENERIC',
+        date: new Date('2026-08-01T00:00:00.000Z'),
+        note: `Sede tx ${suffix}`,
+      },
+    });
+    sedeTxId = created.id;
+    expect(created.farmId).toBe(sedeId);
 
     const norteList = await request(server)
       .get('/transactions')
