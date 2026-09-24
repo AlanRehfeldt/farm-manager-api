@@ -35,6 +35,7 @@ type CreatePurchaseInstallmentInput = {
   dueDate: Date;
   paymentDate?: Date | null;
   paymentForm: PaymentForm;
+  manuallyAdjusted?: boolean;
 };
 
 type CreatePurchaseInput = {

@@ -62,6 +62,7 @@ const createPurchaseBodySchema = z.object({
         dueDate: z.coerce.date(),
         paymentDate: z.coerce.date().optional(),
         paymentForm: paymentFormSchema,
+        manuallyAdjusted: z.boolean().optional().default(false),
       }),
     )
     .min(1),

@@ -34,6 +34,14 @@ export class InstallmentDto {
   paymentForm!: PaymentForm;
 
   @ApiProperty({
+    example: false,
+    description:
+      'When true, client will not redistribute this installment on smart split (PR-28).',
+    default: false,
+  })
+  manuallyAdjusted!: boolean;
+
+  @ApiProperty({
     example: PaymentForm.CASH,
     description: "Transaction's unique identifier",
   })

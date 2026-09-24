@@ -77,6 +77,7 @@ export class PrismaPurchaseRepository implements PurchaseRepository {
             dueDate: installment.dueDate,
             paymentDate: installment.paymentDate,
             paymentForm: installment.paymentForm,
+            manuallyAdjusted: installment.manuallyAdjusted ?? false,
             transactionId: transaction.id,
           },
         });

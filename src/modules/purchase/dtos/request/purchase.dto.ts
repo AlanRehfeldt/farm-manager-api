@@ -38,6 +38,9 @@ export class CreatePurchaseInstallmentBodyDto {
 
   @ApiProperty({ enum: paymentForms })
   paymentForm!: (typeof paymentForms)[number];
+
+  @ApiPropertyOptional({ default: false })
+  manuallyAdjusted?: boolean;
 }
 
 export class CreatePurchaseBodyDto {

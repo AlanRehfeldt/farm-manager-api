@@ -18,6 +18,7 @@ export type PurchaseInstallmentInput = {
   dueDate: Date;
   paymentDate?: Date | null;
   paymentForm: PaymentForm;
+  manuallyAdjusted?: boolean;
 };
 
 export type ProductMeta = {

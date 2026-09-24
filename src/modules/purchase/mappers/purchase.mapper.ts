@@ -18,6 +18,7 @@ export type PurchaseInstallmentResponse = {
   dueDate: Date;
   paymentDate: Date | null;
   paymentForm: string;
+  manuallyAdjusted: boolean;
 };
 
 export type PurchaseResponse = {
@@ -60,6 +61,7 @@ export function toPurchaseResponse(
     dueDate: inst.dueDate,
     paymentDate: inst.paymentDate,
     paymentForm: inst.paymentForm,
+    manuallyAdjusted: inst.manuallyAdjusted,
   }));
 
   const totalInCents = purchase.purchaseTransactionProducts.reduce(

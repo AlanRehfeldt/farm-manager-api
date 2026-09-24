@@ -36,6 +36,9 @@ export class PurchaseInstallmentDto {
 
   @ApiProperty()
   paymentForm!: string;
+
+  @ApiProperty({ default: false })
+  manuallyAdjusted!: boolean;
 }
 
 export class PurchaseSupplierDto {
