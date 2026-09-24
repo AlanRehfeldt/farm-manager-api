@@ -16,6 +16,7 @@ import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
 import { ConflictDto } from 'src/common/errors/conflict.dto';
 import { NotFoundDto } from 'src/common/errors/not-found.dto';
+import { optionalNullableBrStateSchema } from 'src/common/validation/br-state';
 import {
   UpdateSupplierBodyDto,
   UpdateSupplierParamDto,
@@ -46,11 +47,7 @@ const updateSupplierSchema = z
       .optional(),
     address: z.string().nullable().optional(),
     city: z.string().max(100).nullable().optional(),
-    state: z
-      .string()
-      .length(2, { message: 'State must be a 2-letter UF.' })
-      .nullable()
-      .optional(),
+    state: optionalNullableBrStateSchema,
     phoneNumber: z
       .string()
       .regex(/^\d{10,11}$/, { message: 'Phone must be 10 or 11 digits.' })

@@ -22,26 +22,30 @@ export class CreateSupplierBodyDto {
   @ApiPropertyOptional({
     example: 'St. Street, 123',
     description: "Supplier's address",
+    nullable: true,
   })
-  address?: string;
+  address?: string | null;
 
   @ApiPropertyOptional({
     example: 'Salvador',
     description: "Supplier's city",
+    nullable: true,
   })
-  city?: string;
+  city?: string | null;
 
   @ApiPropertyOptional({
     example: 'BA',
     description: "Supplier's state (UF)",
+    nullable: true,
   })
-  state?: string;
+  state?: string | null;
 
   @ApiPropertyOptional({
     example: '71999999999',
     description: "Supplier's phone number (digits only)",
+    nullable: true,
   })
-  phoneNumber?: string;
+  phoneNumber?: string | null;
 
   @ApiPropertyOptional({
     example: 'uuid',

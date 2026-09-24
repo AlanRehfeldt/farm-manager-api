@@ -15,10 +15,10 @@ type CreateSupplierInput = {
   name: string;
   cnpj?: string;
   cpf?: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  phoneNumber?: string;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  phoneNumber?: string | null;
   farmId?: string | null;
   organizationId: string;
   activeFarmId: string;

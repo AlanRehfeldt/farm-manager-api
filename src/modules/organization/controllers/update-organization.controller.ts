@@ -14,6 +14,7 @@ import { ForbiddenDto } from 'src/common/errors/forbidden.dto';
 import { NotFoundDto } from 'src/common/errors/not-found.dto';
 import { UnauthorizedDto } from 'src/common/errors/unauthorized.dto';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
+import { optionalNullableBrStateSchema } from 'src/common/validation/br-state';
 import {
   AuthenticatedUser,
   CurrentUser,
@@ -55,11 +56,7 @@ const updateOrganizationBodySchema = z.object({
   number: z.string().max(20).nullable().optional(),
   complement: z.string().max(100).nullable().optional(),
   city: z.string().max(100).nullable().optional(),
-  state: z
-    .string()
-    .length(2, { message: 'State must be a 2-letter UF.' })
-    .nullable()
-    .optional(),
+  state: optionalNullableBrStateSchema,
   zipCode: optionalDigits(8, 'ZIP code'),
 });
 

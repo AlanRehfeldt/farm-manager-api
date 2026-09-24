@@ -20,11 +20,12 @@ export class PrismaSupplierRepository implements SupplierRepository {
   }
 
   async update(data: UpdateSupplierData): Promise<Supplier> {
+    const { id, ...fields } = data;
     return await this.prisma.supplier.update({
       where: {
-        id: data.id,
+        id,
       },
-      data,
+      data: fields,
     });
   }
 
