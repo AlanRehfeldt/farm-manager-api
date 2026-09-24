@@ -1,6 +1,6 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { UomDimension } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from '@prisma/client/runtime/client';
 import { CreatePurchaseService } from './create-purchase.service';
 import { PurchaseRepository } from '../repositories/purchase.repository';
 import { ProductRepository } from 'src/modules/product/repositories/product.repository';

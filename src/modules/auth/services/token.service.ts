@@ -1,8 +1,12 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Response } from 'express';
 import { Env } from 'src/env';
+import {
+  USER_REPOSITORY,
+  UserRepository,
+} from 'src/modules/user/repositories/user.repository';
 import {
   REFRESH_TOKEN_REPOSITORY,
   RefreshTokenRepository,
@@ -30,15 +34,24 @@ export class TokenService {
     private readonly configService: ConfigService<Env, true>,
     @Inject(REFRESH_TOKEN_REPOSITORY)
     private readonly refreshTokenRepository: RefreshTokenRepository,
+    @Inject(USER_REPOSITORY)
+    private readonly userRepository: UserRepository,
   ) {}
 
   async issueTokenPair(userId: string): Promise<TokenPair> {
+    const user = await this.userRepository.findById(userId);
+
+    if (!user) {
+      throw new UnauthorizedException();
+    }
+
     const refreshExpiresIn = this.configService.get('JWT_REFRESH_EXPIRES_IN', {
       infer: true,
     });
 
     const accessToken = await this.jwtService.signAsync({
       sub: userId,
+      passwordChangedAt: user.passwordChangedAt.getTime(),
     });
 
     const refreshToken = generateRefreshToken();

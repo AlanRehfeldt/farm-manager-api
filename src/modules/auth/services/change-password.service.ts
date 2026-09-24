@@ -56,6 +56,7 @@ export class ChangePasswordService {
       id: userId,
       password: encryptedPassword,
       mustChangePassword: false,
+      passwordChangedAt: new Date(),
     });
 
     await this.refreshTokenRepository.revokeAllByUserId(userId);

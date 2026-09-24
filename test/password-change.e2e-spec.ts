@@ -87,6 +87,7 @@ describe('Password change (e2e)', () => {
       .send({ email: newUserEmail, password: tempPassword })
       .expect(201);
     let cookies = cookieHeader(loginRes);
+    const cookiesBeforeChange = cookies;
 
     const meRes = await request(server)
       .get('/auth/me')
@@ -111,6 +112,17 @@ describe('Password change (e2e)', () => {
 
     cookies = await changePassword(server, cookies, tempPassword, nextPassword);
 
+    await request(server)
+      .get('/auth/me')
+      .set('Cookie', cookiesBeforeChange)
+      .expect(401);
+
+    const refreshRes = await request(server)
+      .post('/auth/refresh')
+      .set('Cookie', cookies)
+      .expect(201);
+    cookies = cookieHeader(refreshRes);
+
     const meAfter = await request(server)
       .get('/auth/me')
       .set('Cookie', cookies)
@@ -122,5 +134,21 @@ describe('Password change (e2e)', () => {
     ).toBe(false);
 
     await request(server).get('/farms').set('Cookie', cookies).expect(200);
+
+    const loginNew = await request(server)
+      .post('/auth/login')
+      .send({ email: newUserEmail, password: nextPassword })
+      .expect(201);
+    const loginCookies = cookieHeader(loginNew);
+
+    await request(server)
+      .get('/auth/me')
+      .set('Cookie', loginCookies)
+      .expect(200);
+
+    await request(server)
+      .post('/auth/refresh')
+      .set('Cookie', cookiesBeforeChange)
+      .expect(401);
   });
 });

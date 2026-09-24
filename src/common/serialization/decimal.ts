@@ -1,4 +1,4 @@
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from '@prisma/client/runtime/client';
 
 export function parseDecimal(value: string | number): Decimal {
   const decimal = new Decimal(value);

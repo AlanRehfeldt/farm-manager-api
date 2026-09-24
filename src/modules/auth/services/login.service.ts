@@ -35,8 +35,13 @@ export class LoginService {
     const tokens = await this.tokenService.issueTokenPair(user.id);
     this.tokenService.setAuthCookies(res, tokens);
 
-    const { password: passwordHash, ...userWithoutPassword } = user;
+    const {
+      password: passwordHash,
+      passwordChangedAt: _passwordChangedAt,
+      ...userWithoutPassword
+    } = user;
     void passwordHash;
+    void _passwordChangedAt;
 
     return {
       message: 'Logged in successfully',

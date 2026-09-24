@@ -1,5 +1,5 @@
 import { ConflictException, ForbiddenException } from '@nestjs/common';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from '@prisma/client/runtime/client';
 import { CostCategoryRepository } from 'src/modules/cost-category/repositories/cost-category.repository';
 import { MembershipRepository } from 'src/modules/membership/repositories/membership.repository';
 import { OpenCltLaborLine } from '../repositories/@types';

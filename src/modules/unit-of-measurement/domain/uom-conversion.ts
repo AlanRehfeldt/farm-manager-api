@@ -1,6 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { UomDimension } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from '@prisma/client/runtime/client';
 
 export const UOM_DIMENSION_MISMATCH = 'UOM_DIMENSION_MISMATCH';
 

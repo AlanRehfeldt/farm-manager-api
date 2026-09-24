@@ -7,7 +7,7 @@ Repositório NestJS da API REST do Farm Manager. Este arquivo é o índice rápi
 | Tecnologia | Versão / uso |
 |------------|----------------|
 | NestJS | 11 — monólito modular |
-| Prisma | 6 — PostgreSQL |
+| Prisma | 7 — PostgreSQL (`prisma.config.ts` + `@prisma/adapter-pg`) |
 | Zod | 4 — validação runtime (controllers, env) |
 | Auth | JWT em cookies httpOnly (`fm_access_token`, `fm_refresh_token`) |
 | OpenAPI | `@nestjs/swagger` + Scalar em `/docs` |

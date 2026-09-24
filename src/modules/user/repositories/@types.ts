@@ -8,6 +8,7 @@ export interface UpdateUserData {
   employeeId?: string;
   password?: string;
   mustChangePassword?: boolean;
+  passwordChangedAt?: Date;
 }
 export interface SearchManyQuery {
   id?: string;

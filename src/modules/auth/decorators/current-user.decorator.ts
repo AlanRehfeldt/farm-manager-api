@@ -2,6 +2,7 @@ import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 
 export type AuthenticatedUser = {
   userId: string;
+  mustChangePassword: boolean;
 };
 
 export const CurrentUser = createParamDecorator(

@@ -59,6 +59,6 @@ export class UpdateUserService {
       employeeId,
     });
 
-    return { user: { ...user, password: undefined } };
+    return { user: { ...user, password: undefined, passwordChangedAt: undefined } };
   }
 }

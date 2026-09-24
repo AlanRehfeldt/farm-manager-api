@@ -1,4 +1,4 @@
-import { Body, Controller, HttpStatus, Post, Res } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Post, Res } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiForbiddenResponse,
@@ -52,6 +52,7 @@ export class ChangePasswordController {
     type: ForbiddenDto,
   })
   @Post('/change-password')
+  @HttpCode(HttpStatus.OK)
   async changePassword(
     @CurrentUser() user: AuthenticatedUser,
     @Body(new ZodValidationPipe(changePasswordBodySchema))

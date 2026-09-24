@@ -1,4 +1,4 @@
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from '@prisma/client/runtime/client';
 import { decimalToString } from 'src/common/serialization/decimal';
 import { HarvestWithRelations } from '../repositories/@types';
 

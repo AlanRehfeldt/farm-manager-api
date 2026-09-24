@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException } from '@nestjs/common';
 import { UomDimension } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from '@prisma/client/runtime/client';
 import { CreateHarvestService } from './create-harvest.service';
 import { HarvestRepository } from '../repositories/harvest.repository';
 import type {

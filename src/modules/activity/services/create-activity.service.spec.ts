@@ -8,7 +8,7 @@ import {
   UomDimension,
   type CostCategory,
 } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from '@prisma/client/runtime/client';
 import { CreateActivityService } from './create-activity.service';
 import { ActivityRepository } from '../repositories/activity.repository';
 import { CropSeasonRepository } from 'src/modules/crop-season/repositories/crop-season.repository';

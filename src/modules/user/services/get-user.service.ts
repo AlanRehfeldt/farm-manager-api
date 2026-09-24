@@ -27,6 +27,7 @@ export class GetUserService {
       user: {
         ...user,
         password: undefined,
+        passwordChangedAt: undefined,
       },
     };
   }

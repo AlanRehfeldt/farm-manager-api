@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 enum Role {
@@ -124,6 +123,7 @@ model User {
   role                Role         @default(USER)
   platformRole        PlatformRole @default(NONE)
   mustChangePassword  Boolean      @default(false)
+  passwordChangedAt    DateTime     @default(now())
   employeeId          String?
   createdAt           DateTime     @default(now())
   updatedAt           DateTime     @updatedAt

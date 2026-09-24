@@ -97,7 +97,7 @@ export class PrismaCostingRepository implements CostingRepository {
 
     const byField = new Map<
       string,
-      import('@prisma/client/runtime/library').Decimal
+      import('@prisma/client/runtime/client').Decimal
     >();
 
     for (const item of items) {
@@ -175,7 +175,7 @@ export class PrismaCostingRepository implements CostingRepository {
 
       const byField = new Map<
         string,
-        import('@prisma/client/runtime/library').Decimal
+        import('@prisma/client/runtime/client').Decimal
       >();
 
       for (const item of harvestItems) {

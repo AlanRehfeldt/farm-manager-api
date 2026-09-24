@@ -1,4 +1,4 @@
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from '@prisma/client/runtime/client';
 
 /** Decrementa saldo; avgCost permanece inalterado (ADR-012). */
 export function applyStockOut(

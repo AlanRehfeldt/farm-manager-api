@@ -1,4 +1,4 @@
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from '@prisma/client/runtime/client';
 import { computeConsumptionAmountInCents } from './consumption-cost';
 
 describe('computeConsumptionAmountInCents', () => {

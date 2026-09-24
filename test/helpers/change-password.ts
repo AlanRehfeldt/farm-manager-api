@@ -11,7 +11,7 @@ export async function changePassword(
     .post('/auth/change-password')
     .set('Cookie', cookies)
     .send({ currentPassword, newPassword })
-    .expect(201);
+    .expect(200);
 
   const setCookie = res.headers['set-cookie'];
   if (!setCookie) {

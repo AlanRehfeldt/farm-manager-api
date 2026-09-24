@@ -26,8 +26,9 @@ export class MeService {
     }
 
     const memberships = await this.membershipRepository.findManyByUser(userId);
-    const { password, ...userWithoutPassword } = user;
+    const { password, passwordChangedAt, ...userWithoutPassword } = user;
     void password;
+    void passwordChangedAt;
 
     return new MeResultDto({
       ...userWithoutPassword,

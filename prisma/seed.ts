@@ -1,8 +1,17 @@
+import { PrismaPg } from '@prisma/adapter-pg';
 import { PlatformRole, PrismaClient, Role } from '@prisma/client';
 import { hashPassword } from '../src/common/crypto/bcrypt';
 import { COST_CATEGORY_SEED } from '../src/modules/cost-category/constants/cost-category-seed';
 
-const prisma = new PrismaClient();
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  throw new Error('DATABASE_URL is required to seed the database.');
+}
+
+const prisma = new PrismaClient({
+  adapter: new PrismaPg({ connectionString }),
+});
 
 async function seedCostCategoriesForOrganization(organizationId: string) {
   for (const entry of COST_CATEGORY_SEED) {

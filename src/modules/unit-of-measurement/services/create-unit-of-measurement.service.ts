@@ -1,6 +1,6 @@
 import { ConflictException, Inject, Injectable } from '@nestjs/common';
 import { UomDimension } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from '@prisma/client/runtime/client';
 import { validateUomFields } from '../domain/validate-uom-fields';
 import {
   UNIT_OF_MEASUREMENT_REPOSITORY,

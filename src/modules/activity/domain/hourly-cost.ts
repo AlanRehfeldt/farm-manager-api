@@ -1,4 +1,4 @@
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from '@prisma/client/runtime/client';
 
 /** hours × hourlyCostInCents → total cents (half-up). */
 export function computeHourlyAmountInCents(

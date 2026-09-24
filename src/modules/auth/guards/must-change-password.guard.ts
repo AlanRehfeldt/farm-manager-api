@@ -2,16 +2,11 @@ import {
   CanActivate,
   ExecutionContext,
   ForbiddenException,
-  Inject,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
-import {
-  USER_REPOSITORY,
-  UserRepository,
-} from 'src/modules/user/repositories/user.repository';
 import { AuthenticatedUser } from '../decorators/current-user.decorator';
 import { ALLOW_MUST_CHANGE_PASSWORD_KEY } from '../decorators/allow-must-change-password.decorator';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
@@ -22,13 +17,9 @@ type RequestWithUser = Request & {
 
 @Injectable()
 export class MustChangePasswordGuard implements CanActivate {
-  constructor(
-    private readonly reflector: Reflector,
-    @Inject(USER_REPOSITORY)
-    private readonly userRepository: UserRepository,
-  ) {}
+  constructor(private readonly reflector: Reflector) {}
 
-  async canActivate(context: ExecutionContext): Promise<boolean> {
+  canActivate(context: ExecutionContext): boolean {
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),
@@ -48,15 +39,13 @@ export class MustChangePasswordGuard implements CanActivate {
     }
 
     const request = context.switchToHttp().getRequest<RequestWithUser>();
-    const userId = request.user?.userId;
+    const user = request.user;
 
-    if (!userId) {
+    if (!user?.userId) {
       throw new UnauthorizedException();
     }
 
-    const user = await this.userRepository.findById(userId);
-
-    if (!user) {
+    if (typeof user.mustChangePassword !== 'boolean') {
       throw new UnauthorizedException();
     }
 

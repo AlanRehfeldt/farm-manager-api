@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionType } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from '@prisma/client/runtime/client';
 import { parseDecimal } from 'src/common/serialization/decimal';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { applyStockIn } from 'src/modules/inventory/domain/stock-ledger';

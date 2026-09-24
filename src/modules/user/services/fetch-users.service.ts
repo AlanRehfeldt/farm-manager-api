@@ -19,6 +19,7 @@ export class FetchUsersService {
     const usersWithoutPassword = users.map((user) => ({
       ...user,
       password: undefined,
+      passwordChangedAt: undefined,
     }));
 
     return {

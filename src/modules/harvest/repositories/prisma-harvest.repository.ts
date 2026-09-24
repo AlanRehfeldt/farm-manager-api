@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from '@prisma/client/runtime/client';
 import { assertActiveCropSeasonLocked } from 'src/common/prisma/crop-season-lock';
 import { parseDecimal } from 'src/common/serialization/decimal';
 import { PrismaService } from 'src/common/prisma/prisma.service';

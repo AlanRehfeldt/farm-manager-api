@@ -4,7 +4,7 @@
 
 ## Visão geral
 
-Monólito modular NestJS 11, uma instância, PostgreSQL via Prisma 6. SPA React consome a API REST com cookies httpOnly para auth.
+Monólito modular NestJS 11, uma instância, PostgreSQL via Prisma 7. SPA React consome a API REST com cookies httpOnly para auth.
 
 ```mermaid
 flowchart TB

@@ -1,4 +1,4 @@
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from '@prisma/client/runtime/client';
 
 /** Valor da linha de consumo em centavos (half-up, ADR-009). */
 export function computeConsumptionAmountInCents(

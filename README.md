@@ -1,6 +1,6 @@
 # Farm Manager API
 
-REST API do Farm Manager — NestJS 11, Prisma 6, PostgreSQL, validação com Zod 4, autenticação JWT via cookies httpOnly.
+REST API do Farm Manager — NestJS 11, Prisma 7, PostgreSQL, validação com Zod 4, autenticação JWT via cookies httpOnly.
 
 ## Documentação
 
@@ -30,7 +30,7 @@ Detalhes: [docs/07-development.md](./docs/07-development.md).
 ## Stack
 
 - NestJS 11 — monólito modular
-- Prisma 6 — PostgreSQL
+- Prisma 7 — PostgreSQL
 - Zod 4 — validação de input e env
 - Passport JWT — cookies `fm_access_token` / `fm_refresh_token`
 - OpenAPI — `@nestjs/swagger` + Scalar

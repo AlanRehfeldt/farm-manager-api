@@ -14,7 +14,7 @@
 | `POST` | `/auth/refresh` | `@Public()` | Refresh cookie → novos cookies |
 | `POST` | `/auth/logout` | `@Public()` | Revoga refresh, limpa cookies |
 | `GET` | `/auth/me` | Protegido (`@AllowMustChangePassword()`) | Usuário atual + memberships + `mustChangePassword` |
-| `POST` | `/auth/change-password` | Protegido (`@AllowMustChangePassword()`) | Senha atual + nova → limpa a flag e rotaciona cookies |
+| `POST` | `/auth/change-password` | Protegido (`@AllowMustChangePassword()`) | Senha atual + nova → limpa a flag, atualiza `passwordChangedAt`, revoga refresh e rotaciona cookies (HTTP 200) |
 
 ## Tenancy
 
@@ -23,6 +23,14 @@ Rotas de catálogo e lançamentos: `@FarmScoped()` + header `x-farm-id`. Ver [08
 `GET /auth/me` devolve `memberships` (`farmId` null = org-wide), `platformRole` e `mustChangePassword`.
 
 `User.mustChangePassword` nasce `true` em `POST /users` e em `POST /memberships` quando a conta é criada (não quando só se anexa `userId`). Contas via seed/`insertUser` ficam `false`.
+
+## Invalidação de sessão (PR-39)
+
+O access JWT inclui a claim `passwordChangedAt` (epoch ms de `User.passwordChangedAt`). A `JwtStrategy` rejeita com 401 tokens sem a claim ou com claim anterior ao valor atual no banco.
+
+`POST /auth/change-password` grava `passwordChangedAt = now()`, revoga todos os refresh tokens e emite cookies novos. Access tokens emitidos antes da troca deixam de ser aceitos imediatamente (não só ao expirar).
+
+`MustChangePasswordGuard` lê `mustChangePassword` do `request.user` populado pela strategy (sem `findById` extra).
 
 ## Guard global
 

@@ -1,4 +1,4 @@
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from '@prisma/client/runtime/client';
 
 /** Aplica ajuste com sinal; avgCost permanece inalterado (OQ-12). */
 export function applyStockAdjustment(

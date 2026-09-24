@@ -74,6 +74,7 @@ describe('ChangePasswordService', () => {
       id: 'user-1',
       password: 'hashed-new',
       mustChangePassword: false,
+      passwordChangedAt: expect.any(Date),
     });
     expect(refreshTokenRepository.revokeAllByUserId).toHaveBeenCalledWith(
       'user-1',
@@ -83,6 +84,9 @@ describe('ChangePasswordService', () => {
       accessToken: 'access',
       refreshToken: 'refresh',
     });
+    expect(userRepository.update.mock.invocationCallOrder[0]).toBeLessThan(
+      tokenService.issueTokenPair.mock.invocationCallOrder[0]!,
+    );
   });
 
   it('rejects an invalid current password', async () => {

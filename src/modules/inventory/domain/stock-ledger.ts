@@ -8,7 +8,7 @@ import {
   StockMovementSourceType,
   StockMovementType,
 } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from '@prisma/client/runtime/client';
 import { computeNewAvgCost } from './avg-cost';
 import { applyStockAdjustment } from './stock-adjustment';
 import { applyStockOut as computeStockOutQuantity } from './stock-out';

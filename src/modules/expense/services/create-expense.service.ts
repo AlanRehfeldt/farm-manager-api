@@ -16,7 +16,7 @@ import {
   Role,
   TransactionType,
 } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from '@prisma/client/runtime/client';
 import {
   ACCOUNT_PLAN_REPOSITORY,
   AccountPlanRepository,

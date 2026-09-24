@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from '@prisma/client/runtime/client';
 import { validateUomFields } from '../domain/validate-uom-fields';
 import { UpdateUnitOfMeasurementData } from '../repositories/@types';
 import {

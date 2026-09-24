@@ -1,5 +1,5 @@
 import { CostEntrySourceType } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from '@prisma/client/runtime/client';
 import { computeSeasonCosting } from './compute-season-costing';
 
 describe('computeSeasonCosting', () => {

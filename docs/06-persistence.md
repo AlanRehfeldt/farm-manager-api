@@ -4,7 +4,8 @@
 
 - **Schema:** `prisma/schema.prisma`
 - **Banco:** PostgreSQL (`DATABASE_URL`)
-- **Versão:** Prisma 6 (`prisma` / `@prisma/client` ^6.11)
+- **Versão:** Prisma 7 (`prisma` / `@prisma/client` ^7.10)
+- **Conexão:** `DATABASE_URL` em `prisma.config.ts` (CLI/Migrate). O schema não declara `url`. O runtime usa `@prisma/adapter-pg`.
 - **Mapeamento:** `@@map("snake_case_tables")` nos models
 
 O schema reflete o estado **implementado** — pode divergir do modelo conceitual em `farm-manager-docs/04-tecnico/02-proposed-data-model.md` até as migrações de domínio.
@@ -28,6 +29,13 @@ Serialização: Decimals como string na API; centavos como number no JSON (BigIn
 // src/common/prisma/prisma.service.ts
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit {
+  constructor(configService: ConfigService<Env, true>) {
+    const adapter = new PrismaPg({
+      connectionString: configService.get('DATABASE_URL', { infer: true }),
+    });
+    super({ adapter });
+  }
+
   async onModuleInit() {
     await this.$connect();
   }
@@ -82,7 +90,7 @@ await this.prisma.$transaction(async (tx) => {
 |---------|------|
 | Soft delete | Deletes são hard `delete()` |
 | `$extends` / client extensions | Não usado |
-| Driver adapters (Prisma 7) | Projeto em Prisma 6 |
+| Driver adapters | PostgreSQL via `@prisma/adapter-pg` no `PrismaService` e no seed |
 | Tenancy filters automáticos | Não — filtro nos repositórios (`organizationId` / visibilidade / `farmId`). Ver [08-tenancy.md](./08-tenancy.md) |
 | Optimistic locking global | Planejado para saldo/version em inventory |
 

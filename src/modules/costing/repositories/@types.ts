@@ -22,12 +22,12 @@ export type CostEntryForCosting = {
 export type PlantingForCosting = {
   fieldId: string;
   fieldName: string;
-  areaHa: import('@prisma/client/runtime/library').Decimal;
+  areaHa: import('@prisma/client/runtime/client').Decimal;
 };
 
 export type FieldHarvestForCosting = {
   fieldId: string;
-  quantity: import('@prisma/client/runtime/library').Decimal;
+  quantity: import('@prisma/client/runtime/client').Decimal;
 };
 
 export type SeasonCostingSnapshotRecord = {
