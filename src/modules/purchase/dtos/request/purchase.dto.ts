@@ -27,7 +27,11 @@ export class CreatePurchaseItemBodyDto {
 }
 
 export class CreatePurchaseInstallmentBodyDto {
-  @ApiProperty({ example: 350000 })
+  @ApiProperty({
+    example: 350000,
+    description: 'Installment value in cents; must be greater than zero',
+    minimum: 1,
+  })
   valueInCents!: number;
 
   @ApiProperty()
