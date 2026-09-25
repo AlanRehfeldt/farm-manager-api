@@ -26,6 +26,8 @@ Rotas de catálogo e lançamentos: `@FarmScoped()` + header `x-farm-id`. Ver [08
 
 ## Invalidação de sessão (PR-39)
 
+Decisão de produto/arquitetura: **ADR-021** em `farm-manager-docs/04-tecnico/adr/021-session-invalidation.md`.
+
 O access JWT inclui a claim `passwordChangedAt` (epoch ms de `User.passwordChangedAt`). A `JwtStrategy` rejeita com 401 tokens sem a claim ou com claim anterior ao valor atual no banco.
 
 `POST /auth/change-password` grava `passwordChangedAt = now()`, revoga todos os refresh tokens e emite cookies novos. Access tokens emitidos antes da troca deixam de ser aceitos imediatamente (não só ao expirar).

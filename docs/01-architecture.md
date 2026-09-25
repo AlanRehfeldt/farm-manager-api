@@ -61,11 +61,12 @@ Em `src/app.module.ts`:
 | `FieldModule` | Farm Structure — talhões |
 | `CropModule` | Farm Structure — culturas e variedades |
 | `MachineModule` | Farm Structure — máquinas |
-| `CropSeasonModule` | Season — safras, plantings, activate/close stub |
+| `CropSeasonModule` | Season — safras, plantings, activate/close/reopen + snapshot (PR-13) |
 | `PurchaseModule` | Finance + Inventory IN — compras atômicas |
 | `InventoryModule` | Inventory — saldos (`GET /stock-balances`), ajustes (`POST /stock-adjustments`) |
 | `ActivityModule` | Operations — atividades, OUT + MO + máquina + CostEntry path A |
 | `ExpenseModule` | Finance — `POST/GET /expenses` (GENERIC/SALARY + alocação → CostEntry path B) |
+| `LaborClosingModule` | People/Costing — preview, fechamento e reabertura mensal de MO CLT (`/labor-month-closings`) |
 | `HarvestModule` | Harvest — `POST/GET /harvests` (volume/classes; sem CostEntry) |
 | `CostingModule` | Costing — `GET /crop-seasons/:id/costing`, `PUT /reference-price`, `PATCH /close` + snapshot |
 | `CostCategoryModule` | Catalog — naturezas de custo (seed) |
@@ -88,6 +89,8 @@ O mapa alvo de contextos e fronteiras está em `farm-manager-docs/04-tecnico/03-
 | CostEntry ledger | Sim (writers path A + path B; **relatório PR-13**) | ADR-006, ADR-007 |
 | Harvest (volume/classes) | Sim (PR-12) | — |
 | SeasonCostingSnapshot + close | Sim (PR-13) | ADR-014 |
+| Fechamento mensal MO CLT + reabertura | Sim (`LaborClosingModule`, PR-30–PR-33) | ADR-011 DC-02, ADR-014 |
+| Invalidação de sessão na troca de senha | Sim (`passwordChangedAt` no JWT, PR-39) | ADR-021 |
 | Inventory desacoplado | Parcial (IN compra, OUT atividade, ADJUSTMENT, `GET /stock-balances`) | ADR-012 |
 | Domain event outbox | Não | ADR-015 |
 | Ports entre módulos | Parcial (token de repo exportado) | ADR-016 — ports formais |
