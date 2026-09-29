@@ -1,4 +1,10 @@
-import { Farm, Organization, PlatformRole, Role } from '@prisma/client';
+import {
+  Farm,
+  Organization,
+  OrganizationStatus,
+  PlatformRole,
+  Role,
+} from '@prisma/client';
 
 export type ProvisionOrganizationData = {
   organizationName: string;
@@ -30,6 +36,7 @@ export type ProvisionOrganizationResult = {
 export type PlatformOrganizationListItem = {
   id: string;
   name: string;
+  status: OrganizationStatus;
   createdAt: Date;
   updatedAt: Date;
   farmCount: number;

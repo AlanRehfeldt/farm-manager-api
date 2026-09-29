@@ -1,5 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { Farm, Organization, PlatformRole, Prisma, Role } from '@prisma/client';
+import {
+  Farm,
+  Organization,
+  OrganizationStatus,
+  PlatformRole,
+  Prisma,
+  Role,
+} from '@prisma/client';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import {
   PlatformOrganizationListItem,
@@ -71,6 +78,74 @@ export class PrismaPlatformRepository implements PlatformRepository {
     return this.prisma.organization.findUnique({ where: { id } });
   }
 
+  async updateOrganizationStatus(
+    organizationId: string,
+    status: OrganizationStatus,
+  ): Promise<Organization | null> {
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.organization.findUnique({
+        where: { id: organizationId },
+        select: { id: true },
+      });
+
+      if (!existing) {
+        return null;
+      }
+
+      const organization = await tx.organization.update({
+        where: { id: organizationId },
+        data: { status },
+      });
+
+      if (status !== OrganizationStatus.SUSPENDED) {
+        return organization;
+      }
+
+      const memberships = await tx.membership.findMany({
+        where: { organizationId },
+        select: {
+          userId: true,
+          user: {
+            select: {
+              platformRole: true,
+              memberships: {
+                select: {
+                  organization: { select: { status: true } },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      const userIds = [
+        ...new Set(
+          memberships
+            .filter(
+              (membership) =>
+                membership.user.platformRole !== PlatformRole.PLATFORM_ADMIN,
+            )
+            .filter((membership) =>
+              membership.user.memberships.every(
+                (row) =>
+                  row.organization.status === OrganizationStatus.SUSPENDED,
+              ),
+            )
+            .map((membership) => membership.userId),
+        ),
+      ];
+
+      if (userIds.length > 0) {
+        await tx.refreshToken.updateMany({
+          where: { userId: { in: userIds }, revokedAt: null },
+          data: { revokedAt: new Date() },
+        });
+      }
+
+      return organization;
+    });
+  }
+
   async searchOrganizationFarms(
     query: SearchPlatformOrganizationFarmsQuery,
   ): Promise<Farm[]> {
@@ -101,6 +176,7 @@ export class PrismaPlatformRepository implements PlatformRepository {
       select: {
         id: true,
         name: true,
+        status: true,
         createdAt: true,
         updatedAt: true,
         _count: { select: { farms: true } },
@@ -138,6 +214,7 @@ export class PrismaPlatformRepository implements PlatformRepository {
       return {
         id: organization.id,
         name: organization.name,
+        status: organization.status,
         createdAt: organization.createdAt,
         updatedAt: organization.updatedAt,
         farmCount: organization._count.farms,

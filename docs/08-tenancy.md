@@ -57,7 +57,8 @@ No create de Product/Supplier/Employee, omitir `farmId` = compartilhado; se envi
 | `POST /users` | `@PlatformAdmin()` — cria usuário **sem** vínculo de tenant (ADR-018). Cliente novo entra por `POST /platform/organizations` |
 | `GET /users` | `@PlatformAdmin()` |
 | `POST /platform/organizations` | `@PlatformAdmin()` — org + fazenda + ADMIN do cliente (`mustChangePassword`) numa transação; seed de categorias; o vendor não vira membro |
-| `GET /platform/organizations` | `@PlatformAdmin()` — listagem com `farmCount`, `seasonCount`, `entryCount` (transações + atividades + colheitas) e `lastAccessAt` (último refresh token de um membro) |
+| `GET /platform/organizations` | `@PlatformAdmin()` — listagem com `status`, `farmCount`, `seasonCount`, `entryCount` (transações + atividades + colheitas) e `lastAccessAt` (último refresh token de um membro) |
+| `PATCH /platform/organizations/:organizationId/status` | `@PlatformAdmin()` — `ACTIVE` ou `SUSPENDED`; idempotente; suspensão revoga refresh de membros sem outra org ativa |
 | `GET /platform/users` | `@PlatformAdmin()` — usuários com memberships; filtro `organizationId` |
 | `POST /platform/users` | `@PlatformAdmin()` — usuário de cliente já numa org (`farmIds` omitido = org-wide) |
 | `POST /platform/users/:id/reset-password` | `@PlatformAdmin()` — nova senha, `mustChangePassword` e revogação dos refresh |
@@ -89,6 +90,19 @@ Fechamento de safra (PR-13): `PATCH /crop-seasons/:id/close` cria `SeasonCosting
 
 `GET /labor-month-closings/preview` e `POST /labor-month-closings` usam `@FarmScoped()` (header `x-farm-id` para derivar a org) e exigem **ADMIN org-wide** (`farmId: null`), conferido no service via `findOrgAdmin`. Membership pontual com `role: ADMIN` na fazenda do header recebe 403 — o preview expõe folha de toda a org e o fechamento grava `CostEntry` em qualquer fazenda.
 
+## Suspensão de organização (PR-20)
+
+`Organization.status` é `ACTIVE` (default) ou `SUSPENDED`. O vendor altera com `PATCH /platform/organizations/:organizationId/status` (`@PlatformAdmin()`). A mesma chamada repetida devolve 200.
+
+| Quem | Efeito |
+|------|--------|
+| Cliente só em orgs `SUSPENDED` | `POST /auth/login` → 403 (`Organization is suspended`). Access já emitido e `POST /auth/refresh` → 401 e os cookies são limpos |
+| Cliente com ao menos uma org `ACTIVE` | Login segue. Fazenda de org suspensa: `FarmMembershipGuard` → 403. `GET /farms`, get de organização e listagem de memberships ignoram a org suspensa |
+| `PLATFORM_ADMIN` | Login e `/platform/*` seguem, inclusive listar e reativar a org suspensa |
+| Usuário sem membership | Login segue, como hoje |
+
+Na suspensão, refresh tokens são revogados para membros que não são platform admin e não têm outra org `ACTIVE`. Reativar não restaura a sessão: o cliente entra de novo com a senha.
+
 ## Fora deste recorte
 
-Permissões nomeadas (ADR-013), join table cadastro × N fazendas, suspensão, auditoria e impersonation (PR-20–PR-26), reopen de safra fechada (planejado INV-REOPEN). O console vendor (`farm-manager-admin`, PR-19) existe à parte e não usa `x-farm-id`.
+Permissões nomeadas (ADR-013), join table cadastro × N fazendas, auditoria e impersonation (PR-21–PR-26), reopen de safra fechada (planejado INV-REOPEN). O console vendor (`farm-manager-admin`, PR-19) existe à parte e não usa `x-farm-id`.

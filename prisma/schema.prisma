@@ -16,6 +16,11 @@ enum PlatformRole {
   PLATFORM_ADMIN
 }
 
+enum OrganizationStatus {
+  ACTIVE
+  SUSPENDED
+}
+
 enum CropSeasonStatus {
   PLANNED
   ACTIVE
@@ -31,8 +36,9 @@ enum UomDimension {
 }
 
 model Organization {
-  id         String   @id @default(uuid())
+  id         String             @id @default(uuid())
   name       String
+  status     OrganizationStatus @default(ACTIVE)
   cnpj       String?
   phone      String?
   email      String?

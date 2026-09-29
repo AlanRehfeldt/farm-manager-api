@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Farm, Prisma } from '@prisma/client';
+import { Farm, OrganizationStatus, Prisma } from '@prisma/client';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { CreateFarmData, SearchManyQuery, UpdateFarmData } from './@types';
 import { FarmRepository } from './farm.repository';
@@ -37,6 +37,7 @@ export class PrismaFarmRepository implements FarmRepository {
     return this.prisma.farm.findFirst({
       where: {
         id,
+        organization: { status: OrganizationStatus.ACTIVE },
         OR: this.accessibleWhere(userId),
       },
     });
@@ -83,6 +84,7 @@ export class PrismaFarmRepository implements FarmRepository {
     query: SearchManyQuery,
   ): Prisma.FarmWhereInput {
     return {
+      organization: { status: OrganizationStatus.ACTIVE },
       OR: this.accessibleWhere(userId),
       organizationId: query.organizationId,
       name: query.name

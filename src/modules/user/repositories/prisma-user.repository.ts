@@ -1,5 +1,5 @@
 import { PrismaService } from 'src/common/prisma/prisma.service';
-import { UserRepository } from './user.repository';
+import { UserRepository, UserSession } from './user.repository';
 import { Prisma, User } from '@prisma/client';
 import { SearchManyQuery, UpdateUserData } from './@types';
 import { Injectable } from '@nestjs/common';
@@ -47,6 +47,32 @@ export class PrismaUserRepository implements UserRepository {
         email,
       },
     });
+  }
+
+  async findSessionById(id: string): Promise<UserSession | null> {
+    return await this.prisma.user.findUnique({
+      where: { id },
+      include: this.sessionInclude(),
+    });
+  }
+
+  async findSessionByEmail(email: string): Promise<UserSession | null> {
+    return await this.prisma.user.findUnique({
+      where: { email },
+      include: this.sessionInclude(),
+    });
+  }
+
+  private sessionInclude() {
+    return {
+      memberships: {
+        select: {
+          organization: {
+            select: { status: true },
+          },
+        },
+      },
+    } as const;
   }
 
   async searchMany(query: SearchManyQuery): Promise<User[]> {

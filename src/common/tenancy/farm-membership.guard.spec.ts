@@ -72,6 +72,7 @@ describe('FarmMembershipGuard', () => {
     prisma.farm.findUnique.mockResolvedValue({
       id: 'farm-a',
       organizationId: 'org-1',
+      organization: { status: 'ACTIVE' },
     });
     prisma.membership.findFirst.mockResolvedValue(null);
     const { context } = createContext({
@@ -88,6 +89,7 @@ describe('FarmMembershipGuard', () => {
     prisma.farm.findUnique.mockResolvedValue({
       id: 'farm-a',
       organizationId: 'org-1',
+      organization: { status: 'ACTIVE' },
     });
     prisma.membership.findFirst.mockResolvedValue({
       id: 'mem-1',
@@ -110,6 +112,7 @@ describe('FarmMembershipGuard', () => {
     prisma.farm.findUnique.mockResolvedValue({
       id: 'farm-b',
       organizationId: 'org-1',
+      organization: { status: 'ACTIVE' },
     });
     prisma.membership.findFirst.mockResolvedValue({
       id: 'mem-org',
@@ -129,5 +132,22 @@ describe('FarmMembershipGuard', () => {
       },
       select: { id: true, role: true },
     });
+  });
+
+  it('returns 403 when the organization is suspended', async () => {
+    prisma.farm.findUnique.mockResolvedValue({
+      id: 'farm-a',
+      organizationId: 'org-1',
+      organization: { status: 'SUSPENDED' },
+    });
+    const { context } = createContext({
+      userId: 'user-1',
+      farmHeader: 'farm-a',
+    });
+
+    await expect(guard.canActivate(context)).rejects.toThrow(
+      'Organization is suspended',
+    );
+    expect(prisma.membership.findFirst).not.toHaveBeenCalled();
   });
 });

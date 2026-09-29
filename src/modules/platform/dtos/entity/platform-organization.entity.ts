@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { OrganizationStatus } from '@prisma/client';
 
 export class PlatformOrganizationDto {
   @ApiProperty({ example: 'uuid' })
@@ -6,6 +7,12 @@ export class PlatformOrganizationDto {
 
   @ApiProperty({ example: 'Rehfeldt Agro' })
   name!: string;
+
+  @ApiProperty({
+    enum: OrganizationStatus,
+    example: OrganizationStatus.ACTIVE,
+  })
+  status!: OrganizationStatus;
 
   @ApiProperty({ example: '2026-09-29T00:00:00.000Z' })
   createdAt!: Date;

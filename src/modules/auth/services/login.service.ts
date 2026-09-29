@@ -1,6 +1,12 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Inject,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { compare } from 'bcryptjs';
 import { Response } from 'express';
+import { isTenantSessionSuspended } from 'src/common/tenancy/tenant-session';
 import {
   USER_REPOSITORY,
   UserRepository,
@@ -21,7 +27,7 @@ export class LoginService {
     password: string,
     res: Response,
   ): Promise<{ message: string; result: UserDto }> {
-    const user = await this.userRepository.findByEmail(email);
+    const user = await this.userRepository.findSessionByEmail(email);
 
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
@@ -32,16 +38,22 @@ export class LoginService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    if (isTenantSessionSuspended(user)) {
+      throw new ForbiddenException('Organization is suspended');
+    }
+
     const tokens = await this.tokenService.issueTokenPair(user.id);
     this.tokenService.setAuthCookies(res, tokens);
 
     const {
       password: passwordHash,
       passwordChangedAt: _passwordChangedAt,
+      memberships: _memberships,
       ...userWithoutPassword
     } = user;
     void passwordHash;
     void _passwordChangedAt;
+    void _memberships;
 
     return {
       message: 'Logged in successfully',

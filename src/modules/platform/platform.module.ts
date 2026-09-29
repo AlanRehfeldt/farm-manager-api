@@ -10,6 +10,7 @@ import { FetchPlatformOrganizationFarmsController } from './controllers/fetch-pl
 import { FetchPlatformOrganizationsController } from './controllers/fetch-platform-organizations.controller';
 import { FetchPlatformUsersController } from './controllers/fetch-platform-users.controller';
 import { ResetPlatformUserPasswordController } from './controllers/reset-platform-user-password.controller';
+import { UpdatePlatformOrganizationStatusController } from './controllers/update-platform-organization-status.controller';
 import { PLATFORM_REPOSITORY } from './repositories/platform.repository';
 import { PrismaPlatformRepository } from './repositories/prisma-platform.repository';
 import { CreatePlatformOrganizationService } from './services/create-platform-organization.service';
@@ -18,6 +19,7 @@ import { FetchPlatformOrganizationFarmsService } from './services/fetch-platform
 import { FetchPlatformOrganizationsService } from './services/fetch-platform-organizations.service';
 import { FetchPlatformUsersService } from './services/fetch-platform-users.service';
 import { ResetPlatformUserPasswordService } from './services/reset-platform-user-password.service';
+import { UpdatePlatformOrganizationStatusService } from './services/update-platform-organization-status.service';
 
 @Module({
   imports: [
@@ -34,6 +36,7 @@ import { ResetPlatformUserPasswordService } from './services/reset-platform-user
     CreatePlatformUserController,
     FetchPlatformUsersController,
     ResetPlatformUserPasswordController,
+    UpdatePlatformOrganizationStatusController,
   ],
   providers: [
     {
@@ -46,6 +49,7 @@ import { ResetPlatformUserPasswordService } from './services/reset-platform-user
     CreatePlatformUserService,
     FetchPlatformUsersService,
     ResetPlatformUserPasswordService,
+    UpdatePlatformOrganizationStatusService,
   ],
 })
 export class PlatformApiModule {}

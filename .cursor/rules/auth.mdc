@@ -14,6 +14,7 @@ Detalhe: `docs/05-auth.md`
 - `JwtAuthGuard` registrado globalmente via `APP_GUARD` em `AuthModule`.
 - `JwtStrategy` extrai token do cookie, não do header Bearer.
 - Access JWT carrega `{ sub, passwordChangedAt }` (epoch ms). A strategy compara com `User.passwordChangedAt` e rejeita claim ausente ou anterior (PR-39).
+- A mesma consulta da strategy inclui `platformRole` e o status das orgs das memberships. Quem não é platform admin e só tem org `SUSPENDED` recebe 401 (PR-20). Login desses usuários é 403.
 - `POST /auth/change-password` atualiza `passwordChangedAt`, revoga refresh tokens e emite cookies novos — access antigo vira 401 na hora.
 
 ## Rotas públicas

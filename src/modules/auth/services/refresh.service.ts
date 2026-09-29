@@ -1,5 +1,10 @@
 import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { isTenantSessionSuspended } from 'src/common/tenancy/tenant-session';
+import {
+  USER_REPOSITORY,
+  UserRepository,
+} from 'src/modules/user/repositories/user.repository';
 import {
   REFRESH_TOKEN_REPOSITORY,
   RefreshTokenRepository,
@@ -14,6 +19,8 @@ export class RefreshService {
     private readonly tokenService: TokenService,
     @Inject(REFRESH_TOKEN_REPOSITORY)
     private readonly refreshTokenRepository: RefreshTokenRepository,
+    @Inject(USER_REPOSITORY)
+    private readonly userRepository: UserRepository,
   ) {}
 
   async execute(req: Request, res: Response): Promise<{ message: string }> {
@@ -42,6 +49,13 @@ export class RefreshService {
     if (storedToken.expiresAt <= new Date()) {
       this.tokenService.clearAuthCookies(res);
       throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    const user = await this.userRepository.findSessionById(storedToken.userId);
+
+    if (!user || isTenantSessionSuspended(user)) {
+      this.tokenService.clearAuthCookies(res);
+      throw new UnauthorizedException('Organization is suspended');
     }
 
     await this.refreshTokenRepository.revokeById(storedToken.id);

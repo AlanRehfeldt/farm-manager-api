@@ -1,4 +1,4 @@
-import { Farm, Organization } from '@prisma/client';
+import { Farm, Organization, OrganizationStatus } from '@prisma/client';
 import {
   PlatformOrganizationListItem,
   PlatformUserListItem,
@@ -14,6 +14,10 @@ export interface PlatformRepository {
     data: ProvisionOrganizationData,
   ): Promise<ProvisionOrganizationResult>;
   findOrganizationById(id: string): Promise<Organization | null>;
+  updateOrganizationStatus(
+    organizationId: string,
+    status: OrganizationStatus,
+  ): Promise<Organization | null>;
   searchOrganizationFarms(
     query: SearchPlatformOrganizationFarmsQuery,
   ): Promise<Farm[]>;

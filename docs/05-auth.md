@@ -34,6 +34,16 @@ O access JWT inclui a claim `passwordChangedAt` (epoch ms de `User.passwordChang
 
 `MustChangePasswordGuard` lê `mustChangePassword` do `request.user` populado pela strategy (sem `findById` extra).
 
+## Suspensão de organização (PR-20)
+
+`Organization.status` (`ACTIVE` | `SUSPENDED`) bloqueia o tenant. A `JwtStrategy` carrega, na mesma consulta do usuário, `platformRole` e o status das orgs das memberships.
+
+- `PLATFORM_ADMIN` e usuário sem membership autenticam normalmente.
+- Quem tem membership e nenhuma org `ACTIVE`: login responde **403** (`Organization is suspended`); access já emitido e refresh respondem **401** e o refresh limpa os cookies.
+- Quem ainda tem uma org `ACTIVE` autentica; a fazenda da org suspensa é barrada no `FarmMembershipGuard` (403).
+
+`PATCH /platform/organizations/:organizationId/status` com `SUSPENDED` revoga os refresh tokens dos membros sem outra org ativa. Detalhe de tenancy: [08-tenancy.md](./08-tenancy.md).
+
 ## Guard global
 
 `JwtAuthGuard` registrado como `APP_GUARD` em `AuthModule`. Todas as rotas exigem cookie de access válido **exceto** as marcadas com `@Public()`.

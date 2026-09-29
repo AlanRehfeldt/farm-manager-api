@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiForbiddenResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -19,6 +20,7 @@ import z from 'zod';
 import { AuthRateLimitGuard } from 'src/common/http/auth-rate-limit.guard';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
+import { ForbiddenDto } from 'src/common/errors/forbidden.dto';
 import { UnauthorizedDto } from 'src/common/errors/unauthorized.dto';
 import { Public } from '../decorators/public.decorator';
 import { LoginBodyDto } from '../dtos/request/login.dto';
@@ -48,6 +50,10 @@ export class LoginController {
   @ApiUnauthorizedResponse({
     description: 'Invalid credentials',
     type: UnauthorizedDto,
+  })
+  @ApiForbiddenResponse({
+    description: 'Organization is suspended',
+    type: ForbiddenDto,
   })
   @Post('/login')
   @UseGuards(AuthRateLimitGuard)

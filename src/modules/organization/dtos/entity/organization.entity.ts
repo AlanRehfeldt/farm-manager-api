@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { OrganizationStatus } from '@prisma/client';
 
 export class OrganizationDto {
   @ApiProperty({ example: 'uuid' })
@@ -6,6 +7,12 @@ export class OrganizationDto {
 
   @ApiProperty({ example: 'Rehfeldt Agro' })
   name!: string;
+
+  @ApiProperty({
+    enum: OrganizationStatus,
+    example: OrganizationStatus.ACTIVE,
+  })
+  status!: OrganizationStatus;
 
   @ApiPropertyOptional({ example: '11222333000181', nullable: true })
   cnpj?: string | null;

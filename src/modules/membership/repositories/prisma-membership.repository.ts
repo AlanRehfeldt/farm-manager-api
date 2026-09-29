@@ -1,5 +1,11 @@
 import { ConflictException, Injectable } from '@nestjs/common';
-import { Membership, PlatformRole, Prisma, Role } from '@prisma/client';
+import {
+  Membership,
+  OrganizationStatus,
+  PlatformRole,
+  Prisma,
+  Role,
+} from '@prisma/client';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import {
   CreateMembershipData,
@@ -13,6 +19,10 @@ import { MembershipRepository } from './membership.repository';
 
 const tenantUserWhere = {
   user: { platformRole: PlatformRole.NONE },
+};
+
+const activeOrganizationWhere = {
+  organization: { status: OrganizationStatus.ACTIVE },
 };
 
 /**
@@ -179,6 +189,7 @@ export class PrismaMembershipRepository implements MembershipRepository {
         organizationId,
         role: Role.ADMIN,
         farmId: null,
+        ...activeOrganizationWhere,
       },
     });
   }
@@ -222,6 +233,7 @@ export class PrismaMembershipRepository implements MembershipRepository {
         userId: query.userId,
         role: query.role,
         ...tenantUserWhere,
+        ...activeOrganizationWhere,
       },
       include: {
         user: {
@@ -246,6 +258,7 @@ export class PrismaMembershipRepository implements MembershipRepository {
         userId: query.userId,
         role: query.role,
         ...tenantUserWhere,
+        ...activeOrganizationWhere,
       },
     });
   }

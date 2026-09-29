@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Organization, Role } from '@prisma/client';
+import { Organization, OrganizationStatus, Role } from '@prisma/client';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { OrganizationRepository } from './organization.repository';
 import {
@@ -77,6 +77,7 @@ export class PrismaOrganizationRepository implements OrganizationRepository {
     return this.prisma.organization.findFirst({
       where: {
         id,
+        status: OrganizationStatus.ACTIVE,
         memberships: { some: { userId } },
       },
     });
@@ -88,6 +89,7 @@ export class PrismaOrganizationRepository implements OrganizationRepository {
   ): Promise<Organization[]> {
     return this.prisma.organization.findMany({
       where: {
+        status: OrganizationStatus.ACTIVE,
         memberships: { some: { userId } },
         name: query.name
           ? { contains: query.name, mode: 'insensitive' }
@@ -102,6 +104,7 @@ export class PrismaOrganizationRepository implements OrganizationRepository {
   async countForUser(userId: string, query: SearchManyQuery): Promise<number> {
     return this.prisma.organization.count({
       where: {
+        status: OrganizationStatus.ACTIVE,
         memberships: { some: { userId } },
         name: query.name
           ? { contains: query.name, mode: 'insensitive' }

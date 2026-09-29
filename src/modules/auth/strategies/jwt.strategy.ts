@@ -4,6 +4,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Request } from 'express';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Env } from 'src/env';
+import { isTenantSessionSuspended } from 'src/common/tenancy/tenant-session';
 import {
   USER_REPOSITORY,
   UserRepository,
@@ -39,7 +40,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload): Promise<AuthenticatedUser> {
-    const user = await this.userRepository.findById(payload.sub);
+    const user = await this.userRepository.findSessionById(payload.sub);
 
     if (!user) {
       throw new UnauthorizedException();
@@ -48,6 +49,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const claim = payload.passwordChangedAt;
     if (typeof claim !== 'number' || claim < user.passwordChangedAt.getTime()) {
       throw new UnauthorizedException();
+    }
+
+    if (isTenantSessionSuspended(user)) {
+      throw new UnauthorizedException('Organization is suspended');
     }
 
     return {
