@@ -266,6 +266,10 @@ export class PrismaActivityRepository implements ActivityRepository {
         throw new NotFoundException('Activity not found');
       }
 
+      if (activity.reversedAt != null) {
+        throw new ConflictException('Activity has already been reversed');
+      }
+
       await assertActiveCropSeasonLocked(
         tx,
         activity.cropSeasonId,
@@ -289,10 +293,6 @@ export class PrismaActivityRepository implements ActivityRepository {
             ? 'Activity has already been reversed'
             : 'Activity has no cost entries to reverse',
         );
-      }
-
-      for (const line of openCltLabor) {
-        await tx.activityLabor.delete({ where: { id: line.id } });
       }
 
       if (
@@ -338,15 +338,6 @@ export class PrismaActivityRepository implements ActivityRepository {
         });
       }
 
-      // Linhas MO já custeadas (fechamento CLT ou empreitada): removidas após
-      // estornar CostEntry, para não reaparecerem como horas abertas na reabertura.
-      const closedLabor = activity.labor.filter(
-        (line) => line.costInCents != null,
-      );
-      for (const line of closedLabor) {
-        await tx.activityLabor.delete({ where: { id: line.id } });
-      }
-
       const reversalNote = `[Estornado em ${data.reversedAt.toISOString()}] ${data.reason}`;
       const updatedNote = activity.note
         ? `${activity.note}\n${reversalNote}`
@@ -354,7 +345,7 @@ export class PrismaActivityRepository implements ActivityRepository {
 
       await tx.activity.update({
         where: { id: activity.id },
-        data: { note: updatedNote },
+        data: { note: updatedNote, reversedAt: data.reversedAt },
       });
 
       const fullActivity = await tx.activity.findUniqueOrThrow({
@@ -450,6 +441,7 @@ export class PrismaActivityRepository implements ActivityRepository {
         costInCents: true,
         activity: {
           select: {
+            reversedAt: true,
             costEntries: {
               select: { sourceType: true, reversedAt: true },
             },
@@ -459,7 +451,10 @@ export class PrismaActivityRepository implements ActivityRepository {
     });
 
     return rows.some((row) => {
-      // Horas CLT abertas (estorno F9 apaga a linha; reabertura zera costInCents)
+      if (row.activity.reversedAt != null) {
+        return false;
+      }
+      // Hora CLT ainda sem custo. Estorno marca a atividade e mantém a linha.
       if (row.costInCents == null) {
         return true;
       }

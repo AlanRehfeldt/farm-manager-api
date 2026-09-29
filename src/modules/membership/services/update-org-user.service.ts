@@ -110,6 +110,7 @@ export class UpdateOrgUserService {
           email: input.email,
           organizationId: input.organizationId,
           memberships: rows,
+          guardLastOrgAdmin: isCurrentlyOrgAdmin && !becomesOrgAdmin,
         });
 
       return { memberships };

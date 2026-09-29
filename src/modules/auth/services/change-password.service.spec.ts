@@ -85,7 +85,7 @@ describe('ChangePasswordService', () => {
       refreshToken: 'refresh',
     });
     expect(userRepository.update.mock.invocationCallOrder[0]).toBeLessThan(
-      tokenService.issueTokenPair.mock.invocationCallOrder[0]!,
+      tokenService.issueTokenPair.mock.invocationCallOrder[0],
     );
   });
 

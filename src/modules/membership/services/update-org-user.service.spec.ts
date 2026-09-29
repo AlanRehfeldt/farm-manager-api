@@ -103,6 +103,7 @@ describe('UpdateOrgUserService', () => {
           role: Role.USER,
         },
       ],
+      guardLastOrgAdmin: false,
     });
     expect(result.memberships).toEqual([existingMembership]);
   });

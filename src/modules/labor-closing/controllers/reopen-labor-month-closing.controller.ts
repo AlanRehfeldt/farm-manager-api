@@ -86,7 +86,8 @@ export class ReopenLaborMonthClosingController {
     @OrganizationId() organizationId: string,
     @CurrentUser() user: { userId: string },
     @Param(new ZodValidationPipe(paramSchema)) param: { id: string },
-    @Body(new ZodValidationPipe(bodySchema)) body: ReopenLaborMonthClosingBodyDto,
+    @Body(new ZodValidationPipe(bodySchema))
+    body: ReopenLaborMonthClosingBodyDto,
   ) {
     const result = await this.reopenLaborMonthClosingService.execute({
       organizationId,

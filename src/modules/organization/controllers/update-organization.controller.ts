@@ -15,6 +15,7 @@ import { NotFoundDto } from 'src/common/errors/not-found.dto';
 import { UnauthorizedDto } from 'src/common/errors/unauthorized.dto';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
 import { optionalNullableBrStateSchema } from 'src/common/validation/br-state';
+import { emptyToNull } from 'src/common/validation/empty-to-null';
 import {
   AuthenticatedUser,
   CurrentUser,
@@ -31,13 +32,11 @@ const updateOrganizationParamSchema = z.object({
 });
 
 const optionalDigits = (length: number, field: string) =>
-  z
-    .string()
-    .regex(new RegExp(`^\\d{${length}}$`), {
+  emptyToNull(
+    z.string().regex(new RegExp(`^\\d{${length}}$`), {
       message: `${field} must be ${length} digits.`,
-    })
-    .nullable()
-    .optional();
+    }),
+  );
 
 const updateOrganizationBodySchema = z.object({
   name: z
@@ -46,16 +45,16 @@ const updateOrganizationBodySchema = z.object({
     .max(150, { message: 'Name must be at most 150 characters long.' })
     .optional(),
   cnpj: optionalDigits(14, 'CNPJ'),
-  phone: z
-    .string()
-    .regex(/^\d{10,11}$/, { message: 'Phone must be 10 or 11 digits.' })
-    .nullable()
-    .optional(),
-  email: z.email().nullable().optional(),
-  street: z.string().max(200).nullable().optional(),
-  number: z.string().max(20).nullable().optional(),
-  complement: z.string().max(100).nullable().optional(),
-  city: z.string().max(100).nullable().optional(),
+  phone: emptyToNull(
+    z
+      .string()
+      .regex(/^\d{10,11}$/, { message: 'Phone must be 10 or 11 digits.' }),
+  ),
+  email: emptyToNull(z.email()),
+  street: emptyToNull(z.string().max(200)),
+  number: emptyToNull(z.string().max(20)),
+  complement: emptyToNull(z.string().max(100)),
+  city: emptyToNull(z.string().max(100)),
   state: optionalNullableBrStateSchema,
   zipCode: optionalDigits(8, 'ZIP code'),
 });

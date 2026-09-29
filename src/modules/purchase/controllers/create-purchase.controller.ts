@@ -58,12 +58,9 @@ const createPurchaseBodySchema = z.object({
   installments: z
     .array(
       z.object({
-        valueInCents: z.coerce
-          .number()
-          .int()
-          .positive({
-            message: 'Installment value must be greater than zero',
-          }),
+        valueInCents: z.coerce.number().int().positive({
+          message: 'Installment value must be greater than zero',
+        }),
         dueDate: z.coerce.date(),
         paymentDate: z.coerce.date().optional(),
         paymentForm: paymentFormSchema,

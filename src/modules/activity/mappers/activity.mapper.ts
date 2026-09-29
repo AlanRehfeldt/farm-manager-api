@@ -182,7 +182,7 @@ export function toActivityResponse(
     labor,
     machineHours,
     totalCostInCents,
-    reversedAt: computeActivityReversedAt(activity),
+    reversedAt: activity.reversedAt ?? computeActivityReversedAt(activity),
     createdAt: activity.createdAt,
     updatedAt: activity.updatedAt,
   };

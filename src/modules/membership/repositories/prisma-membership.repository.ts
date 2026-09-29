@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { Membership, PlatformRole, Role } from '@prisma/client';
+import { ConflictException, Injectable } from '@nestjs/common';
+import { Membership, PlatformRole, Prisma, Role } from '@prisma/client';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import {
   CreateMembershipData,
@@ -14,6 +14,41 @@ import { MembershipRepository } from './membership.repository';
 const tenantUserWhere = {
   user: { platformRole: PlatformRole.NONE },
 };
+
+/**
+ * Trava as memberships de admin org-wide antes de qualquer update de usuário.
+ * A ordem estável é `userId`, para dois rebaixamentos concorrentes serializarem.
+ */
+async function lockOrgAdminMemberships(
+  tx: Prisma.TransactionClient,
+  organizationId: string,
+): Promise<number> {
+  const rows = await tx.$queryRaw<Array<{ id: string }>>`
+    SELECT m.id
+    FROM memberships m
+    INNER JOIN users u ON u.id = m."userId"
+    WHERE m."organizationId" = ${organizationId}
+      AND m.role = 'ADMIN'::"Role"
+      AND m."farmId" IS NULL
+      AND u."platformRole" = 'NONE'::"PlatformRole"
+    ORDER BY m."userId"
+    FOR UPDATE OF m
+  `;
+
+  return rows.length;
+}
+
+async function assertOrgKeepsAnotherAdmin(
+  tx: Prisma.TransactionClient,
+  organizationId: string,
+): Promise<void> {
+  const adminCount = await lockOrgAdminMemberships(tx, organizationId);
+  if (adminCount <= 1) {
+    throw new ConflictException(
+      'Cannot remove the last admin of the organization',
+    );
+  }
+}
 
 @Injectable()
 export class PrismaMembershipRepository implements MembershipRepository {
@@ -81,9 +116,16 @@ export class PrismaMembershipRepository implements MembershipRepository {
   async deleteManyByUserAndOrg(
     userId: string,
     organizationId: string,
+    options?: { guardLastOrgAdmin?: boolean },
   ): Promise<void> {
-    await this.prisma.membership.deleteMany({
-      where: { userId, organizationId },
+    await this.prisma.$transaction(async (tx) => {
+      if (options?.guardLastOrgAdmin) {
+        await assertOrgKeepsAnotherAdmin(tx, organizationId);
+      }
+
+      await tx.membership.deleteMany({
+        where: { userId, organizationId },
+      });
     });
   }
 
@@ -91,6 +133,10 @@ export class PrismaMembershipRepository implements MembershipRepository {
     data: ReplaceProfileAndMembershipsData,
   ): Promise<Membership[]> {
     return this.prisma.$transaction(async (tx) => {
+      if (data.guardLastOrgAdmin) {
+        await assertOrgKeepsAnotherAdmin(tx, data.organizationId);
+      }
+
       await tx.user.update({
         where: { id: data.userId },
         data: {

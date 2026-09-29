@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { CostEntrySourceType, TransactionType } from '@prisma/client';
-import { assertActiveCropSeasonLocked } from 'src/common/prisma/crop-season-lock';
+import { lockActiveCropSeasons } from 'src/common/prisma/crop-season-lock';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import {
   CreateExpenseData,
@@ -56,21 +56,13 @@ export class PrismaExpenseRepository implements ExpenseRepository {
 
   async create(data: CreateExpenseData): Promise<CreateExpenseResult> {
     return await this.prisma.$transaction(async (tx) => {
-      const lockKeys = [
-        ...new Map(
-          data.allocations.map((allocation) => [
-            `${allocation.farmId}:${allocation.cropSeasonId}`,
-            {
-              farmId: allocation.farmId,
-              cropSeasonId: allocation.cropSeasonId,
-            },
-          ]),
-        ).values(),
-      ];
-
-      for (const lock of lockKeys) {
-        await assertActiveCropSeasonLocked(tx, lock.cropSeasonId, lock.farmId);
-      }
+      await lockActiveCropSeasons(
+        tx,
+        data.allocations.map((allocation) => ({
+          farmId: allocation.farmId,
+          cropSeasonId: allocation.cropSeasonId,
+        })),
+      );
 
       const transaction = await tx.transaction.create({
         data: {
@@ -276,21 +268,13 @@ export class PrismaExpenseRepository implements ExpenseRepository {
         throw new NotFoundException('Expense not found');
       }
 
-      const lockKeys = [
-        ...new Map(
-          expense.transactionAllocations.map((allocation) => [
-            `${allocation.farmId}:${allocation.cropSeasonId}`,
-            {
-              farmId: allocation.farmId,
-              cropSeasonId: allocation.cropSeasonId,
-            },
-          ]),
-        ).values(),
-      ];
-
-      for (const lock of lockKeys) {
-        await assertActiveCropSeasonLocked(tx, lock.cropSeasonId, lock.farmId);
-      }
+      await lockActiveCropSeasons(
+        tx,
+        expense.transactionAllocations.map((allocation) => ({
+          farmId: allocation.farmId,
+          cropSeasonId: allocation.cropSeasonId,
+        })),
+      );
 
       const allocationIds = expense.transactionAllocations.map((a) => a.id);
       const costEntries = await this.loadCostEntries(allocationIds, tx);

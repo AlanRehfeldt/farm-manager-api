@@ -17,6 +17,7 @@ import { BadRequestDto } from 'src/common/errors/bad-request.dto';
 import { ConflictDto } from 'src/common/errors/conflict.dto';
 import { NotFoundDto } from 'src/common/errors/not-found.dto';
 import { optionalNullableBrStateSchema } from 'src/common/validation/br-state';
+import { emptyToNull } from 'src/common/validation/empty-to-null';
 import {
   UpdateSupplierBodyDto,
   UpdateSupplierParamDto,
@@ -45,14 +46,14 @@ const updateSupplierSchema = z
       .length(11, { message: 'CPF must be 11 characters long.' })
       .nullable()
       .optional(),
-    address: z.string().nullable().optional(),
-    city: z.string().max(100).nullable().optional(),
+    address: emptyToNull(z.string()),
+    city: emptyToNull(z.string().max(100)),
     state: optionalNullableBrStateSchema,
-    phoneNumber: z
-      .string()
-      .regex(/^\d{10,11}$/, { message: 'Phone must be 10 or 11 digits.' })
-      .nullable()
-      .optional(),
+    phoneNumber: emptyToNull(
+      z
+        .string()
+        .regex(/^\d{10,11}$/, { message: 'Phone must be 10 or 11 digits.' }),
+    ),
   })
   .refine(
     (data) => {

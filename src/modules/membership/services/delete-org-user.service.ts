@@ -73,6 +73,7 @@ export class DeleteOrgUserService {
     await this.membershipRepository.deleteManyByUserAndOrg(
       userId,
       organizationId,
+      { guardLastOrgAdmin: isOrgAdmin },
     );
   }
 }

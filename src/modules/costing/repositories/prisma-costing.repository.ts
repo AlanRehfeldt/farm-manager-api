@@ -5,6 +5,10 @@ import {
   assertClosedCropSeasonForReopen,
 } from 'src/common/prisma/crop-season-lock';
 import { PrismaService } from 'src/common/prisma/prisma.service';
+import {
+  findOpenCltLaborMonths,
+  formatOpenCltLaborMonths,
+} from 'src/modules/labor-closing/domain/open-clt-labor';
 import { computeSeasonCosting } from '../domain/compute-season-costing';
 import { toSeasonCostingResponse } from '../mappers/costing.mapper';
 import {
@@ -140,6 +144,16 @@ export class PrismaCostingRepository implements CostingRepository {
   ): Promise<SeasonCostingSnapshotRecord['payload']> {
     return await this.prisma.$transaction(async (tx) => {
       await assertActiveCropSeasonForClose(tx, data.cropSeasonId, data.farmId);
+
+      const openLaborMonths = await findOpenCltLaborMonths(
+        tx,
+        data.cropSeasonId,
+      );
+      if (openLaborMonths.length > 0) {
+        throw new ConflictException(
+          `Cannot close crop season while CLT labor months are open: ${formatOpenCltLaborMonths(openLaborMonths)}`,
+        );
+      }
 
       const season = await tx.cropSeason.findFirstOrThrow({
         where: { id: data.cropSeasonId, farmId: data.farmId },

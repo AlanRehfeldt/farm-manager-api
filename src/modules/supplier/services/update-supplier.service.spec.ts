@@ -8,10 +8,7 @@ import { UpdateSupplierService } from './update-supplier.service';
 
 describe('UpdateSupplierService', () => {
   const supplierRepository: jest.Mocked<
-    Pick<
-      SupplierRepository,
-      'findById' | 'findByCnpj' | 'findByCpf' | 'update'
-    >
+    Pick<SupplierRepository, 'findById' | 'findByCnpj' | 'findByCpf' | 'update'>
   > = {
     findById: jest.fn(),
     findByCnpj: jest.fn(),

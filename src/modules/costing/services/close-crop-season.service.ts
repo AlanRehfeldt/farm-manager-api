@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { CropSeasonStatus } from '@prisma/client';
+import { formatOpenCltLaborMonths } from 'src/modules/labor-closing/domain/open-clt-labor';
 import {
   LABOR_CLOSING_REPOSITORY,
   LaborClosingRepository,
@@ -46,11 +47,8 @@ export class CloseCropSeasonService {
       );
 
     if (openLaborMonths.length > 0) {
-      const list = openLaborMonths
-        .map((m) => `${String(m.month).padStart(2, '0')}/${m.year}`)
-        .join(', ');
       throw new ConflictException(
-        `Cannot close crop season while CLT labor months are open: ${list}`,
+        `Cannot close crop season while CLT labor months are open: ${formatOpenCltLaborMonths(openLaborMonths)}`,
       );
     }
 

@@ -269,9 +269,7 @@ export class CreateActivityService {
 
         if (employee.employmentType === EmploymentType.CLT) {
           if (item.payBasis !== LaborPayBasis.HOUR) {
-            throw new BadRequestException(
-              'CLT labor must use HOUR pay basis',
-            );
+            throw new BadRequestException('CLT labor must use HOUR pay basis');
           }
           if (item.costInCents != null || item.hourlyRateInCents != null) {
             throw new BadRequestException(

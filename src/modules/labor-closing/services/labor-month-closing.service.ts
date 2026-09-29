@@ -215,12 +215,11 @@ export class CloseLaborMonthService {
       );
     }
 
-    const lines =
-      await this.laborClosingRepository.findOpenCltLaborInOrgMonth(
-        organizationId,
-        year,
-        month,
-      );
+    const lines = await this.laborClosingRepository.findOpenCltLaborInOrgMonth(
+      organizationId,
+      year,
+      month,
+    );
 
     if (lines.length === 0) {
       throw new ConflictException(
@@ -311,8 +310,7 @@ export class CloseLaborMonthService {
       });
     }
 
-    const closings =
-      await this.laborClosingRepository.closeOrgMonth(toClose);
+    const closings = await this.laborClosingRepository.closeOrgMonth(toClose);
 
     const closingByEmployee = new Map(
       closings.map((c) => [c.employeeId, c.id]),

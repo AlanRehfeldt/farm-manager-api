@@ -21,6 +21,8 @@ export type ReplaceProfileAndMembershipsData = {
   email: string;
   organizationId: string;
   memberships: CreateMembershipData[];
+  /** Trava os admins org-wide e recusa se este replace tirar o último. */
+  guardLastOrgAdmin?: boolean;
 };
 
 export type CreateUserWithMembershipsResult = {

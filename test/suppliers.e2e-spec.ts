@@ -182,5 +182,41 @@ describe('Suppliers (e2e)', () => {
     expect(cleared.state).toBeNull();
     expect(cleared.phoneNumber).toBeNull();
     expect(cleared.cpf).toBe(swapCpf);
+
+    const blankRes = await request(server)
+      .put(`/suppliers/${created.id}`)
+      .set('Cookie', adminCookies)
+      .set('x-farm-id', farmId)
+      .send({
+        address: 'Rua Temporaria',
+        city: 'Campinas',
+        phoneNumber: '19999999999',
+      })
+      .expect(200);
+    expect(commandResult<SupplierResult>(blankRes).address).toBe(
+      'Rua Temporaria',
+    );
+
+    const blankCleared = await request(server)
+      .put(`/suppliers/${created.id}`)
+      .set('Cookie', adminCookies)
+      .set('x-farm-id', farmId)
+      .send({
+        address: '',
+        city: ' ',
+        phoneNumber: '',
+      })
+      .expect(200);
+    const blank = commandResult<SupplierResult>(blankCleared);
+    expect(blank.address).toBeNull();
+    expect(blank.city).toBeNull();
+    expect(blank.phoneNumber).toBeNull();
+
+    await request(server)
+      .put(`/suppliers/${created.id}`)
+      .set('Cookie', adminCookies)
+      .set('x-farm-id', farmId)
+      .send({ state: 'ZZ' })
+      .expect(400);
   });
 });

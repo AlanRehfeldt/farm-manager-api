@@ -15,6 +15,7 @@ import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
 import { ConflictDto } from 'src/common/errors/conflict.dto';
 import { optionalNullableBrStateSchema } from 'src/common/validation/br-state';
+import { emptyToNull } from 'src/common/validation/empty-to-null';
 import { CreateSupplierBodyDto } from '../dtos/request/create-supplier.dto';
 import { CreateSupplierResponseDto } from '../dtos/response/create-supplier.dto';
 import { CreateSupplierService } from '../services/create-supplier.service';
@@ -33,14 +34,14 @@ const createSupplierBodySchema = z
       .string()
       .length(11, { message: 'CPF must be 11 characters long.' })
       .optional(),
-    address: z.string().nullable().optional(),
-    city: z.string().max(100).nullable().optional(),
+    address: emptyToNull(z.string()),
+    city: emptyToNull(z.string().max(100)),
     state: optionalNullableBrStateSchema,
-    phoneNumber: z
-      .string()
-      .regex(/^\d{10,11}$/, { message: 'Phone must be 10 or 11 digits.' })
-      .nullable()
-      .optional(),
+    phoneNumber: emptyToNull(
+      z
+        .string()
+        .regex(/^\d{10,11}$/, { message: 'Phone must be 10 or 11 digits.' }),
+    ),
     farmId: z.uuid().nullable().optional(),
   })
   .refine((data) => Boolean(data.cnpj) !== Boolean(data.cpf), {

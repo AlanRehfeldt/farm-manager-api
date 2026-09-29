@@ -1,10 +1,14 @@
-import { INestApplication } from '@nestjs/common';
+import { ConflictException, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import cookieParser from 'cookie-parser';
 import { Server } from 'node:http';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/common/prisma/prisma.service';
+import {
+  COSTING_REPOSITORY,
+  CostingRepository,
+} from '../src/modules/costing/repositories/costing.repository';
 import { changePassword } from './helpers/change-password';
 import { insertUser } from './helpers/insert-user';
 
@@ -58,7 +62,6 @@ describe('Labor month closing (e2e)', () => {
   let kgUomId: string;
   let cropId: string;
   let activityAId: string;
-  let activityBId: string;
   let costCenterId: string;
   let accountPlanId: string;
   let closingId: string;
@@ -259,7 +262,7 @@ describe('Labor month closing (e2e)', () => {
       .expect(201);
     activityAId = commandResult<{ id: string }>(activityARes).id;
 
-    const activityBRes = await request(server)
+    await request(server)
       .post('/activities')
       .set('Cookie', orgAdminCookies)
       .set('x-farm-id', farmId)
@@ -279,7 +282,6 @@ describe('Labor month closing (e2e)', () => {
         machineHours: [],
       })
       .expect(201);
-    activityBId = commandResult<{ id: string }>(activityBRes).id;
   }, 90000);
 
   afterAll(async () => {
@@ -309,6 +311,127 @@ describe('Labor month closing (e2e)', () => {
       .set('x-farm-id', farmId)
       .send({ employmentType: 'CONTRACTOR' })
       .expect(409);
+  });
+
+  it('rejects reopen after the employee left CLT and keeps the closed cost', async () => {
+    const august = 8;
+    const regimeEmployeeRes = await request(server)
+      .post('/employees')
+      .set('Cookie', orgAdminCookies)
+      .set('x-farm-id', farmId)
+      .send({
+        name: 'CLT que vira empreita',
+        registration: `R${suffix}`.slice(0, 20),
+        type: 'FIELD_WORKER',
+        employmentType: 'CLT',
+        monthlySalaryInCents: salaryInCents,
+        expectedMonthlyHours: '160',
+      })
+      .expect(201);
+    const regimeEmployeeId = commandResult<{ id: string }>(
+      regimeEmployeeRes,
+    ).id;
+
+    const regimeSeasonRes = await request(server)
+      .post('/crop-seasons')
+      .set('Cookie', orgAdminCookies)
+      .set('x-farm-id', farmId)
+      .send({
+        name: 'Safra regime',
+        cropId,
+        startDate: '2026-08-01',
+        productionUomId: kgUomId,
+      })
+      .expect(201);
+    const regimeSeasonId = commandResult<{ id: string }>(regimeSeasonRes).id;
+
+    await request(server)
+      .post('/crop-plantings')
+      .set('Cookie', orgAdminCookies)
+      .set('x-farm-id', farmId)
+      .send({ cropSeasonId: regimeSeasonId, fieldId })
+      .expect(201);
+
+    await request(server)
+      .patch(`/crop-seasons/${regimeSeasonId}/activate`)
+      .set('Cookie', orgAdminCookies)
+      .set('x-farm-id', farmId)
+      .expect(200);
+
+    const activityRes = await request(server)
+      .post('/activities')
+      .set('Cookie', orgAdminCookies)
+      .set('x-farm-id', farmId)
+      .send({
+        cropSeasonId: regimeSeasonId,
+        fieldId,
+        activityType: 'MANAGEMENT',
+        date: `${year}-${String(august).padStart(2, '0')}-12`,
+        inputs: [],
+        labor: [
+          {
+            employeeId: regimeEmployeeId,
+            payBasis: 'HOUR',
+            hours: '160',
+          },
+        ],
+        machineHours: [],
+      })
+      .expect(201);
+    const regimeActivityId = commandResult<{ id: string }>(activityRes).id;
+
+    const closeRes = await request(server)
+      .post('/labor-month-closings')
+      .set('Cookie', orgAdminCookies)
+      .set('x-farm-id', farmId)
+      .send({ year, month: august })
+      .expect(201);
+    const closed = commandResult<{
+      employees: { closingId: string; employeeId: string }[];
+    }>(closeRes);
+    const regimeClosing = closed.employees.find(
+      (employee) => employee.employeeId === regimeEmployeeId,
+    );
+    expect(regimeClosing).toBeTruthy();
+
+    await request(server)
+      .put(`/employees/${regimeEmployeeId}`)
+      .set('Cookie', orgAdminCookies)
+      .set('x-farm-id', farmId)
+      .send({ employmentType: 'CONTRACTOR' })
+      .expect(200);
+
+    await request(server)
+      .patch(`/labor-month-closings/${regimeClosing!.closingId}/reopen`)
+      .set('Cookie', orgAdminCookies)
+      .set('x-farm-id', farmId)
+      .send({ reason: 'Tentar reabrir depois da troca de regime' })
+      .expect(409);
+
+    const laborLines = await prisma.activityLabor.findMany({
+      where: { activityId: regimeActivityId },
+      select: { id: true },
+    });
+    const moSum = await prisma.costEntry.aggregate({
+      where: {
+        sourceType: 'ACTIVITY_LABOR',
+        sourceId: { in: laborLines.map((line) => line.id) },
+        reversedAt: null,
+      },
+      _sum: { amountInCents: true },
+    });
+    expect(Number(moSum._sum.amountInCents ?? 0n)).toBe(salaryInCents);
+
+    const closingStillThere = await prisma.laborMonthClosing.findUnique({
+      where: {
+        employeeId_year_month: {
+          employeeId: regimeEmployeeId,
+          year,
+          month: august,
+        },
+      },
+    });
+    expect(closingStillThere).not.toBeNull();
   });
 
   it('allows org-wide ADMIN to preview, close, reopen and reclose', async () => {
@@ -414,6 +537,20 @@ describe('Labor month closing (e2e)', () => {
       .send({ reason: 'Atividade lançada por engano' })
       .expect(201);
 
+    const reversedActivity = await request(server)
+      .get(`/activities/${activityAId}`)
+      .set('Cookie', orgAdminCookies)
+      .set('x-farm-id', farmId)
+      .expect(200);
+    expect(
+      commandResult<{ labor: unknown[]; reversedAt: string | null }>(
+        reversedActivity,
+      ).labor.length,
+    ).toBeGreaterThan(0);
+    expect(
+      commandResult<{ reversedAt: string | null }>(reversedActivity).reversedAt,
+    ).toEqual(expect.any(String));
+
     await request(server)
       .patch(`/labor-month-closings/${closingId}/reopen`)
       .set('Cookie', orgAdminCookies)
@@ -433,12 +570,15 @@ describe('Labor month closing (e2e)', () => {
     expect(preview.employees).toHaveLength(1);
     expect(preview.employees[0].totalHours).toBe('80');
 
-    await request(server)
+    const recloseRes = await request(server)
       .post('/labor-month-closings')
       .set('Cookie', orgAdminCookies)
       .set('x-farm-id', farmId)
       .send({ year, month })
       .expect(201);
+    closingId = commandResult<{
+      employees: { closingId: string }[];
+    }>(recloseRes).employees[0].closingId;
 
     const moSum = await prisma.costEntry.aggregate({
       where: {
@@ -482,6 +622,31 @@ describe('Labor month closing (e2e)', () => {
       .send({ reason: 'Horas lançadas por engano' })
       .expect(201);
 
+    await request(server)
+      .post(`/activities/${activityId}/reverse`)
+      .set('Cookie', orgAdminCookies)
+      .set('x-farm-id', farmId)
+      .send({ reason: 'Segundo estorno' })
+      .expect(409);
+
+    await request(server)
+      .put(`/employees/${salaryEmployeeId}`)
+      .set('Cookie', orgAdminCookies)
+      .set('x-farm-id', farmId)
+      .send({ employmentType: 'CONTRACTOR' })
+      .expect(200);
+
+    await request(server)
+      .put(`/employees/${salaryEmployeeId}`)
+      .set('Cookie', orgAdminCookies)
+      .set('x-farm-id', farmId)
+      .send({
+        employmentType: 'CLT',
+        monthlySalaryInCents: salaryInCents,
+        expectedMonthlyHours: '160',
+      })
+      .expect(200);
+
     const costCategory = await prisma.costCategory.findFirst({
       where: { organizationId, code: 'outros' },
     });
@@ -517,6 +682,79 @@ describe('Labor month closing (e2e)', () => {
       .expect(201);
   });
 
+  it('closeSeason rejects open CLT hours after locking the season', async () => {
+    const openSeasonRes = await request(server)
+      .post('/crop-seasons')
+      .set('Cookie', orgAdminCookies)
+      .set('x-farm-id', farmId)
+      .send({
+        name: 'Safra hora aberta',
+        cropId,
+        startDate: '2026-08-01',
+        productionUomId: kgUomId,
+      })
+      .expect(201);
+    const openSeasonId = commandResult<{ id: string }>(openSeasonRes).id;
+
+    await request(server)
+      .post('/crop-plantings')
+      .set('Cookie', orgAdminCookies)
+      .set('x-farm-id', farmId)
+      .send({ cropSeasonId: openSeasonId, fieldId })
+      .expect(201);
+
+    await request(server)
+      .patch(`/crop-seasons/${openSeasonId}/activate`)
+      .set('Cookie', orgAdminCookies)
+      .set('x-farm-id', farmId)
+      .expect(200);
+
+    await request(server)
+      .post('/activities')
+      .set('Cookie', orgAdminCookies)
+      .set('x-farm-id', farmId)
+      .send({
+        cropSeasonId: openSeasonId,
+        fieldId,
+        activityType: 'MANAGEMENT',
+        date: '2026-11-03',
+        inputs: [],
+        labor: [
+          {
+            employeeId: salaryEmployeeId,
+            payBasis: 'HOUR',
+            hours: '4',
+          },
+        ],
+        machineHours: [],
+      })
+      .expect(201);
+
+    const actor = await prisma.user.findUniqueOrThrow({
+      where: { email: orgAdminEmail },
+      select: { id: true },
+    });
+    const costingRepository = app.get<CostingRepository>(COSTING_REPOSITORY);
+
+    await expect(
+      costingRepository.closeSeason({
+        cropSeasonId: openSeasonId,
+        farmId,
+        closedByUserId: actor.id,
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
+
+    const season = await prisma.cropSeason.findUniqueOrThrow({
+      where: { id: openSeasonId },
+    });
+    expect(season.status).toBe('ACTIVE');
+
+    const snapshot = await prisma.seasonCostingSnapshot.findUnique({
+      where: { cropSeasonId: openSeasonId },
+    });
+    expect(snapshot).toBeNull();
+  });
+
   it('includes MO_fixa in season costing snapshot after labor close', async () => {
     const closeSeasonRes = await request(server)
       .patch(`/crop-seasons/${seasonId}/close`)
@@ -536,5 +774,19 @@ describe('Labor month closing (e2e)', () => {
       (category) => category.code === 'MO_fixa',
     );
     expect(moFixa?.amountInCents).toBe(salaryInCents);
+  });
+
+  it('rejects reopen when a season touched by the closing is closed', async () => {
+    await request(server)
+      .patch(`/labor-month-closings/${closingId}/reopen`)
+      .set('Cookie', orgAdminCookies)
+      .set('x-farm-id', farmId)
+      .send({ reason: 'Safra já fechada' })
+      .expect(409);
+
+    const closing = await prisma.laborMonthClosing.findUnique({
+      where: { id: closingId },
+    });
+    expect(closing).not.toBeNull();
   });
 });

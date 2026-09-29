@@ -273,12 +273,11 @@ export class CreateExpenseService {
       const year = input.date.getUTCFullYear();
       const month = input.date.getUTCMonth() + 1;
 
-      const monthClosed =
-        await this.activityRepository.hasLaborMonthClosing(
-          input.salary.employeeId,
-          year,
-          month,
-        );
+      const monthClosed = await this.activityRepository.hasLaborMonthClosing(
+        input.salary.employeeId,
+        year,
+        month,
+      );
       if (monthClosed) {
         throw domainConflict(
           DomainConflictCode.DOUBLE_COUNT_BLOCKED,

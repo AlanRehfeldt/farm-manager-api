@@ -15,7 +15,11 @@ export interface MembershipRepository {
     user: CreateUserWithMembershipsData,
     memberships: Omit<CreateMembershipData, 'userId'>[],
   ): Promise<CreateUserWithMembershipsResult>;
-  deleteManyByUserAndOrg(userId: string, organizationId: string): Promise<void>;
+  deleteManyByUserAndOrg(
+    userId: string,
+    organizationId: string,
+    options?: { guardLastOrgAdmin?: boolean },
+  ): Promise<void>;
   replaceProfileAndMemberships(
     data: ReplaceProfileAndMembershipsData,
   ): Promise<Membership[]>;

@@ -1,7 +1,4 @@
-import {
-  brStateSchema,
-  optionalNullableBrStateSchema,
-} from './br-state';
+import { brStateSchema, optionalNullableBrStateSchema } from './br-state';
 
 describe('brStateSchema', () => {
   it('accepts a valid UF', () => {

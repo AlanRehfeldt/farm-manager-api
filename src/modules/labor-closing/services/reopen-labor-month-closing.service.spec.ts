@@ -1,7 +1,4 @@
-import {
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Decimal } from '@prisma/client/runtime/client';
 import { MembershipRepository } from 'src/modules/membership/repositories/membership.repository';
 import { LaborClosingRepository } from '../repositories/labor-closing.repository';

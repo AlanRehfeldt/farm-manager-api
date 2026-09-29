@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   CostEntrySourceType,
   CropSeasonStatus,
@@ -10,7 +14,8 @@ import {
   DomainConflictCode,
   domainConflict,
 } from 'src/common/errors/domain-conflict';
-import { assertActiveCropSeasonLocked } from 'src/common/prisma/crop-season-lock';
+import { lockActiveCropSeasons } from 'src/common/prisma/crop-season-lock';
+import { findOpenCltLaborMonths } from '../domain/open-clt-labor';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import {
   CloseEmployeeLaborData,
@@ -59,6 +64,7 @@ export class PrismaLaborClosingRepository implements LaborClosingRepository {
         },
         activity: {
           date: { gte: start, lt: end },
+          reversedAt: null,
           farm: { organizationId },
           cropSeason: { status: CropSeasonStatus.ACTIVE },
         },
@@ -102,43 +108,7 @@ export class PrismaLaborClosingRepository implements LaborClosingRepository {
   async findOpenCltLaborMonthsForSeason(
     cropSeasonId: string,
   ): Promise<{ year: number; month: number }[]> {
-    const rows = await this.prisma.activityLabor.findMany({
-      where: {
-        costInCents: null,
-        employeeId: { not: null },
-        hours: { not: null },
-        employee: {
-          employmentType: EmploymentType.CLT,
-        },
-        activity: {
-          cropSeasonId,
-        },
-      },
-      select: {
-        activity: {
-          select: {
-            date: true,
-          },
-        },
-      },
-    });
-
-    const seen = new Set<string>();
-    const result: { year: number; month: number }[] = [];
-
-    for (const row of rows) {
-      const year = row.activity.date.getUTCFullYear();
-      const month = row.activity.date.getUTCMonth() + 1;
-      const key = `${year}-${month}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        result.push({ year, month });
-      }
-    }
-
-    return result.sort((a, b) =>
-      a.year !== b.year ? a.year - b.year : a.month - b.month,
-    );
+    return findOpenCltLaborMonths(this.prisma, cropSeasonId);
   }
 
   async hasSalaryAllocationInOrgMonth(
@@ -221,31 +191,15 @@ export class PrismaLaborClosingRepository implements LaborClosingRepository {
   ): Promise<LaborMonthClosingRecord[]> {
     try {
       return await this.prisma.$transaction(async (tx) => {
-        const lockKeys = [
-          ...new Map(
-            employees.flatMap((employee) =>
-              employee.allocations.map((allocation) => [
-                `${allocation.farmId}:${allocation.cropSeasonId}`,
-                {
-                  farmId: allocation.farmId,
-                  cropSeasonId: allocation.cropSeasonId,
-                },
-              ]),
-            ),
-          ).values(),
-        ].sort((a, b) =>
-          a.cropSeasonId !== b.cropSeasonId
-            ? a.cropSeasonId.localeCompare(b.cropSeasonId)
-            : a.farmId.localeCompare(b.farmId),
+        await lockActiveCropSeasons(
+          tx,
+          employees.flatMap((employee) =>
+            employee.allocations.map((allocation) => ({
+              farmId: allocation.farmId,
+              cropSeasonId: allocation.cropSeasonId,
+            })),
+          ),
         );
-
-        for (const lock of lockKeys) {
-          await assertActiveCropSeasonLocked(
-            tx,
-            lock.cropSeasonId,
-            lock.farmId,
-          );
-        }
 
         const closings: LaborMonthClosingRecord[] = [];
 
@@ -353,6 +307,20 @@ export class PrismaLaborClosingRepository implements LaborClosingRepository {
         throw new NotFoundException('Labor month closing not found');
       }
 
+      const employee = await tx.employee.findFirst({
+        where: {
+          id: closing.employeeId,
+          organizationId: data.organizationId,
+        },
+        select: { employmentType: true },
+      });
+
+      if (!employee || employee.employmentType !== EmploymentType.CLT) {
+        throw new ConflictException(
+          'Cannot reopen labor month: employee is not CLT. Change the employee back to CLT before reopening this competence.',
+        );
+      }
+
       const start = new Date(Date.UTC(closing.year, closing.month - 1, 1));
       const end = new Date(Date.UTC(closing.year, closing.month, 1));
 
@@ -363,6 +331,7 @@ export class PrismaLaborClosingRepository implements LaborClosingRepository {
           hourlyRateInCents: null,
           activity: {
             date: { gte: start, lt: end },
+            reversedAt: null,
           },
         },
         include: {
@@ -378,25 +347,13 @@ export class PrismaLaborClosingRepository implements LaborClosingRepository {
         },
       });
 
-      const lockKeys = [
-        ...new Map(
-          laborLines.map((line) => [
-            `${line.activity.farmId}:${line.activity.cropSeasonId}`,
-            {
-              farmId: line.activity.farmId,
-              cropSeasonId: line.activity.cropSeasonId,
-            },
-          ]),
-        ).values(),
-      ].sort((a, b) =>
-        a.cropSeasonId !== b.cropSeasonId
-          ? a.cropSeasonId.localeCompare(b.cropSeasonId)
-          : a.farmId.localeCompare(b.farmId),
+      await lockActiveCropSeasons(
+        tx,
+        laborLines.map((line) => ({
+          farmId: line.activity.farmId,
+          cropSeasonId: line.activity.cropSeasonId,
+        })),
       );
-
-      for (const lock of lockKeys) {
-        await assertActiveCropSeasonLocked(tx, lock.cropSeasonId, lock.farmId);
-      }
 
       const affectedActivityIds = new Set<string>();
 

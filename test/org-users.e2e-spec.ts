@@ -1,4 +1,4 @@
-import { INestApplication } from '@nestjs/common';
+import { ConflictException, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import cookieParser from 'cookie-parser';
 import { PlatformRole, Role } from '@prisma/client';
@@ -403,5 +403,75 @@ describe('Org users (e2e)', () => {
       where: { userId: adminUserId, organizationId },
     });
     expect(memberships.some((item) => item.farmId === null)).toBe(true);
+  });
+
+  it('keeps one org admin when two demotions run together', async () => {
+    const membershipRepository = app.get<MembershipRepository>(
+      MEMBERSHIP_REPOSITORY,
+    );
+    const organization = await prisma.organization.create({
+      data: { name: `Race admins ${suffix}` },
+    });
+    const first = await insertUser(prisma, {
+      name: 'Race Admin A',
+      email: `race.a.${suffix}@example.com`,
+      password: 'RaceAd1!x',
+    });
+    const second = await insertUser(prisma, {
+      name: 'Race Admin B',
+      email: `race.b.${suffix}@example.com`,
+      password: 'RaceAd1!x',
+    });
+
+    await prisma.membership.createMany({
+      data: [
+        {
+          userId: first.id,
+          organizationId: organization.id,
+          farmId: null,
+          role: Role.ADMIN,
+        },
+        {
+          userId: second.id,
+          organizationId: organization.id,
+          farmId: null,
+          role: Role.ADMIN,
+        },
+      ],
+    });
+
+    const demote = (user: { id: string; name: string; email: string }) =>
+      membershipRepository.replaceProfileAndMemberships({
+        userId: user.id,
+        name: user.name,
+        email: user.email,
+        organizationId: organization.id,
+        guardLastOrgAdmin: true,
+        memberships: [
+          {
+            userId: user.id,
+            organizationId: organization.id,
+            farmId: null,
+            role: Role.USER,
+          },
+        ],
+      });
+
+    const results = await Promise.allSettled([demote(first), demote(second)]);
+    const fulfilled = results.filter((result) => result.status === 'fulfilled');
+    const rejected = results.filter((result) => result.status === 'rejected');
+
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+    expect(rejected[0].reason).toBeInstanceOf(ConflictException);
+
+    const admins = await prisma.membership.count({
+      where: {
+        organizationId: organization.id,
+        role: Role.ADMIN,
+        farmId: null,
+      },
+    });
+    expect(admins).toBe(1);
   });
 });

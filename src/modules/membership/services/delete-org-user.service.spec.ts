@@ -91,6 +91,7 @@ describe('DeleteOrgUserService', () => {
     expect(membershipRepository.deleteManyByUserAndOrg).toHaveBeenCalledWith(
       targetId,
       organizationId,
+      { guardLastOrgAdmin: false },
     );
   });
 

@@ -737,6 +737,7 @@ model Activity {
   activityType    ActivityType
   date            DateTime
   note            String?
+  reversedAt      DateTime?
   createdByUserId String
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt

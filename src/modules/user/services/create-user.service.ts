@@ -49,6 +49,8 @@ export class CreateUserService {
       mustChangePassword: true,
     });
 
-    return { user: { ...user, password: undefined, passwordChangedAt: undefined } };
+    return {
+      user: { ...user, password: undefined, passwordChangedAt: undefined },
+    };
   }
 }

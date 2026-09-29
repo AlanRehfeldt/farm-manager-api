@@ -118,6 +118,7 @@ export class PrismaEmployeeRepository implements EmployeeRepository {
       where: {
         employeeId,
         costInCents: null,
+        activity: { reversedAt: null },
       },
     });
     return count > 0;
