@@ -24,12 +24,12 @@ export class CreateFarmService {
   ) {}
 
   async execute(userId: string, data: CreateFarmData) {
-    const admin = await this.membershipRepository.findOrgAdmin(
+    const allowed = await this.membershipRepository.hasOrgOperationalAccess(
       userId,
       data.organizationId,
     );
 
-    if (!admin) {
+    if (!allowed) {
       throw new ForbiddenException('Only organization admins can create farms');
     }
 

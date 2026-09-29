@@ -39,11 +39,11 @@ export class ReopenLaborMonthClosingService {
     reason: string;
     actorUserId: string;
   }): Promise<ReopenLaborMonthClosingResult> {
-    const admin = await this.membershipRepository.findOrgAdmin(
+    const allowed = await this.membershipRepository.hasOrgOperationalAccess(
       input.actorUserId,
       input.organizationId,
     );
-    if (!admin) {
+    if (!allowed) {
       throw new ForbiddenException(
         'Only organization admins can manage labor month closings',
       );

@@ -85,8 +85,11 @@ async function assertOrgAdmin(
   userId: string,
   organizationId: string,
 ): Promise<void> {
-  const admin = await membershipRepository.findOrgAdmin(userId, organizationId);
-  if (!admin) {
+  const allowed = await membershipRepository.hasOrgOperationalAccess(
+    userId,
+    organizationId,
+  );
+  if (!allowed) {
     throw new ForbiddenException(
       'Only organization admins can manage labor month closings',
     );

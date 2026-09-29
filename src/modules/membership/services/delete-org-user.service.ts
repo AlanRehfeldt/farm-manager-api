@@ -25,12 +25,12 @@ export class DeleteOrgUserService {
   ) {}
 
   async execute(actorUserId: string, userId: string, organizationId: string) {
-    const admin = await this.membershipRepository.findOrgAdmin(
+    const allowed = await this.membershipRepository.hasOrgOperationalAccess(
       actorUserId,
       organizationId,
     );
 
-    if (!admin) {
+    if (!allowed) {
       throw new ForbiddenException(
         'Only organization admins can delete memberships',
       );

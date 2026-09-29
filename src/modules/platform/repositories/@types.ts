@@ -90,3 +90,68 @@ export type SearchPlatformUsersQuery = {
   orderBy: 'name' | 'email' | 'createdAt';
   orderDirection: 'asc' | 'desc';
 };
+
+export type SupportAccessListItem = {
+  id: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  organizationId: string;
+  organizationName: string;
+  grantedByUserId: string;
+  grantedByName: string;
+  createdAt: Date;
+};
+
+export type ActiveSupportAccess = {
+  organizationId: string;
+  organizationName: string;
+};
+
+export type SupportUserListItem = {
+  id: string;
+  name: string;
+  email: string;
+  mustChangePassword: boolean;
+  createdAt: Date;
+};
+
+export type SearchSupportAccessQuery = {
+  organizationId?: string;
+  userId?: string;
+  page: number;
+  perPage: number;
+  orderBy: 'createdAt';
+  orderDirection: 'asc' | 'desc';
+};
+
+export type SearchSupportUsersQuery = {
+  name?: string;
+  email?: string;
+  page: number;
+  perPage: number;
+  orderBy: 'name' | 'createdAt';
+  orderDirection: 'asc' | 'desc';
+};
+
+export type AuditLogListItem = {
+  id: string;
+  actorUserId: string;
+  actorName: string;
+  action: string;
+  targetType: string;
+  targetId: string | null;
+  organizationId: string | null;
+  organizationName: string | null;
+  createdAt: Date;
+};
+
+export type SearchAuditLogsQuery = {
+  organizationId?: string;
+  actorUserId?: string;
+  action?: string;
+  page: number;
+  perPage: number;
+  orderBy: 'createdAt';
+  orderDirection: 'asc' | 'desc';
+};

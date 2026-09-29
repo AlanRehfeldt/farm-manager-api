@@ -5,7 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Role } from '@prisma/client';
+import { PlatformRole, Role } from '@prisma/client';
 import {
   FARM_REPOSITORY,
   FarmRepository,
@@ -18,6 +18,10 @@ import {
   ORGANIZATION_REPOSITORY,
   OrganizationRepository,
 } from 'src/modules/organization/repositories/organization.repository';
+import {
+  USER_REPOSITORY,
+  UserRepository,
+} from 'src/modules/user/repositories/user.repository';
 
 type CreateOnboardingInput = {
   farmName: string;
@@ -33,9 +37,22 @@ export class CreateOnboardingService {
     private readonly membershipRepository: MembershipRepository,
     @Inject(FARM_REPOSITORY)
     private readonly farmRepository: FarmRepository,
+    @Inject(USER_REPOSITORY)
+    private readonly userRepository: UserRepository,
   ) {}
 
   async execute(userId: string, input: CreateOnboardingInput) {
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User does not exist');
+    }
+
+    if (user.platformRole !== PlatformRole.NONE) {
+      throw new ForbiddenException(
+        'Platform users cannot create a farm through onboarding',
+      );
+    }
+
     const memberships = await this.membershipRepository.findManyByUser(userId);
 
     if (memberships.length === 0) {

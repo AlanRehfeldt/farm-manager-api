@@ -44,12 +44,12 @@ export class UpdateOrgUserService {
     userId: string,
     input: UpdateOrgUserInput,
   ) {
-    const admin = await this.membershipRepository.findOrgAdmin(
+    const allowed = await this.membershipRepository.hasOrgOperationalAccess(
       actorUserId,
       input.organizationId,
     );
 
-    if (!admin) {
+    if (!allowed) {
       throw new ForbiddenException('Only organization admins can update users');
     }
 

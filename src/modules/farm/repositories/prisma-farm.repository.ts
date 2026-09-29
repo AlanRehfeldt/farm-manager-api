@@ -76,6 +76,13 @@ export class PrismaFarmRepository implements FarmRepository {
         },
       },
       { memberships: { some: { userId } } },
+      {
+        organization: {
+          supportAccesses: {
+            some: { userId, revokedAt: null },
+          },
+        },
+      },
     ];
   }
 

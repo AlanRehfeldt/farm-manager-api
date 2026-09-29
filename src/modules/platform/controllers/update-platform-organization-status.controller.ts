@@ -17,6 +17,10 @@ import { UnauthorizedDto } from 'src/common/errors/unauthorized.dto';
 import { PlatformAdmin } from 'src/common/platform/platform-admin.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
 import {
+  AuthenticatedUser,
+  CurrentUser,
+} from 'src/modules/auth/decorators/current-user.decorator';
+import {
   UpdatePlatformOrganizationStatusBodyDto,
   UpdatePlatformOrganizationStatusParamDto,
 } from '../dtos/request/update-platform-organization-status.dto';
@@ -64,6 +68,7 @@ export class UpdatePlatformOrganizationStatusController {
   })
   @Patch('/:organizationId/status')
   async update(
+    @CurrentUser() actor: AuthenticatedUser,
     @Param(new ZodValidationPipe(updatePlatformOrganizationStatusParamSchema))
     params: UpdatePlatformOrganizationStatusParamDto,
     @Body(new ZodValidationPipe(updatePlatformOrganizationStatusBodySchema))
@@ -72,6 +77,7 @@ export class UpdatePlatformOrganizationStatusController {
     const result = await this.updatePlatformOrganizationStatusService.execute(
       params.organizationId,
       data.status,
+      actor.userId,
     );
 
     return {

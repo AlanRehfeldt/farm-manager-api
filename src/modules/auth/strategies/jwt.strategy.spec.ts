@@ -78,6 +78,7 @@ describe('JwtStrategy', () => {
     ).resolves.toEqual({
       userId: 'user-1',
       mustChangePassword: false,
+      platformRole: PlatformRole.NONE,
     });
   });
 
@@ -100,6 +101,7 @@ describe('JwtStrategy', () => {
     ).resolves.toEqual({
       userId: 'user-1',
       mustChangePassword: false,
+      platformRole: PlatformRole.PLATFORM_ADMIN,
     });
   });
 
@@ -142,6 +144,7 @@ describe('JwtStrategy', () => {
     ).resolves.toEqual({
       userId: 'user-1',
       mustChangePassword: false,
+      platformRole: PlatformRole.NONE,
     });
   });
 });

@@ -17,6 +17,10 @@ import { NotFoundDto } from 'src/common/errors/not-found.dto';
 import { UnauthorizedDto } from 'src/common/errors/unauthorized.dto';
 import { PlatformAdmin } from 'src/common/platform/platform-admin.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
+import {
+  AuthenticatedUser,
+  CurrentUser,
+} from 'src/modules/auth/decorators/current-user.decorator';
 import { passwordSchema } from 'src/common/validation/password-schema';
 import { CreatePlatformUserBodyDto } from '../dtos/request/create-platform-user.dto';
 import { CreatePlatformUserResponseDto } from '../dtos/response/create-platform-user.dto';
@@ -74,10 +78,14 @@ export class CreatePlatformUserController {
   })
   @Post()
   async create(
+    @CurrentUser() actor: AuthenticatedUser,
     @Body(new ZodValidationPipe(createPlatformUserBodySchema))
     data: CreatePlatformUserBodyDto,
   ) {
-    const result = await this.createPlatformUserService.execute(data);
+    const result = await this.createPlatformUserService.execute(
+      actor.userId,
+      data,
+    );
 
     return {
       statusCode: HttpStatus.CREATED,

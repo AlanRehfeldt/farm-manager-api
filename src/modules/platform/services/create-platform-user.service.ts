@@ -46,7 +46,7 @@ export class CreatePlatformUserService {
     private readonly farmRepository: FarmRepository,
   ) {}
 
-  async execute(input: CreatePlatformUserInput) {
+  async execute(actorUserId: string, input: CreatePlatformUserInput) {
     const organization = await this.platformRepository.findOrganizationById(
       input.organizationId,
     );
@@ -81,6 +81,10 @@ export class CreatePlatformUserService {
             farmId,
             role,
           })),
+          {
+            actorUserId,
+            organizationId: input.organizationId,
+          },
         );
 
       const user = await this.userRepository.findById(userId);

@@ -32,6 +32,7 @@ describe('FarmMembershipGuard', () => {
   const prisma = {
     farm: { findUnique: jest.fn() },
     membership: { findFirst: jest.fn() },
+    supportAccess: { findFirst: jest.fn() },
   };
 
   const guard = new FarmMembershipGuard(prisma as unknown as PrismaService);
@@ -75,6 +76,7 @@ describe('FarmMembershipGuard', () => {
       organization: { status: 'ACTIVE' },
     });
     prisma.membership.findFirst.mockResolvedValue(null);
+    prisma.supportAccess.findFirst.mockResolvedValue(null);
     const { context } = createContext({
       userId: 'user-1',
       farmHeader: 'farm-a',
@@ -83,6 +85,28 @@ describe('FarmMembershipGuard', () => {
     await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
       ForbiddenException,
     );
+  });
+
+  it('allows an active support grant without membership', async () => {
+    prisma.farm.findUnique.mockResolvedValue({
+      id: 'farm-a',
+      organizationId: 'org-1',
+      organization: { status: 'ACTIVE' },
+    });
+    prisma.membership.findFirst.mockResolvedValue(null);
+    prisma.supportAccess.findFirst.mockResolvedValue({ id: 'access-1' });
+    const { context, request } = createContext({
+      userId: 'support-1',
+      farmHeader: 'farm-a',
+    });
+
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+    expect(request.farmContext).toEqual({
+      farmId: 'farm-a',
+      organizationId: 'org-1',
+      membershipRole: 'ADMIN',
+      supportAccess: true,
+    });
   });
 
   it('allows a farm-specific membership', async () => {
@@ -105,6 +129,7 @@ describe('FarmMembershipGuard', () => {
       farmId: 'farm-a',
       organizationId: 'org-1',
       membershipRole: 'USER',
+      supportAccess: false,
     });
   });
 

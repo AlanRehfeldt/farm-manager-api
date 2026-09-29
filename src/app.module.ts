@@ -1,5 +1,7 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { RequestIdMiddleware } from './common/http/request-id.middleware';
+import { SupportWriteAuditInterceptor } from './common/platform/support-write-audit.interceptor';
 import { UserModule } from './modules/user/user.module';
 import { PrismaModule } from './common/prisma/prisma.module';
 import { TenancyModule } from './common/tenancy/tenancy.module';
@@ -73,7 +75,12 @@ import { IdempotencyModule } from './common/idempotency/idempotency.module';
     LaborClosingModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: SupportWriteAuditInterceptor,
+    },
+  ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {

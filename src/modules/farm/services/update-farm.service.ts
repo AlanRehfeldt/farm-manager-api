@@ -34,12 +34,12 @@ export class UpdateFarmService {
       throw new NotFoundException('Farm does not exist');
     }
 
-    const admin = await this.membershipRepository.findOrgAdmin(
+    const allowed = await this.membershipRepository.hasOrgOperationalAccess(
       userId,
       farm.organizationId,
     );
 
-    if (!admin) {
+    if (!allowed) {
       throw new ForbiddenException('Only organization admins can update farms');
     }
 

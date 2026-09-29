@@ -7,7 +7,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { hashPassword } from 'src/common/crypto/bcrypt';
-import { Prisma, Role } from '@prisma/client';
+import { PlatformRole, Prisma, Role } from '@prisma/client';
 import {
   FARM_REPOSITORY,
   FarmRepository,
@@ -45,12 +45,12 @@ export class CreateMembershipService {
   ) {}
 
   async execute(actorUserId: string, input: CreateMembershipInput) {
-    const admin = await this.membershipRepository.findOrgAdmin(
+    const allowed = await this.membershipRepository.hasOrgOperationalAccess(
       actorUserId,
       input.organizationId,
     );
 
-    if (!admin) {
+    if (!allowed) {
       throw new ForbiddenException(
         'Only organization admins can create memberships',
       );
@@ -78,6 +78,12 @@ export class CreateMembershipService {
     const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new NotFoundException('User does not exist');
+    }
+
+    if (user.platformRole !== PlatformRole.NONE) {
+      throw new ForbiddenException(
+        'Platform users cannot receive a membership',
+      );
     }
 
     const existing = await this.membershipRepository.findManyByUserAndOrg(

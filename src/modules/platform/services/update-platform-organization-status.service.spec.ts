@@ -28,7 +28,7 @@ describe('UpdatePlatformOrganizationStatusService', () => {
     platformRepository.updateOrganizationStatus.mockResolvedValue(organization);
 
     await expect(
-      service.execute('org-1', OrganizationStatus.SUSPENDED),
+      service.execute('org-1', OrganizationStatus.SUSPENDED, 'actor-1'),
     ).resolves.toEqual({
       id: 'org-1',
       name: 'Rehfeldt Agro',
@@ -38,6 +38,7 @@ describe('UpdatePlatformOrganizationStatusService', () => {
     expect(platformRepository.updateOrganizationStatus).toHaveBeenCalledWith(
       'org-1',
       OrganizationStatus.SUSPENDED,
+      'actor-1',
     );
   });
 
@@ -45,7 +46,7 @@ describe('UpdatePlatformOrganizationStatusService', () => {
     platformRepository.updateOrganizationStatus.mockResolvedValue(null);
 
     await expect(
-      service.execute('missing', OrganizationStatus.ACTIVE),
+      service.execute('missing', OrganizationStatus.ACTIVE, 'actor-1'),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 });

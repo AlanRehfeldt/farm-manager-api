@@ -7,7 +7,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { OrganizationStatus } from '@prisma/client';
+import { OrganizationStatus, Role } from '@prisma/client';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { AuthenticatedUser } from 'src/modules/auth/decorators/current-user.decorator';
 import { FARM_ID_HEADER, FarmRequestContext } from './constants';
@@ -61,14 +61,35 @@ export class FarmMembershipGuard implements CanActivate {
       select: { id: true, role: true },
     });
 
-    if (!membership) {
+    if (membership) {
+      request.farmContext = {
+        farmId: farm.id,
+        organizationId: farm.organizationId,
+        membershipRole: membership.role,
+        supportAccess: false,
+      };
+
+      return true;
+    }
+
+    const supportAccess = await this.prisma.supportAccess.findFirst({
+      where: {
+        userId,
+        organizationId: farm.organizationId,
+        revokedAt: null,
+      },
+      select: { id: true },
+    });
+
+    if (!supportAccess) {
       throw new ForbiddenException('Access to this farm is forbidden');
     }
 
     request.farmContext = {
       farmId: farm.id,
       organizationId: farm.organizationId,
-      membershipRole: membership.role,
+      membershipRole: Role.ADMIN,
+      supportAccess: true,
     };
 
     return true;

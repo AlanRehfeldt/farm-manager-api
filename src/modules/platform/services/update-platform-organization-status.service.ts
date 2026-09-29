@@ -12,10 +12,15 @@ export class UpdatePlatformOrganizationStatusService {
     private readonly platformRepository: PlatformRepository,
   ) {}
 
-  async execute(organizationId: string, status: OrganizationStatus) {
+  async execute(
+    organizationId: string,
+    status: OrganizationStatus,
+    actorUserId: string,
+  ) {
     const organization = await this.platformRepository.updateOrganizationStatus(
       organizationId,
       status,
+      actorUserId,
     );
 
     if (!organization) {

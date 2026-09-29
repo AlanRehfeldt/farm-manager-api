@@ -1,8 +1,10 @@
+import { PlatformRole } from '@prisma/client';
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 
 export type AuthenticatedUser = {
   userId: string;
   mustChangePassword: boolean;
+  platformRole: PlatformRole;
 };
 
 export const CurrentUser = createParamDecorator(

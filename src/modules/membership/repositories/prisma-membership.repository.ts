@@ -16,6 +16,10 @@ import {
   SearchManyQuery,
 } from './@types';
 import { MembershipRepository } from './membership.repository';
+import {
+  appendPlatformAuditLog,
+  PlatformAuditAction,
+} from 'src/modules/platform/repositories/append-platform-audit-log';
 
 const tenantUserWhere = {
   user: { platformRole: PlatformRole.NONE },
@@ -93,6 +97,10 @@ export class PrismaMembershipRepository implements MembershipRepository {
   async createUserWithMemberships(
     user: CreateUserWithMembershipsData,
     memberships: Omit<CreateMembershipData, 'userId'>[],
+    audit?: {
+      actorUserId: string;
+      organizationId: string;
+    },
   ): Promise<CreateUserWithMembershipsResult> {
     return this.prisma.$transaction(async (tx) => {
       const createdUser = await tx.user.create({
@@ -116,6 +124,16 @@ export class PrismaMembershipRepository implements MembershipRepository {
             },
           }),
         );
+      }
+
+      if (audit) {
+        await appendPlatformAuditLog(tx, {
+          actorUserId: audit.actorUserId,
+          action: PlatformAuditAction.USER_CREATED,
+          targetType: 'User',
+          targetId: createdUser.id,
+          organizationId: audit.organizationId,
+        });
       }
 
       return { userId: createdUser.id, memberships: created };
@@ -192,6 +210,28 @@ export class PrismaMembershipRepository implements MembershipRepository {
         ...activeOrganizationWhere,
       },
     });
+  }
+
+  async hasOrgOperationalAccess(
+    userId: string,
+    organizationId: string,
+  ): Promise<boolean> {
+    const admin = await this.findOrgAdmin(userId, organizationId);
+    if (admin) {
+      return true;
+    }
+
+    const access = await this.prisma.supportAccess.findFirst({
+      where: {
+        userId,
+        organizationId,
+        revokedAt: null,
+        organization: { status: OrganizationStatus.ACTIVE },
+      },
+      select: { id: true },
+    });
+
+    return access !== null;
   }
 
   async findByUserAndOrgAndFarm(

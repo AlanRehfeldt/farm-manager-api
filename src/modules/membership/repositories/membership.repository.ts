@@ -14,6 +14,10 @@ export interface MembershipRepository {
   createUserWithMemberships(
     user: CreateUserWithMembershipsData,
     memberships: Omit<CreateMembershipData, 'userId'>[],
+    audit?: {
+      actorUserId: string;
+      organizationId: string;
+    },
   ): Promise<CreateUserWithMembershipsResult>;
   deleteManyByUserAndOrg(
     userId: string,
@@ -27,6 +31,10 @@ export interface MembershipRepository {
     userId: string,
     organizationId: string,
   ): Promise<Membership | null>;
+  hasOrgOperationalAccess(
+    userId: string,
+    organizationId: string,
+  ): Promise<boolean>;
   findByUserAndOrgAndFarm(
     userId: string,
     organizationId: string,

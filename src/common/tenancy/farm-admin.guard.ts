@@ -33,6 +33,10 @@ export class FarmAdminGuard implements CanActivate {
       throw new ForbiddenException('Farm admin access required');
     }
 
+    if (farmContext.supportAccess) {
+      return true;
+    }
+
     const membership = await this.prisma.membership.findFirst({
       where: {
         userId,

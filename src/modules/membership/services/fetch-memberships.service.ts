@@ -13,12 +13,12 @@ export class FetchMembershipsService {
   ) {}
 
   async execute(actorUserId: string, params: SearchManyQuery) {
-    const admin = await this.membershipRepository.findOrgAdmin(
+    const allowed = await this.membershipRepository.hasOrgOperationalAccess(
       actorUserId,
       params.organizationId,
     );
 
-    if (!admin) {
+    if (!allowed) {
       throw new ForbiddenException(
         'Only organization admins can list memberships',
       );

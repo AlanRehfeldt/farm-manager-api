@@ -26,20 +26,23 @@ export class CreatePlatformOrganizationService {
     private readonly seedCostCategoriesService: SeedCostCategoriesService,
   ) {}
 
-  async execute(input: CreatePlatformOrganizationInput) {
+  async execute(input: CreatePlatformOrganizationInput, actorUserId: string) {
     const passwordHash = await hashPassword(input.admin.password);
 
     try {
-      const provisioned = await this.platformRepository.provisionOrganization({
-        organizationName: input.organizationName,
-        farmName: input.farmName,
-        timezone: input.timezone,
-        admin: {
-          name: input.admin.name,
-          email: input.admin.email,
-          passwordHash,
+      const provisioned = await this.platformRepository.provisionOrganization(
+        {
+          organizationName: input.organizationName,
+          farmName: input.farmName,
+          timezone: input.timezone,
+          admin: {
+            name: input.admin.name,
+            email: input.admin.email,
+            passwordHash,
+          },
         },
-      });
+        actorUserId,
+      );
 
       await this.seedCostCategoriesService.execute(provisioned.organization.id);
 

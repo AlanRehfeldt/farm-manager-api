@@ -28,9 +28,9 @@ function openLine(
 
 describe('labor month closing authorization', () => {
   const membershipRepository: jest.Mocked<
-    Pick<MembershipRepository, 'findOrgAdmin'>
+    Pick<MembershipRepository, 'hasOrgOperationalAccess'>
   > = {
-    findOrgAdmin: jest.fn(),
+    hasOrgOperationalAccess: jest.fn(),
   };
 
   const laborClosingRepository: jest.Mocked<
@@ -69,9 +69,7 @@ describe('labor month closing authorization', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    membershipRepository.findOrgAdmin.mockResolvedValue({
-      id: 'membership-org-admin',
-    } as never);
+    membershipRepository.hasOrgOperationalAccess.mockResolvedValue(true);
     costCategoryRepository.findByCode.mockResolvedValue({
       id: 'mo-fixa',
     } as never);
@@ -96,7 +94,7 @@ describe('labor month closing authorization', () => {
   });
 
   it('rejects preview when actor is only a farm-scoped admin', async () => {
-    membershipRepository.findOrgAdmin.mockResolvedValue(null);
+    membershipRepository.hasOrgOperationalAccess.mockResolvedValue(false);
 
     await expect(
       previewService.execute('org-1', 2026, 9, 'user-farm-admin'),
@@ -108,7 +106,7 @@ describe('labor month closing authorization', () => {
   });
 
   it('rejects close when actor is only a farm-scoped admin', async () => {
-    membershipRepository.findOrgAdmin.mockResolvedValue(null);
+    membershipRepository.hasOrgOperationalAccess.mockResolvedValue(false);
 
     await expect(
       closeService.execute({
@@ -128,9 +126,9 @@ describe('labor month closing authorization', () => {
 
 describe('CloseLaborMonthService', () => {
   const membershipRepository: jest.Mocked<
-    Pick<MembershipRepository, 'findOrgAdmin'>
+    Pick<MembershipRepository, 'hasOrgOperationalAccess'>
   > = {
-    findOrgAdmin: jest.fn(),
+    hasOrgOperationalAccess: jest.fn(),
   };
 
   const laborClosingRepository: jest.Mocked<
@@ -164,9 +162,7 @@ describe('CloseLaborMonthService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    membershipRepository.findOrgAdmin.mockResolvedValue({
-      id: 'membership-org-admin',
-    } as never);
+    membershipRepository.hasOrgOperationalAccess.mockResolvedValue(true);
     costCategoryRepository.findByCode.mockResolvedValue({
       id: 'mo-fixa',
     } as never);

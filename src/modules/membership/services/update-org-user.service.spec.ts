@@ -10,7 +10,7 @@ describe('UpdateOrgUserService', () => {
   let membershipRepository: jest.Mocked<
     Pick<
       MembershipRepository,
-      | 'findOrgAdmin'
+      | 'hasOrgOperationalAccess'
       | 'findManyByUserAndOrg'
       | 'countOrgAdmins'
       | 'replaceProfileAndMemberships'
@@ -43,7 +43,7 @@ describe('UpdateOrgUserService', () => {
 
   beforeEach(() => {
     membershipRepository = {
-      findOrgAdmin: jest.fn(),
+      hasOrgOperationalAccess: jest.fn(),
       findManyByUserAndOrg: jest.fn(),
       countOrgAdmins: jest.fn(),
       replaceProfileAndMemberships: jest.fn(),
@@ -62,9 +62,7 @@ describe('UpdateOrgUserService', () => {
       userRepository as unknown as UserRepository,
     );
 
-    membershipRepository.findOrgAdmin.mockResolvedValue({
-      id: 'm-admin',
-    } as Membership);
+    membershipRepository.hasOrgOperationalAccess.mockResolvedValue(true);
     userRepository.findById.mockResolvedValue(user);
     membershipRepository.findManyByUserAndOrg.mockResolvedValue([
       existingMembership,
@@ -109,7 +107,7 @@ describe('UpdateOrgUserService', () => {
   });
 
   it('rejects when the actor is not an organization admin', async () => {
-    membershipRepository.findOrgAdmin.mockResolvedValue(null);
+    membershipRepository.hasOrgOperationalAccess.mockResolvedValue(false);
 
     await expect(
       service.execute(actorId, userId, {

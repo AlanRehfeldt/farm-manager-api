@@ -12,11 +12,12 @@ export class ResetPlatformUserPasswordService {
     private readonly platformRepository: PlatformRepository,
   ) {}
 
-  async execute(userId: string, password: string) {
+  async execute(userId: string, password: string, actorUserId: string) {
     const passwordHash = await hashPassword(password);
     const updated = await this.platformRepository.resetUserPassword(
       userId,
       passwordHash,
+      actorUserId,
     );
 
     if (!updated) {

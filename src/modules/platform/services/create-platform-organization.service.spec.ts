@@ -51,28 +51,34 @@ describe('CreatePlatformOrganizationService', () => {
   });
 
   it('provisions the client admin and seeds cost categories', async () => {
-    const result = await service.execute({
-      organizationName: 'Rehfeldt Agro',
-      farmName: 'Sede',
-      timezone: 'America/Bahia',
-      admin: {
-        name: 'Cliente Admin',
-        email: 'admin@example.com',
-        password: 'Admin1!x',
+    const result = await service.execute(
+      {
+        organizationName: 'Rehfeldt Agro',
+        farmName: 'Sede',
+        timezone: 'America/Bahia',
+        admin: {
+          name: 'Cliente Admin',
+          email: 'admin@example.com',
+          password: 'Admin1!x',
+        },
       },
-    });
+      'actor-1',
+    );
 
     expect(hashPassword).toHaveBeenCalledWith('Admin1!x');
-    expect(platformRepository.provisionOrganization).toHaveBeenCalledWith({
-      organizationName: 'Rehfeldt Agro',
-      farmName: 'Sede',
-      timezone: 'America/Bahia',
-      admin: {
-        name: 'Cliente Admin',
-        email: 'admin@example.com',
-        passwordHash: 'hashed-password',
+    expect(platformRepository.provisionOrganization).toHaveBeenCalledWith(
+      {
+        organizationName: 'Rehfeldt Agro',
+        farmName: 'Sede',
+        timezone: 'America/Bahia',
+        admin: {
+          name: 'Cliente Admin',
+          email: 'admin@example.com',
+          passwordHash: 'hashed-password',
+        },
       },
-    });
+      'actor-1',
+    );
     expect(seedCostCategoriesService.execute).toHaveBeenCalledWith('org-1');
     expect(result.admin.mustChangePassword).toBe(true);
     expect(result).not.toHaveProperty('password');
@@ -87,15 +93,18 @@ describe('CreatePlatformOrganizationService', () => {
     );
 
     await expect(
-      service.execute({
-        organizationName: 'Outra',
-        farmName: 'Sede',
-        admin: {
-          name: 'Cliente Admin',
-          email: 'admin@example.com',
-          password: 'Admin1!x',
+      service.execute(
+        {
+          organizationName: 'Outra',
+          farmName: 'Sede',
+          admin: {
+            name: 'Cliente Admin',
+            email: 'admin@example.com',
+            password: 'Admin1!x',
+          },
         },
-      }),
+        'actor-1',
+      ),
     ).rejects.toBeInstanceOf(ConflictException);
 
     expect(seedCostCategoriesService.execute).not.toHaveBeenCalled();

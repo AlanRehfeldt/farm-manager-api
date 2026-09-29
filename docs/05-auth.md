@@ -38,7 +38,7 @@ O access JWT inclui a claim `passwordChangedAt` (epoch ms de `User.passwordChang
 
 `Organization.status` (`ACTIVE` | `SUSPENDED`) bloqueia o tenant. A `JwtStrategy` carrega, na mesma consulta do usuário, `platformRole` e o status das orgs das memberships.
 
-- `PLATFORM_ADMIN` e usuário sem membership autenticam normalmente.
+- `PLATFORM_ADMIN` e usuário sem membership autenticam normalmente. `PLATFORM_SUPPORT` também autentica; o acesso à fazenda depende de concessão ativa (PR-21), não de membership.
 - Quem tem membership e nenhuma org `ACTIVE`: login responde **403** (`Organization is suspended`); access já emitido e refresh respondem **401** e o refresh limpa os cookies.
 - Quem ainda tem uma org `ACTIVE` autentica; a fazenda da org suspensa é barrada no `FarmMembershipGuard` (403).
 

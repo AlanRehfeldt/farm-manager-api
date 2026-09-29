@@ -15,6 +15,10 @@ import { ForbiddenDto } from 'src/common/errors/forbidden.dto';
 import { UnauthorizedDto } from 'src/common/errors/unauthorized.dto';
 import { PlatformAdmin } from 'src/common/platform/platform-admin.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
+import {
+  AuthenticatedUser,
+  CurrentUser,
+} from 'src/modules/auth/decorators/current-user.decorator';
 import { passwordSchema } from 'src/common/validation/password-schema';
 import { CreatePlatformOrganizationBodyDto } from '../dtos/request/create-platform-organization.dto';
 import { CreatePlatformOrganizationResponseDto } from '../dtos/response/create-platform-organization.dto';
@@ -80,10 +84,14 @@ export class CreatePlatformOrganizationController {
   })
   @Post()
   async create(
+    @CurrentUser() actor: AuthenticatedUser,
     @Body(new ZodValidationPipe(createPlatformOrganizationBodySchema))
     data: CreatePlatformOrganizationBodyDto,
   ) {
-    const result = await this.createPlatformOrganizationService.execute(data);
+    const result = await this.createPlatformOrganizationService.execute(
+      data,
+      actor.userId,
+    );
 
     return {
       statusCode: HttpStatus.CREATED,

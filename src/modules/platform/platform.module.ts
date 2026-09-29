@@ -11,6 +11,18 @@ import { FetchPlatformOrganizationsController } from './controllers/fetch-platfo
 import { FetchPlatformUsersController } from './controllers/fetch-platform-users.controller';
 import { ResetPlatformUserPasswordController } from './controllers/reset-platform-user-password.controller';
 import { UpdatePlatformOrganizationStatusController } from './controllers/update-platform-organization-status.controller';
+import { CreateSupportUserController } from './controllers/create-support-user.controller';
+import { FetchAuditLogsController } from './controllers/fetch-audit-logs.controller';
+import { FetchSupportAccessController } from './controllers/fetch-support-access.controller';
+import { FetchSupportUsersController } from './controllers/fetch-support-users.controller';
+import { GrantSupportAccessController } from './controllers/grant-support-access.controller';
+import { RevokeSupportAccessController } from './controllers/revoke-support-access.controller';
+import { CreateSupportUserService } from './services/create-support-user.service';
+import { FetchAuditLogsService } from './services/fetch-audit-logs.service';
+import { FetchSupportAccessService } from './services/fetch-support-access.service';
+import { FetchSupportUsersService } from './services/fetch-support-users.service';
+import { GrantSupportAccessService } from './services/grant-support-access.service';
+import { RevokeSupportAccessService } from './services/revoke-support-access.service';
 import { PLATFORM_REPOSITORY } from './repositories/platform.repository';
 import { PrismaPlatformRepository } from './repositories/prisma-platform.repository';
 import { CreatePlatformOrganizationService } from './services/create-platform-organization.service';
@@ -37,6 +49,12 @@ import { UpdatePlatformOrganizationStatusService } from './services/update-platf
     FetchPlatformUsersController,
     ResetPlatformUserPasswordController,
     UpdatePlatformOrganizationStatusController,
+    CreateSupportUserController,
+    FetchSupportUsersController,
+    GrantSupportAccessController,
+    FetchSupportAccessController,
+    RevokeSupportAccessController,
+    FetchAuditLogsController,
   ],
   providers: [
     {
@@ -50,6 +68,13 @@ import { UpdatePlatformOrganizationStatusService } from './services/update-platf
     FetchPlatformUsersService,
     ResetPlatformUserPasswordService,
     UpdatePlatformOrganizationStatusService,
+    CreateSupportUserService,
+    FetchSupportUsersService,
+    GrantSupportAccessService,
+    FetchSupportAccessService,
+    RevokeSupportAccessService,
+    FetchAuditLogsService,
   ],
+  exports: [PLATFORM_REPOSITORY],
 })
 export class PlatformApiModule {}

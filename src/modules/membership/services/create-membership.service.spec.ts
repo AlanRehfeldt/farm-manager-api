@@ -3,7 +3,7 @@ jest.mock('src/common/crypto/bcrypt', () => ({
 }));
 
 import { ConflictException, ForbiddenException } from '@nestjs/common';
-import { Membership, Role, User } from '@prisma/client';
+import { Membership, PlatformRole, Role, User } from '@prisma/client';
 import { hashPassword } from 'src/common/crypto/bcrypt';
 import { FarmRepository } from 'src/modules/farm/repositories/farm.repository';
 import { UserRepository } from 'src/modules/user/repositories/user.repository';
@@ -15,7 +15,7 @@ describe('CreateMembershipService', () => {
   let membershipRepository: jest.Mocked<
     Pick<
       MembershipRepository,
-      | 'findOrgAdmin'
+      | 'hasOrgOperationalAccess'
       | 'findManyByUserAndOrg'
       | 'createMany'
       | 'createUserWithMemberships'
@@ -40,7 +40,7 @@ describe('CreateMembershipService', () => {
 
   beforeEach(() => {
     membershipRepository = {
-      findOrgAdmin: jest.fn(),
+      hasOrgOperationalAccess: jest.fn(),
       findManyByUserAndOrg: jest.fn(),
       createMany: jest.fn(),
       createUserWithMemberships: jest.fn(),
@@ -59,9 +59,7 @@ describe('CreateMembershipService', () => {
       userRepository as unknown as UserRepository,
     );
 
-    membershipRepository.findOrgAdmin.mockResolvedValue({
-      id: 'm-admin',
-    } as Membership);
+    membershipRepository.hasOrgOperationalAccess.mockResolvedValue(true);
     farmRepository.findById.mockResolvedValue({
       id: farmId,
       organizationId,
@@ -106,7 +104,10 @@ describe('CreateMembershipService', () => {
 
   it('attaches an existing user via createMany', async () => {
     const existingUserId = 'user-existing';
-    userRepository.findById.mockResolvedValue({ id: existingUserId } as User);
+    userRepository.findById.mockResolvedValue({
+      id: existingUserId,
+      platformRole: PlatformRole.NONE,
+    } as User);
     membershipRepository.findManyByUserAndOrg.mockResolvedValue([]);
     membershipRepository.createMany.mockResolvedValue([
       { ...membership, userId: existingUserId },
@@ -126,8 +127,26 @@ describe('CreateMembershipService', () => {
     expect(result.membership.userId).toBe(existingUserId);
   });
 
+  it('rejects attaching a platform user', async () => {
+    userRepository.findById.mockResolvedValue({
+      id: 'user-support',
+      platformRole: PlatformRole.PLATFORM_SUPPORT,
+    } as User);
+
+    await expect(
+      service.execute(actorId, {
+        organizationId,
+        farmIds: [farmId],
+        role: Role.USER,
+        userId: 'user-support',
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+
+    expect(membershipRepository.createMany).not.toHaveBeenCalled();
+  });
+
   it('rejects when the actor is not an organization admin', async () => {
-    membershipRepository.findOrgAdmin.mockResolvedValue(null);
+    membershipRepository.hasOrgOperationalAccess.mockResolvedValue(false);
 
     await expect(
       service.execute(actorId, {

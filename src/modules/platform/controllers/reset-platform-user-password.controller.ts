@@ -22,6 +22,10 @@ import { NotFoundDto } from 'src/common/errors/not-found.dto';
 import { UnauthorizedDto } from 'src/common/errors/unauthorized.dto';
 import { PlatformAdmin } from 'src/common/platform/platform-admin.decorator';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
+import {
+  AuthenticatedUser,
+  CurrentUser,
+} from 'src/modules/auth/decorators/current-user.decorator';
 import { passwordSchema } from 'src/common/validation/password-schema';
 import {
   ResetPlatformUserPasswordBodyDto,
@@ -72,6 +76,7 @@ export class ResetPlatformUserPasswordController {
   @Post('/:id/reset-password')
   @HttpCode(HttpStatus.OK)
   async reset(
+    @CurrentUser() actor: AuthenticatedUser,
     @Param(new ZodValidationPipe(resetPlatformUserPasswordParamSchema))
     params: ResetPlatformUserPasswordParamDto,
     @Body(new ZodValidationPipe(resetPlatformUserPasswordBodySchema))
@@ -80,6 +85,7 @@ export class ResetPlatformUserPasswordController {
     await this.resetPlatformUserPasswordService.execute(
       params.id,
       data.password,
+      actor.userId,
     );
 
     return {

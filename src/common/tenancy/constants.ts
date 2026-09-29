@@ -6,4 +6,6 @@ export type FarmRequestContext = {
   farmId: string;
   organizationId: string;
   membershipRole: Role;
+  /** Concessão de suporte, sem linha de Membership. */
+  supportAccess: boolean;
 };

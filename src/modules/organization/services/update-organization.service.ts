@@ -35,9 +35,9 @@ export class UpdateOrganizationService {
       throw new NotFoundException('Organization does not exist');
     }
 
-    const admin = await this.membershipRepository.findOrgAdmin(userId, data.id);
+    const allowed = await this.membershipRepository.hasOrgOperationalAccess(userId, data.id);
 
-    if (!admin) {
+    if (!allowed) {
       throw new ForbiddenException(
         'Only organization admins can update the organization',
       );

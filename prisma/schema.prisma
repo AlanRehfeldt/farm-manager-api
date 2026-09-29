@@ -14,6 +14,7 @@ enum Role {
 enum PlatformRole {
   NONE
   PLATFORM_ADMIN
+  PLATFORM_SUPPORT
 }
 
 enum OrganizationStatus {
@@ -62,6 +63,7 @@ model Organization {
   crops               Crop[]
   costCategories      CostCategory[]
   laborMonthClosings  LaborMonthClosing[]
+  supportAccesses     SupportAccess[]
 
   @@map("organizations")
 }
@@ -139,8 +141,46 @@ model User {
   activities    Activity[]
   seasonCostingSnapshotsClosed SeasonCostingSnapshot[]
   laborMonthClosingsClosed     LaborMonthClosing[]
+  supportAccesses              SupportAccess[] @relation("SupportAccessUser")
+  supportAccessesGranted       SupportAccess[] @relation("SupportAccessGrantedBy")
+  platformAuditLogs            PlatformAuditLog[]
 
   @@map("users")
+}
+
+model SupportAccess {
+  id              String    @id @default(uuid())
+  userId          String
+  organizationId  String
+  grantedByUserId String
+  revokedAt       DateTime?
+  createdAt       DateTime  @default(now())
+
+  user         User         @relation("SupportAccessUser", fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  grantedBy    User         @relation("SupportAccessGrantedBy", fields: [grantedByUserId], references: [id])
+
+  @@index([userId])
+  @@index([organizationId])
+  @@map("support_accesses")
+}
+
+model PlatformAuditLog {
+  id             String   @id @default(uuid())
+  actorUserId    String
+  action         String
+  targetType     String
+  targetId       String?
+  organizationId String?
+  metadata       Json?
+  createdAt      DateTime @default(now())
+
+  actor User @relation(fields: [actorUserId], references: [id])
+
+  @@index([createdAt])
+  @@index([organizationId])
+  @@index([actorUserId])
+  @@map("platform_audit_logs")
 }
 
 model RefreshToken {

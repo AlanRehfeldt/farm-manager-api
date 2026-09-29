@@ -1,8 +1,13 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { PlatformRole } from '@prisma/client';
 import {
   MEMBERSHIP_REPOSITORY,
   MembershipRepository,
 } from 'src/modules/membership/repositories/membership.repository';
+import {
+  PLATFORM_REPOSITORY,
+  PlatformRepository,
+} from 'src/modules/platform/repositories/platform.repository';
 import {
   USER_REPOSITORY,
   UserRepository,
@@ -16,6 +21,8 @@ export class MeService {
     private readonly userRepository: UserRepository,
     @Inject(MEMBERSHIP_REPOSITORY)
     private readonly membershipRepository: MembershipRepository,
+    @Inject(PLATFORM_REPOSITORY)
+    private readonly platformRepository: PlatformRepository,
   ) {}
 
   async execute(userId: string): Promise<MeResultDto> {
@@ -26,6 +33,10 @@ export class MeService {
     }
 
     const memberships = await this.membershipRepository.findManyByUser(userId);
+    const supportAccesses =
+      user.platformRole === PlatformRole.PLATFORM_SUPPORT
+        ? await this.platformRepository.listActiveSupportAccess(userId)
+        : [];
     const { password, passwordChangedAt, ...userWithoutPassword } = user;
     void password;
     void passwordChangedAt;
@@ -34,6 +45,7 @@ export class MeService {
       ...userWithoutPassword,
       employeeId: userWithoutPassword.employeeId ?? undefined,
       memberships,
+      supportAccesses,
     });
   }
 }

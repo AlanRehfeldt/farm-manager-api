@@ -8,7 +8,7 @@
 - **Farm** — unidade operacional (header `x-farm-id`). Unique `(organizationId, name)`.
 - **Membership** — `ADMIN` | `USER`. `farmId` null = todas as fazendas da org; preenchido = só aquela. Várias linhas pontuais por `(user, org)` (PR-24); **não** misturar org-wide com pontual. Índices únicos parciais no Postgres.
 
-Autorização de fazenda = Membership (`ADMIN` | `USER`). A coluna legada `User.role` foi removida (PR-18). **`User.platformRole`** (`NONE` | `PLATFORM_ADMIN`) é ortogonal ao tenant — ADR-018 em `farm-manager-docs`. ACL nomeada (ADR-013) **não** implementada; mutações sensíveis usam `@FarmAdmin()` (membership `ADMIN` org-wide ou na farm do header).
+Autorização de fazenda = Membership (`ADMIN` | `USER`). A coluna legada `User.role` foi removida (PR-18). **`User.platformRole`** (`NONE` | `PLATFORM_ADMIN` | `PLATFORM_SUPPORT`) é ortogonal ao tenant — ADR-018 e ADR-020 em `farm-manager-docs`. ACL nomeada (ADR-013) **não** implementada; mutações sensíveis usam `@FarmAdmin()` (membership `ADMIN` org-wide ou na farm do header, ou concessão de suporte ativa).
 
 ## Contexto HTTP
 
@@ -100,9 +100,14 @@ Fechamento de safra (PR-13): `PATCH /crop-seasons/:id/close` cria `SeasonCosting
 | Cliente com ao menos uma org `ACTIVE` | Login segue. Fazenda de org suspensa: `FarmMembershipGuard` → 403. `GET /farms`, get de organização e listagem de memberships ignoram a org suspensa |
 | `PLATFORM_ADMIN` | Login e `/platform/*` seguem, inclusive listar e reativar a org suspensa |
 | Usuário sem membership | Login segue, como hoje |
+| `PLATFORM_SUPPORT` sem concessão ativa | Login segue. `GET /farms` vem vazio e o app não cai em onboarding. Fazenda sem concessão: `FarmMembershipGuard` → 403 |
 
 Na suspensão, refresh tokens são revogados para membros que não são platform admin e não têm outra org `ACTIVE`. Reativar não restaura a sessão: o cliente entra de novo com a senha.
 
+## Acesso de suporte (PR-21)
+
+`PLATFORM_SUPPORT` não cria `Membership`. O acesso é uma linha `SupportAccess` ativa (`revokedAt` nulo) na organização da fazenda. O guard lê a concessão em todo request; revogar vale no pedido seguinte, sem esperar o JWT expirar. O contexto marca `supportAccess` e segue com acesso operacional da org inteira. `POST /onboarding` e criar membership para papel de plataforma respondem 403. Cada escrita autenticada do suporte grava `PlatformAuditLog` (`TENANT_WRITE`) com o id do suporte. Detalhe: ADR-020.
+
 ## Fora deste recorte
 
-Permissões nomeadas (ADR-013), join table cadastro × N fazendas, auditoria e impersonation (PR-21–PR-26), reopen de safra fechada (planejado INV-REOPEN). O console vendor (`farm-manager-admin`, PR-19) existe à parte e não usa `x-farm-id`.
+Permissões nomeadas (ADR-013), join table cadastro × N fazendas, `organizationId` no JWT (PR-25), billing (PR-23), reopen de safra fechada (planejado INV-REOPEN). O console vendor (`farm-manager-admin`, PR-19) existe à parte e não usa `x-farm-id`. Impersonation está rejeitada.

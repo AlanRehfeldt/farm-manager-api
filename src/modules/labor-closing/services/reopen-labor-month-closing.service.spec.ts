@@ -6,9 +6,9 @@ import { ReopenLaborMonthClosingService } from './reopen-labor-month-closing.ser
 
 describe('ReopenLaborMonthClosingService', () => {
   const membershipRepository: jest.Mocked<
-    Pick<MembershipRepository, 'findOrgAdmin'>
+    Pick<MembershipRepository, 'hasOrgOperationalAccess'>
   > = {
-    findOrgAdmin: jest.fn(),
+    hasOrgOperationalAccess: jest.fn(),
   };
 
   const laborClosingRepository: jest.Mocked<
@@ -25,9 +25,7 @@ describe('ReopenLaborMonthClosingService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    membershipRepository.findOrgAdmin.mockResolvedValue({
-      id: 'membership-org-admin',
-    } as never);
+    membershipRepository.hasOrgOperationalAccess.mockResolvedValue(true);
     laborClosingRepository.findClosingById.mockResolvedValue({
       id: 'closing-1',
       organizationId: 'org-1',
@@ -53,7 +51,7 @@ describe('ReopenLaborMonthClosingService', () => {
   });
 
   it('rejects when actor is only a farm-scoped admin', async () => {
-    membershipRepository.findOrgAdmin.mockResolvedValue(null);
+    membershipRepository.hasOrgOperationalAccess.mockResolvedValue(false);
 
     await expect(
       service.execute({

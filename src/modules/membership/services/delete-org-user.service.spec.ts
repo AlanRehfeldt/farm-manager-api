@@ -9,7 +9,7 @@ describe('DeleteOrgUserService', () => {
   let membershipRepository: jest.Mocked<
     Pick<
       MembershipRepository,
-      | 'findOrgAdmin'
+      | 'hasOrgOperationalAccess'
       | 'findManyByUserAndOrg'
       | 'countOrgAdmins'
       | 'deleteManyByUserAndOrg'
@@ -36,7 +36,7 @@ describe('DeleteOrgUserService', () => {
 
   beforeEach(() => {
     membershipRepository = {
-      findOrgAdmin: jest.fn(),
+      hasOrgOperationalAccess: jest.fn(),
       findManyByUserAndOrg: jest.fn(),
       countOrgAdmins: jest.fn(),
       deleteManyByUserAndOrg: jest.fn(),
@@ -52,9 +52,7 @@ describe('DeleteOrgUserService', () => {
   });
 
   it('rejects self-removal even when other admins exist', async () => {
-    membershipRepository.findOrgAdmin.mockResolvedValue({
-      id: 'm-admin',
-    } as Membership);
+    membershipRepository.hasOrgOperationalAccess.mockResolvedValue(true);
     userRepository.findById.mockResolvedValue({
       id: actorId,
       platformRole: PlatformRole.NONE,
@@ -78,9 +76,7 @@ describe('DeleteOrgUserService', () => {
   });
 
   it('removes another user from the organization', async () => {
-    membershipRepository.findOrgAdmin.mockResolvedValue({
-      id: 'm-admin',
-    } as Membership);
+    membershipRepository.hasOrgOperationalAccess.mockResolvedValue(true);
     userRepository.findById.mockResolvedValue(targetUser);
     membershipRepository.findManyByUserAndOrg.mockResolvedValue([
       targetMembership,
@@ -96,9 +92,7 @@ describe('DeleteOrgUserService', () => {
   });
 
   it('rejects when the target user is not in the organization', async () => {
-    membershipRepository.findOrgAdmin.mockResolvedValue({
-      id: 'm-admin',
-    } as Membership);
+    membershipRepository.hasOrgOperationalAccess.mockResolvedValue(true);
     userRepository.findById.mockResolvedValue(targetUser);
     membershipRepository.findManyByUserAndOrg.mockResolvedValue([]);
 
