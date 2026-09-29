@@ -65,6 +65,15 @@ export type PlatformUserListItem = {
   memberships: PlatformUserMembership[];
 };
 
+export type SearchPlatformOrganizationFarmsQuery = {
+  organizationId: string;
+  name?: string;
+  page: number;
+  perPage: number;
+  orderBy: 'name' | 'createdAt';
+  orderDirection: 'asc' | 'desc';
+};
+
 export type SearchPlatformUsersQuery = {
   organizationId?: string;
   name?: string;

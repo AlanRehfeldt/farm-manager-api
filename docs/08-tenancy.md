@@ -91,4 +91,4 @@ Fechamento de safra (PR-13): `PATCH /crop-seasons/:id/close` cria `SeasonCosting
 
 ## Fora deste recorte
 
-Permissões nomeadas (ADR-013), join table cadastro × N fazendas, console vendor (PR-19), suspensão, auditoria e impersonation (PR-20–PR-26), reopen de safra fechada (planejado INV-REOPEN).
+Permissões nomeadas (ADR-013), join table cadastro × N fazendas, suspensão, auditoria e impersonation (PR-20–PR-26), reopen de safra fechada (planejado INV-REOPEN). O console vendor (`farm-manager-admin`, PR-19) existe à parte e não usa `x-farm-id`.

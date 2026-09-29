@@ -1,9 +1,10 @@
-import { Organization } from '@prisma/client';
+import { Farm, Organization } from '@prisma/client';
 import {
   PlatformOrganizationListItem,
   PlatformUserListItem,
   ProvisionOrganizationData,
   ProvisionOrganizationResult,
+  SearchPlatformOrganizationFarmsQuery,
   SearchPlatformOrganizationsQuery,
   SearchPlatformUsersQuery,
 } from './@types';
@@ -13,6 +14,12 @@ export interface PlatformRepository {
     data: ProvisionOrganizationData,
   ): Promise<ProvisionOrganizationResult>;
   findOrganizationById(id: string): Promise<Organization | null>;
+  searchOrganizationFarms(
+    query: SearchPlatformOrganizationFarmsQuery,
+  ): Promise<Farm[]>;
+  countOrganizationFarms(
+    query: SearchPlatformOrganizationFarmsQuery,
+  ): Promise<number>;
   searchOrganizations(
     query: SearchPlatformOrganizationsQuery,
   ): Promise<PlatformOrganizationListItem[]>;

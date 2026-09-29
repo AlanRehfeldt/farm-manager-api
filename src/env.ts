@@ -15,7 +15,17 @@ export const envSchema = z.object({
     .default('false')
     .transform((value) => value === 'true'),
   COOKIE_SAME_SITE: z.enum(['strict', 'lax', 'none']).default('lax'),
-  CORS_ORIGIN: z.url().default('http://localhost:5173'),
+  /** Uma origem ou várias separadas por vírgula (app da fazenda e console). */
+  CORS_ORIGIN: z
+    .string()
+    .default('http://localhost:5173')
+    .transform((value) =>
+      value
+        .split(',')
+        .map((origin) => origin.trim())
+        .filter((origin) => origin.length > 0),
+    )
+    .pipe(z.array(z.url()).min(1)),
 });
 
 export type Env = z.infer<typeof envSchema>;

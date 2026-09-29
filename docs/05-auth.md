@@ -90,13 +90,15 @@ Ver `.env.example` e `src/env.ts`:
 | `JWT_REFRESH_COOKIE_NAME` | Default `fm_refresh_token` |
 | `COOKIE_SECURE` | `true`/`false` |
 | `COOKIE_SAME_SITE` | `strict`, `lax`, `none` |
-| `CORS_ORIGIN` | Origem do SPA (ex. `http://localhost:5173`) |
+| `CORS_ORIGIN` | Origens dos SPAs, separadas por vírgula (ex. `http://localhost:5173,http://localhost:5174`) |
 
 Credenciais de seed (`PLATFORM_ADMIN_*`) — apenas para `npm run seed:platform-admin`; não validadas no boot da API.
 
 ## Frontend
 
 Requisições cross-origin precisam de `credentials: 'include'` (ou equivalente). CORS na API com `credentials: true`.
+
+O console `farm-manager-admin` (PR-19) usa a mesma sessão por cookie e as rotas `/platform/*`, inclusive `GET /platform/organizations/:organizationId/farms`.
 
 ## O que não está implementado
 
@@ -105,7 +107,6 @@ Requisições cross-origin precisam de `credentials: 'include'` (ou equivalente)
 | Guards de role (`ADMIN` vs `USER`) em rotas de catálogo | ADR-013; hoje ADMIN é checado no service de org/farm/membership |
 | ACL nomeada | ADR-013 |
 | Bearer como fluxo principal | Não — cookies são o padrão atual |
-| Console vendor (`farm-manager-admin`) | PR-19 |
 
 Não documentar Bearer no OpenAPI como mecanismo principal sem mudança de arquitetura.
 

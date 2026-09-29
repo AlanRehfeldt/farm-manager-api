@@ -234,6 +234,51 @@ describe('Platform provisioning (e2e)', () => {
     expect(listed[0]?.lastAccessAt).toEqual(expect.any(String));
   });
 
+  it('GET /platform/organizations/:id/farms lists the provisioned farm', async () => {
+    await request(server)
+      .get(`/platform/organizations/${organizationId}/farms`)
+      .expect(401);
+
+    await request(server)
+      .get(`/platform/organizations/${organizationId}/farms`)
+      .set('Cookie', regularCookies)
+      .expect(403);
+
+    await request(server)
+      .get(
+        '/platform/organizations/00000000-0000-4000-8000-000000000099/farms',
+      )
+      .set('Cookie', platformCookies)
+      .expect(404);
+
+    const res = await request(server)
+      .get(`/platform/organizations/${organizationId}/farms`)
+      .query({ name: `Sede ${suffix}` })
+      .set('Cookie', platformCookies)
+      .expect(200);
+
+    const farms = listResults<{
+      id: string;
+      organizationId: string;
+      name: string;
+    }>(res);
+    expect(farms).toEqual([
+      expect.objectContaining({
+        id: farmId,
+        organizationId,
+        name: `Sede ${suffix}`,
+      }),
+    ]);
+    expect(res.body).toEqual(
+      expect.objectContaining({
+        total: 1,
+        page: 1,
+        orderBy: 'name',
+        orderDirection: 'asc',
+      }),
+    );
+  });
+
   it('does not leave an organization when the admin email already exists', async () => {
     const orphanName = `Orphan Org ${suffix}`;
 

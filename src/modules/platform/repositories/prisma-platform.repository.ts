@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { Organization, PlatformRole, Prisma, Role } from '@prisma/client';
+import { Farm, Organization, PlatformRole, Prisma, Role } from '@prisma/client';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import {
   PlatformOrganizationListItem,
   PlatformUserListItem,
   ProvisionOrganizationData,
   ProvisionOrganizationResult,
+  SearchPlatformOrganizationFarmsQuery,
   SearchPlatformOrganizationsQuery,
   SearchPlatformUsersQuery,
 } from './@types';
@@ -68,6 +69,25 @@ export class PrismaPlatformRepository implements PlatformRepository {
 
   async findOrganizationById(id: string): Promise<Organization | null> {
     return this.prisma.organization.findUnique({ where: { id } });
+  }
+
+  async searchOrganizationFarms(
+    query: SearchPlatformOrganizationFarmsQuery,
+  ): Promise<Farm[]> {
+    return this.prisma.farm.findMany({
+      where: this.organizationFarmWhere(query),
+      skip: (query.page - 1) * query.perPage,
+      take: query.perPage,
+      orderBy: { [query.orderBy]: query.orderDirection },
+    });
+  }
+
+  async countOrganizationFarms(
+    query: SearchPlatformOrganizationFarmsQuery,
+  ): Promise<number> {
+    return this.prisma.farm.count({
+      where: this.organizationFarmWhere(query),
+    });
   }
 
   async searchOrganizations(
@@ -201,6 +221,17 @@ export class PrismaPlatformRepository implements PlatformRepository {
 
       return true;
     });
+  }
+
+  private organizationFarmWhere(
+    query: SearchPlatformOrganizationFarmsQuery,
+  ): Prisma.FarmWhereInput {
+    return {
+      organizationId: query.organizationId,
+      name: query.name
+        ? { contains: query.name, mode: 'insensitive' }
+        : undefined,
+    };
   }
 
   private organizationWhere(

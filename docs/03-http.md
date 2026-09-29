@@ -81,7 +81,7 @@ Configurado em `src/main.ts`:
 
 ## CORS e cookies
 
-Frontend deve chamar com `credentials: 'include'`. API usa `CORS_ORIGIN` e `credentials: true`. Ver [05-auth.md](./05-auth.md).
+Frontend deve chamar com `credentials: 'include'`. API usa `CORS_ORIGIN` (uma ou várias origens separadas por vírgula) e `credentials: true`. Ver [05-auth.md](./05-auth.md).
 
 ## Referências
 

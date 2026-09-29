@@ -35,13 +35,16 @@ Públicas hoje: `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`.
 
 ## CORS
 
-`credentials: true` + `CORS_ORIGIN` — frontend deve enviar cookies cross-origin.
+`credentials: true` + `CORS_ORIGIN` (uma ou várias origens separadas por vírgula) — frontend deve enviar cookies cross-origin.
+
+## Console
+
+O SPA `farm-manager-admin` (PR-19) existe à parte. A API autoriza `/platform/*` só com `@PlatformAdmin()`; o console não ganha `Membership`.
 
 ## O que não existe
 
 - `@Roles()` / guards de permissão nomeada (ADR-013)
 - Bearer token como fluxo principal
-- Console vendor (`farm-manager-admin`, PR-19)
 
 Tenancy de fazenda **não** está no JwtAuthGuard. Rotas de catálogo/lançamentos usam `@FarmScoped()` (`x-farm-id`). Ver `docs/08-tenancy.md` e `.cursor/rules/tenancy.mdc`.
 

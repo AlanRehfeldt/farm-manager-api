@@ -83,7 +83,7 @@ O mapa alvo de contextos e fronteiras está em `farm-manager-docs/04-tecnico/03-
 | Capacidade | No código hoje | Planejado (docs/ADRs) |
 |------------|----------------|-------------------------|
 | Auth JWT cookie | Sim | — |
-| `User.platformRole` + `@PlatformAdmin()` + `/platform/*` | Sim (PR-05.1, PR-18) | Console vendor (PR-19) |
+| `User.platformRole` + `@PlatformAdmin()` + `/platform/*` | Sim (PR-05.1, PR-18); console `farm-manager-admin` (PR-19) | — |
 | Role enum em `User` | Não (coluna removida no PR-18) | Authz de fazenda = `Membership.role`; ACL nomeada ADR-013 |
 | Tenancy por farm/org | Sim (`@FarmScoped()`, `@FarmId()`, `@OrganizationId()`) | ACL nomeada ADR-013 |
 | Field, Crop, Variety, Machine, CropSeason, CropPlanting | Sim (PR-06) | — |
@@ -111,7 +111,7 @@ O mapa alvo de contextos e fronteiras está em `farm-manager-docs/04-tecnico/03-
 | Middleware | `cookie-parser` |
 | Logging | Sem `Logger` estruturado — drift com `console.error` em controllers |
 | Prefixo `/api` | Não |
-| CORS | `credentials: true`, origem via `CORS_ORIGIN` |
+| CORS | `credentials: true`, origens via `CORS_ORIGIN` (vírgula) |
 
 ## Referências
 

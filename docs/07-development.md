@@ -96,11 +96,12 @@ Runbook completo: `farm-manager-docs/07-plataforma/04-environments-and-data-life
 
 ## Integração com o app
 
-SPA (`farm-manager-app`) em desenvolvimento típico:
+SPAs em desenvolvimento típico:
 
-- Vite: `http://localhost:5173`
-- `CORS_ORIGIN=http://localhost:5173` no `.env` da API
-- Frontend com `credentials` nas chamadas HTTP
+- App da fazenda (`farm-manager-app`): `http://localhost:5173`
+- Console da plataforma (`farm-manager-admin`): `http://localhost:5174`
+- `CORS_ORIGIN=http://localhost:5173,http://localhost:5174` no `.env` da API
+- Frontends com `credentials` nas chamadas HTTP
 
 ## Referências
 

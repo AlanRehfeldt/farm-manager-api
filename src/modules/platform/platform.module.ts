@@ -6,6 +6,7 @@ import { MembershipModule } from '../membership/membership.module';
 import { UserModule } from '../user/user.module';
 import { CreatePlatformOrganizationController } from './controllers/create-platform-organization.controller';
 import { CreatePlatformUserController } from './controllers/create-platform-user.controller';
+import { FetchPlatformOrganizationFarmsController } from './controllers/fetch-platform-organization-farms.controller';
 import { FetchPlatformOrganizationsController } from './controllers/fetch-platform-organizations.controller';
 import { FetchPlatformUsersController } from './controllers/fetch-platform-users.controller';
 import { ResetPlatformUserPasswordController } from './controllers/reset-platform-user-password.controller';
@@ -13,6 +14,7 @@ import { PLATFORM_REPOSITORY } from './repositories/platform.repository';
 import { PrismaPlatformRepository } from './repositories/prisma-platform.repository';
 import { CreatePlatformOrganizationService } from './services/create-platform-organization.service';
 import { CreatePlatformUserService } from './services/create-platform-user.service';
+import { FetchPlatformOrganizationFarmsService } from './services/fetch-platform-organization-farms.service';
 import { FetchPlatformOrganizationsService } from './services/fetch-platform-organizations.service';
 import { FetchPlatformUsersService } from './services/fetch-platform-users.service';
 import { ResetPlatformUserPasswordService } from './services/reset-platform-user-password.service';
@@ -28,6 +30,7 @@ import { ResetPlatformUserPasswordService } from './services/reset-platform-user
   controllers: [
     CreatePlatformOrganizationController,
     FetchPlatformOrganizationsController,
+    FetchPlatformOrganizationFarmsController,
     CreatePlatformUserController,
     FetchPlatformUsersController,
     ResetPlatformUserPasswordController,
@@ -39,6 +42,7 @@ import { ResetPlatformUserPasswordService } from './services/reset-platform-user
     },
     CreatePlatformOrganizationService,
     FetchPlatformOrganizationsService,
+    FetchPlatformOrganizationFarmsService,
     CreatePlatformUserService,
     FetchPlatformUsersService,
     ResetPlatformUserPasswordService,
