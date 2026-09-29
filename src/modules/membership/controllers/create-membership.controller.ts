@@ -16,6 +16,7 @@ import { ForbiddenDto } from 'src/common/errors/forbidden.dto';
 import { NotFoundDto } from 'src/common/errors/not-found.dto';
 import { UnauthorizedDto } from 'src/common/errors/unauthorized.dto';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
+import { assertSessionOrganization } from 'src/common/tenancy/forbidden-organization';
 import { passwordSchema } from 'src/common/validation/password-schema';
 import {
   AuthenticatedUser,
@@ -87,6 +88,8 @@ export class CreateMembershipController {
     @Body(new ZodValidationPipe(createMembershipBodySchema))
     data: CreateMembershipBodyDto,
   ) {
+    assertSessionOrganization(user, data.organizationId);
+
     const { membership } = await this.createMembershipService.execute(
       user.userId,
       data,

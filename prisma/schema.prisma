@@ -184,17 +184,25 @@ model PlatformAuditLog {
 }
 
 model RefreshToken {
-  id        String    @id @default(uuid())
-  userId    String
-  tokenHash String    @unique
-  expiresAt DateTime
-  revokedAt DateTime?
-  createdAt DateTime  @default(now())
+  id                    String                @id @default(uuid())
+  userId                String
+  tokenHash             String                @unique
+  expiresAt             DateTime
+  revokedAt             DateTime?
+  organizationId        String?
+  organizationSelection OrganizationSelection @default(EXEMPT)
+  createdAt             DateTime              @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("refresh_tokens")
+}
+
+enum OrganizationSelection {
+  EXEMPT
+  PENDING
+  BOUND
 }
 
 enum EmployeeType {

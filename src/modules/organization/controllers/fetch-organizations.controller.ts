@@ -10,6 +10,7 @@ import z from 'zod';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
 import { UnauthorizedDto } from 'src/common/errors/unauthorized.dto';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
+import { boundSessionOrganizationId } from 'src/common/tenancy/forbidden-organization';
 import {
   AuthenticatedUser,
   CurrentUser,
@@ -53,6 +54,7 @@ export class FetchOrganizationsController {
     query: FetchOrganizationsQueryDto,
   ) {
     return this.fetchOrganizationsService.execute(user.userId, {
+      id: boundSessionOrganizationId(user) ?? undefined,
       name: query.name,
       page: query.page ?? 1,
       perPage: query.perPage ?? 10,

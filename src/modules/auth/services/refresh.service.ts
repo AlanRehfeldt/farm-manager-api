@@ -11,6 +11,7 @@ import {
 } from '../repositories/refresh-token.repository';
 import { getCookie } from '../utils/get-cookie';
 import { hashToken } from '../utils/hash-token';
+import { boundOrganizationStillActive } from '../organization-session';
 import { TokenService } from './token.service';
 
 @Injectable()
@@ -58,9 +59,22 @@ export class RefreshService {
       throw new UnauthorizedException('Organization is suspended');
     }
 
+    const scope = {
+      organizationSelection: storedToken.organizationSelection,
+      organizationId: storedToken.organizationId,
+    };
+
+    if (!boundOrganizationStillActive(scope, user.memberships)) {
+      this.tokenService.clearAuthCookies(res);
+      throw new UnauthorizedException();
+    }
+
     await this.refreshTokenRepository.revokeById(storedToken.id);
 
-    const tokens = await this.tokenService.issueTokenPair(storedToken.userId);
+    const tokens = await this.tokenService.issueTokenPair(
+      storedToken.userId,
+      scope,
+    );
     this.tokenService.setAuthCookies(res, tokens);
 
     return { message: 'Token refreshed' };

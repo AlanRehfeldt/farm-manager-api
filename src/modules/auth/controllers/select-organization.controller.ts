@@ -20,63 +20,58 @@ import { BadRequestDto } from 'src/common/errors/bad-request.dto';
 import { ForbiddenDto } from 'src/common/errors/forbidden.dto';
 import { UnauthorizedDto } from 'src/common/errors/unauthorized.dto';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
-import { passwordSchema } from 'src/common/validation/password-schema';
-import { AllowMustChangePassword } from '../decorators/allow-must-change-password.decorator';
 import { AllowPendingOrganizationSelection } from '../decorators/allow-pending-organization-selection.decorator';
 import {
   AuthenticatedUser,
   CurrentUser,
 } from '../decorators/current-user.decorator';
-import { ChangePasswordBodyDto } from '../dtos/request/change-password.dto';
+import { SelectOrganizationBodyDto } from '../dtos/request/select-organization.dto';
 import { MessageResponseDto } from '../dtos/response/message.dto';
-import { ChangePasswordService } from '../services/change-password.service';
+import { SelectOrganizationService } from '../services/select-organization.service';
 
-const changePasswordBodySchema = z.object({
-  currentPassword: z.string().min(1, { message: 'Password is required.' }),
-  newPassword: passwordSchema,
+const selectOrganizationBodySchema = z.object({
+  organizationId: z.uuid(),
 });
 
 @ApiTags('Auth')
 @Controller('/auth')
-export class ChangePasswordController {
-  constructor(private readonly changePasswordService: ChangePasswordService) {}
+export class SelectOrganizationController {
+  constructor(
+    private readonly selectOrganizationService: SelectOrganizationService,
+  ) {}
 
-  @AllowMustChangePassword()
   @AllowPendingOrganizationSelection()
-  @ApiOperation({ summary: 'Change password (required on first access)' })
+  @ApiOperation({
+    summary: 'Bind the session to one organization after login',
+  })
   @ApiOkResponse({
-    description: 'Password updated; new auth cookies issued',
+    description: 'Issues a new token pair scoped to the organization',
     type: MessageResponseDto,
   })
   @ApiBadRequestResponse({
-    description: 'Validation failed or new password equals current',
+    description: 'Validation failed',
     type: BadRequestDto,
   })
   @ApiUnauthorizedResponse({
-    description: 'Invalid current password',
+    description: 'Unauthorized',
     type: UnauthorizedDto,
   })
   @ApiForbiddenResponse({
-    description: 'Forbidden',
+    description: 'Selection is not pending or the organization is forbidden',
     type: ForbiddenDto,
   })
-  @Post('/change-password')
+  @Post('/select-organization')
   @HttpCode(HttpStatus.OK)
-  async changePassword(
+  async select(
     @CurrentUser() user: AuthenticatedUser,
-    @Body(new ZodValidationPipe(changePasswordBodySchema))
-    data: ChangePasswordBodyDto,
+    @Body(new ZodValidationPipe(selectOrganizationBodySchema))
+    data: SelectOrganizationBodyDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const result = await this.changePasswordService.execute(
-      user.userId,
-      data.currentPassword,
-      data.newPassword,
+    const result = await this.selectOrganizationService.execute(
+      user,
+      data.organizationId,
       res,
-      {
-        organizationSelection: user.organizationSelection,
-        organizationId: user.organizationId,
-      },
     );
 
     return {

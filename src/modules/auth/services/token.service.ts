@@ -21,6 +21,7 @@ import {
   parseDurationToDate,
   parseDurationToMs,
 } from '../utils/parse-duration';
+import { OrganizationSessionScope } from '../organization-session';
 
 export type TokenPair = {
   accessToken: string;
@@ -38,7 +39,10 @@ export class TokenService {
     private readonly userRepository: UserRepository,
   ) {}
 
-  async issueTokenPair(userId: string): Promise<TokenPair> {
+  async issueTokenPair(
+    userId: string,
+    scope: OrganizationSessionScope,
+  ): Promise<TokenPair> {
     const user = await this.userRepository.findById(userId);
 
     if (!user) {
@@ -52,6 +56,8 @@ export class TokenService {
     const accessToken = await this.jwtService.signAsync({
       sub: userId,
       passwordChangedAt: user.passwordChangedAt.getTime(),
+      organizationSelection: scope.organizationSelection,
+      ...(scope.organizationId ? { organizationId: scope.organizationId } : {}),
     });
 
     const refreshToken = generateRefreshToken();
@@ -61,9 +67,19 @@ export class TokenService {
       userId,
       tokenHash,
       expiresAt: parseDurationToDate(refreshExpiresIn),
+      organizationId: scope.organizationId,
+      organizationSelection: scope.organizationSelection,
     });
 
     return { accessToken, refreshToken };
+  }
+
+  async revokeAndIssue(
+    userId: string,
+    scope: OrganizationSessionScope,
+  ): Promise<TokenPair> {
+    await this.refreshTokenRepository.revokeAllByUserId(userId);
+    return this.issueTokenPair(userId, scope);
   }
 
   private getEnv(): Env {

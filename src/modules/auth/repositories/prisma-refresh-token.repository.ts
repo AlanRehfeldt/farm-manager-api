@@ -39,6 +39,8 @@ export class PrismaRefreshTokenRepository implements RefreshTokenRepository {
         userId: true,
         revokedAt: true,
         expiresAt: true,
+        organizationId: true,
+        organizationSelection: true,
       },
     });
   }

@@ -1,4 +1,4 @@
-import { Body, Controller, HttpStatus, Post } from '@nestjs/common';
+import { Body, Controller, HttpStatus, Post, Res } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiCreatedResponse,
@@ -6,10 +6,13 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { OrganizationSelection } from '@prisma/client';
+import type { Response } from 'express';
 import z from 'zod';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
 import { UnauthorizedDto } from 'src/common/errors/unauthorized.dto';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
+import { TokenService } from 'src/modules/auth/services/token.service';
 import {
   AuthenticatedUser,
   CurrentUser,
@@ -30,6 +33,7 @@ const createOrganizationBodySchema = z.object({
 export class CreateOrganizationController {
   constructor(
     private readonly createOrganizationService: CreateOrganizationService,
+    private readonly tokenService: TokenService,
   ) {}
 
   @ApiOperation({ summary: 'Create organization' })
@@ -50,11 +54,18 @@ export class CreateOrganizationController {
     @CurrentUser() user: AuthenticatedUser,
     @Body(new ZodValidationPipe(createOrganizationBodySchema))
     data: CreateOrganizationBodyDto,
+    @Res({ passthrough: true }) res: Response,
   ) {
     const { organization } = await this.createOrganizationService.execute(
       user.userId,
       data.name,
     );
+
+    const tokens = await this.tokenService.revokeAndIssue(user.userId, {
+      organizationSelection: OrganizationSelection.BOUND,
+      organizationId: organization.id,
+    });
+    this.tokenService.setAuthCookies(res, tokens);
 
     return {
       statusCode: HttpStatus.CREATED,

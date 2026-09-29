@@ -12,6 +12,7 @@ import {
   UserRepository,
 } from 'src/modules/user/repositories/user.repository';
 import { UserDto } from 'src/modules/user/dtos/entity/user.entity';
+import { resolveLoginOrganizationScope } from '../organization-session';
 import { TokenService } from './token.service';
 
 @Injectable()
@@ -42,7 +43,10 @@ export class LoginService {
       throw new ForbiddenException('Organization is suspended');
     }
 
-    const tokens = await this.tokenService.issueTokenPair(user.id);
+    const tokens = await this.tokenService.issueTokenPair(
+      user.id,
+      resolveLoginOrganizationScope(user),
+    );
     this.tokenService.setAuthCookies(res, tokens);
 
     const {

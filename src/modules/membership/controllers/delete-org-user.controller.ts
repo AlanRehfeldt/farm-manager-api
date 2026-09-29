@@ -16,6 +16,7 @@ import { ForbiddenDto } from 'src/common/errors/forbidden.dto';
 import { NotFoundDto } from 'src/common/errors/not-found.dto';
 import { UnauthorizedDto } from 'src/common/errors/unauthorized.dto';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
+import { assertSessionOrganization } from 'src/common/tenancy/forbidden-organization';
 import {
   AuthenticatedUser,
   CurrentUser,
@@ -71,6 +72,8 @@ export class DeleteOrgUserController {
     @Query(new ZodValidationPipe(deleteOrgUserQuerySchema))
     query: DeleteOrgUserQueryDto,
   ) {
+    assertSessionOrganization(user, query.organizationId);
+
     await this.deleteOrgUserService.execute(
       user.userId,
       param.userId,

@@ -89,6 +89,7 @@ export class PrismaOrganizationRepository implements OrganizationRepository {
   ): Promise<Organization[]> {
     return this.prisma.organization.findMany({
       where: {
+        id: query.id,
         status: OrganizationStatus.ACTIVE,
         memberships: { some: { userId } },
         name: query.name
@@ -104,6 +105,7 @@ export class PrismaOrganizationRepository implements OrganizationRepository {
   async countForUser(userId: string, query: SearchManyQuery): Promise<number> {
     return this.prisma.organization.count({
       where: {
+        id: query.id,
         status: OrganizationStatus.ACTIVE,
         memberships: { some: { userId } },
         name: query.name

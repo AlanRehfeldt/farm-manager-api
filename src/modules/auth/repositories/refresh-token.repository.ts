@@ -1,7 +1,11 @@
+import { OrganizationSelection } from '@prisma/client';
+
 export type CreateRefreshTokenData = {
   userId: string;
   tokenHash: string;
   expiresAt: Date;
+  organizationId: string | null;
+  organizationSelection: OrganizationSelection;
 };
 
 export type ValidRefreshToken = {
@@ -14,6 +18,8 @@ export type StoredRefreshToken = {
   userId: string;
   revokedAt: Date | null;
   expiresAt: Date;
+  organizationId: string | null;
+  organizationSelection: OrganizationSelection;
 };
 
 export interface RefreshTokenRepository {

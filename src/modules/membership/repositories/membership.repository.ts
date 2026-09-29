@@ -41,6 +41,9 @@ export interface MembershipRepository {
     farmId: string | null,
   ): Promise<Membership | null>;
   findManyByUser(userId: string): Promise<Membership[]>;
+  listActiveOrganizationsByUser(
+    userId: string,
+  ): Promise<Array<{ id: string; name: string }>>;
   findManyByUserAndOrg(
     userId: string,
     organizationId: string,

@@ -3,7 +3,11 @@ jest.mock('./token.service', () => ({
 }));
 
 import { UnauthorizedException } from '@nestjs/common';
-import { OrganizationStatus, PlatformRole } from '@prisma/client';
+import {
+  OrganizationSelection,
+  OrganizationStatus,
+  PlatformRole,
+} from '@prisma/client';
 import { UserRepository } from 'src/modules/user/repositories/user.repository';
 import { RefreshTokenRepository } from '../repositories/refresh-token.repository';
 import { RefreshService } from './refresh.service';
@@ -68,6 +72,8 @@ describe('RefreshService', () => {
       userId: 'user-1',
       revokedAt: new Date('2026-01-01T00:00:00.000Z'),
       expiresAt: new Date('2026-12-31T00:00:00.000Z'),
+      organizationId: null,
+      organizationSelection: OrganizationSelection.EXEMPT,
     });
 
     const req = {
@@ -92,13 +98,13 @@ describe('RefreshService', () => {
       userId: 'user-1',
       revokedAt: null,
       expiresAt: new Date('2026-12-31T00:00:00.000Z'),
+      organizationId: null,
+      organizationSelection: OrganizationSelection.EXEMPT,
     });
     userRepository.findSessionById.mockResolvedValue({
       id: 'user-1',
       platformRole: PlatformRole.NONE,
-      memberships: [
-        { organization: { status: OrganizationStatus.SUSPENDED } },
-      ],
+      memberships: [{ organization: { status: OrganizationStatus.SUSPENDED } }],
     } as never);
 
     const req = {
@@ -109,6 +115,69 @@ describe('RefreshService', () => {
       UnauthorizedException,
     );
 
+    expect(tokenService.clearAuthCookies).toHaveBeenCalledWith(res);
+    expect(tokenService.issueTokenPair).not.toHaveBeenCalled();
+  });
+
+  it('reissues the access token with the organization bound to the refresh token', async () => {
+    refreshTokenRepository.findByHash.mockResolvedValue({
+      id: 'token-1',
+      userId: 'user-1',
+      revokedAt: null,
+      expiresAt: new Date('2026-12-31T00:00:00.000Z'),
+      organizationId: 'org-1',
+      organizationSelection: OrganizationSelection.BOUND,
+    });
+    userRepository.findSessionById.mockResolvedValue({
+      id: 'user-1',
+      platformRole: PlatformRole.NONE,
+      memberships: [
+        {
+          organizationId: 'org-1',
+          organization: { status: OrganizationStatus.ACTIVE },
+        },
+      ],
+    } as never);
+
+    const req = {
+      cookies: { fm_refresh_token: 'live-token' },
+    } as unknown as Parameters<RefreshService['execute']>[0];
+
+    await service.execute(req, res);
+
+    expect(tokenService.issueTokenPair).toHaveBeenCalledWith('user-1', {
+      organizationSelection: OrganizationSelection.BOUND,
+      organizationId: 'org-1',
+    });
+  });
+
+  it('rejects refresh when the bound organization is no longer active', async () => {
+    refreshTokenRepository.findByHash.mockResolvedValue({
+      id: 'token-1',
+      userId: 'user-1',
+      revokedAt: null,
+      expiresAt: new Date('2026-12-31T00:00:00.000Z'),
+      organizationId: 'org-1',
+      organizationSelection: OrganizationSelection.BOUND,
+    });
+    userRepository.findSessionById.mockResolvedValue({
+      id: 'user-1',
+      platformRole: PlatformRole.NONE,
+      memberships: [
+        {
+          organizationId: 'org-2',
+          organization: { status: OrganizationStatus.ACTIVE },
+        },
+      ],
+    } as never);
+
+    const req = {
+      cookies: { fm_refresh_token: 'live-token' },
+    } as unknown as Parameters<RefreshService['execute']>[0];
+
+    await expect(service.execute(req, res)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
     expect(tokenService.clearAuthCookies).toHaveBeenCalledWith(res);
     expect(tokenService.issueTokenPair).not.toHaveBeenCalled();
   });

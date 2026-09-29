@@ -255,6 +255,19 @@ export class PrismaMembershipRepository implements MembershipRepository {
     });
   }
 
+  async listActiveOrganizationsByUser(
+    userId: string,
+  ): Promise<Array<{ id: string; name: string }>> {
+    return this.prisma.organization.findMany({
+      where: {
+        status: OrganizationStatus.ACTIVE,
+        memberships: { some: { userId } },
+      },
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+    });
+  }
+
   async findManyByUserAndOrg(
     userId: string,
     organizationId: string,

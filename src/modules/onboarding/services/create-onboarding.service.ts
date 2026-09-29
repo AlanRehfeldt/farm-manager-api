@@ -41,7 +41,11 @@ export class CreateOnboardingService {
     private readonly userRepository: UserRepository,
   ) {}
 
-  async execute(userId: string, input: CreateOnboardingInput) {
+  async execute(
+    userId: string,
+    input: CreateOnboardingInput,
+    organizationId: string | null,
+  ) {
     const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new NotFoundException('User does not exist');
@@ -53,24 +57,17 @@ export class CreateOnboardingService {
       );
     }
 
-    const memberships = await this.membershipRepository.findManyByUser(userId);
-
-    if (memberships.length === 0) {
+    if (!organizationId) {
       throw new ConflictException(
         'Organization must be provisioned by the platform',
       );
     }
 
-    const organizationIds = [
-      ...new Set(memberships.map((membership) => membership.organizationId)),
-    ];
+    const memberships = (
+      await this.membershipRepository.findManyByUser(userId)
+    ).filter((membership) => membership.organizationId === organizationId);
 
-    if (organizationIds.length !== 1) {
-      throw new ConflictException('User belongs to more than one organization');
-    }
-
-    const organizationId = organizationIds[0];
-    if (!organizationId) {
+    if (memberships.length === 0) {
       throw new ConflictException(
         'Organization must be provisioned by the platform',
       );

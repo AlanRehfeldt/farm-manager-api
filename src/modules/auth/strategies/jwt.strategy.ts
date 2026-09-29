@@ -1,6 +1,7 @@
 import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
+import { OrganizationSelection } from '@prisma/client';
 import { Request } from 'express';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Env } from 'src/env';
@@ -10,11 +11,17 @@ import {
   UserRepository,
 } from 'src/modules/user/repositories/user.repository';
 import { AuthenticatedUser } from '../decorators/current-user.decorator';
+import {
+  boundOrganizationStillActive,
+  OrganizationSessionScope,
+} from '../organization-session';
 import { getCookie } from '../utils/get-cookie';
 
 type JwtPayload = {
   sub: string;
   passwordChangedAt?: number;
+  organizationSelection?: OrganizationSelection;
+  organizationId?: string;
 };
 
 @Injectable()
@@ -55,10 +62,50 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Organization is suspended');
     }
 
+    const scope = this.readOrganizationScope(payload);
+
+    if (!boundOrganizationStillActive(scope, user.memberships)) {
+      throw new UnauthorizedException();
+    }
+
     return {
       userId: user.id,
       mustChangePassword: user.mustChangePassword,
       platformRole: user.platformRole,
+      organizationSelection: scope.organizationSelection,
+      organizationId: scope.organizationId,
+    };
+  }
+
+  private readOrganizationScope(payload: JwtPayload): OrganizationSessionScope {
+    const selection = payload.organizationSelection;
+
+    if (
+      selection !== OrganizationSelection.EXEMPT &&
+      selection !== OrganizationSelection.PENDING &&
+      selection !== OrganizationSelection.BOUND
+    ) {
+      throw new UnauthorizedException();
+    }
+
+    if (selection === OrganizationSelection.BOUND) {
+      if (!payload.organizationId) {
+        throw new UnauthorizedException();
+      }
+
+      return {
+        organizationSelection: selection,
+        organizationId: payload.organizationId,
+      };
+    }
+
+    if (payload.organizationId) {
+      throw new UnauthorizedException();
+    }
+
+    return {
+      organizationSelection: selection,
+      organizationId: null,
     };
   }
 }

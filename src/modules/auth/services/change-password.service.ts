@@ -15,6 +15,7 @@ import {
   REFRESH_TOKEN_REPOSITORY,
   RefreshTokenRepository,
 } from '../repositories/refresh-token.repository';
+import { OrganizationSessionScope } from '../organization-session';
 import { TokenService } from './token.service';
 
 @Injectable()
@@ -32,6 +33,7 @@ export class ChangePasswordService {
     currentPassword: string,
     newPassword: string,
     res: Response,
+    scope: OrganizationSessionScope,
   ): Promise<{ message: string; result: null }> {
     const user = await this.userRepository.findById(userId);
 
@@ -61,7 +63,7 @@ export class ChangePasswordService {
 
     await this.refreshTokenRepository.revokeAllByUserId(userId);
 
-    const tokens = await this.tokenService.issueTokenPair(userId);
+    const tokens = await this.tokenService.issueTokenPair(userId, scope);
     this.tokenService.setAuthCookies(res, tokens);
 
     return {

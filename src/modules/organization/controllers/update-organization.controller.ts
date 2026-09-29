@@ -14,6 +14,7 @@ import { ForbiddenDto } from 'src/common/errors/forbidden.dto';
 import { NotFoundDto } from 'src/common/errors/not-found.dto';
 import { UnauthorizedDto } from 'src/common/errors/unauthorized.dto';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
+import { assertSessionOrganization } from 'src/common/tenancy/forbidden-organization';
 import { optionalNullableBrStateSchema } from 'src/common/validation/br-state';
 import { emptyToNull } from 'src/common/validation/empty-to-null';
 import {
@@ -95,6 +96,8 @@ export class UpdateOrganizationController {
     @Body(new ZodValidationPipe(updateOrganizationBodySchema))
     data: UpdateOrganizationBodyDto,
   ) {
+    assertSessionOrganization(user, param.id);
+
     const { organization } = await this.updateOrganizationService.execute(
       user.userId,
       { id: param.id, ...data },

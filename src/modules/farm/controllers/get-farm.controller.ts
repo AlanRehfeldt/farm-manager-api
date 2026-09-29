@@ -12,6 +12,7 @@ import { BadRequestDto } from 'src/common/errors/bad-request.dto';
 import { NotFoundDto } from 'src/common/errors/not-found.dto';
 import { UnauthorizedDto } from 'src/common/errors/unauthorized.dto';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
+import { boundSessionOrganizationId } from 'src/common/tenancy/forbidden-organization';
 import {
   AuthenticatedUser,
   CurrentUser,
@@ -51,7 +52,11 @@ export class GetFarmController {
     @CurrentUser() user: AuthenticatedUser,
     @Param(new ZodValidationPipe(getFarmParamSchema)) param: GetFarmParamDto,
   ) {
-    const { farm } = await this.getFarmService.execute(param.id, user.userId);
+    const { farm } = await this.getFarmService.execute(
+      param.id,
+      user.userId,
+      boundSessionOrganizationId(user),
+    );
 
     return {
       statusCode: HttpStatus.OK,

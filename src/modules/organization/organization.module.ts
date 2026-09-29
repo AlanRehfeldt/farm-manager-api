@@ -1,5 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { PrismaModule } from 'src/common/prisma/prisma.module';
+import { AuthModule } from '../auth/auth.module';
 import { CostCategoryModule } from '../cost-category/cost-category.module';
 import { MembershipModule } from '../membership/membership.module';
 import { CreateOrganizationController } from './controllers/create-organization.controller';
@@ -17,6 +18,7 @@ import { UpdateOrganizationService } from './services/update-organization.servic
   imports: [
     PrismaModule,
     forwardRef(() => MembershipModule),
+    AuthModule,
     CostCategoryModule,
   ],
   controllers: [

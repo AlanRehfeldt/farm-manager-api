@@ -4,15 +4,26 @@ import {
   ForbiddenException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { OrganizationSelection } from '@prisma/client';
 import { FarmMembershipGuard } from './farm-membership.guard';
 import { PrismaService } from 'src/common/prisma/prisma.service';
+import { FORBIDDEN_ORGANIZATION_CODE } from './forbidden-organization';
 
 function createContext(options: {
   userId?: string;
   farmHeader?: string | string[];
+  organizationSelection?: OrganizationSelection;
+  organizationId?: string | null;
 }): { context: ExecutionContext; request: { farmContext?: unknown } } {
   const request = {
-    user: options.userId ? { userId: options.userId } : undefined,
+    user: options.userId
+      ? {
+          userId: options.userId,
+          organizationSelection:
+            options.organizationSelection ?? OrganizationSelection.EXEMPT,
+          organizationId: options.organizationId ?? null,
+        }
+      : undefined,
     headers: {
       'x-farm-id': options.farmHeader,
     },
@@ -157,6 +168,25 @@ describe('FarmMembershipGuard', () => {
       },
       select: { id: true, role: true },
     });
+  });
+
+  it('returns FORBIDDEN_ORGANIZATION when the farm belongs to another organization', async () => {
+    prisma.farm.findUnique.mockResolvedValue({
+      id: 'farm-b',
+      organizationId: 'org-2',
+      organization: { status: 'ACTIVE' },
+    });
+    const { context } = createContext({
+      userId: 'user-1',
+      farmHeader: 'farm-b',
+      organizationSelection: OrganizationSelection.BOUND,
+      organizationId: 'org-1',
+    });
+
+    await expect(guard.canActivate(context)).rejects.toMatchObject({
+      response: { code: FORBIDDEN_ORGANIZATION_CODE },
+    });
+    expect(prisma.membership.findFirst).not.toHaveBeenCalled();
   });
 
   it('returns 403 when the organization is suspended', async () => {

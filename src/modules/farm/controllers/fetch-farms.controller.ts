@@ -10,6 +10,7 @@ import z from 'zod';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
 import { UnauthorizedDto } from 'src/common/errors/unauthorized.dto';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
+import { scopedOrganizationId } from 'src/common/tenancy/forbidden-organization';
 import {
   AuthenticatedUser,
   CurrentUser,
@@ -53,7 +54,7 @@ export class FetchFarmsController {
   ) {
     return this.fetchFarmsService.execute(user.userId, {
       name: query.name,
-      organizationId: query.organizationId,
+      organizationId: scopedOrganizationId(user, query.organizationId),
       page: query.page ?? 1,
       perPage: query.perPage ?? 10,
       orderBy: query.orderBy ?? 'name',

@@ -16,6 +16,7 @@ import { ForbiddenDto } from 'src/common/errors/forbidden.dto';
 import { NotFoundDto } from 'src/common/errors/not-found.dto';
 import { UnauthorizedDto } from 'src/common/errors/unauthorized.dto';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
+import { boundSessionOrganizationId } from 'src/common/tenancy/forbidden-organization';
 import { optionalNullableBrStateSchema } from 'src/common/validation/br-state';
 import { emptyToNull } from 'src/common/validation/empty-to-null';
 import {
@@ -87,10 +88,14 @@ export class UpdateFarmController {
     param: UpdateFarmParamDto,
     @Body(new ZodValidationPipe(updateFarmBodySchema)) data: UpdateFarmBodyDto,
   ) {
-    const { farm } = await this.updateFarmService.execute(user.userId, {
-      id: param.id,
-      ...data,
-    });
+    const { farm } = await this.updateFarmService.execute(
+      user.userId,
+      {
+        id: param.id,
+        ...data,
+      },
+      boundSessionOrganizationId(user),
+    );
 
     return {
       statusCode: HttpStatus.OK,

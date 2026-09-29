@@ -67,6 +67,7 @@ export class PrismaUserRepository implements UserRepository {
     return {
       memberships: {
         select: {
+          organizationId: true,
           organization: {
             select: { status: true },
           },

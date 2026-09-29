@@ -46,6 +46,7 @@ export interface UpdateOrganizationData {
 }
 
 export interface SearchManyQuery {
+  id?: string;
   name?: string;
   page: number;
   perPage: number;

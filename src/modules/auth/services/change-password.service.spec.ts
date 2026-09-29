@@ -3,7 +3,7 @@ jest.mock('./token.service', () => ({
 }));
 
 import { BadRequestException, UnauthorizedException } from '@nestjs/common';
-import { User } from '@prisma/client';
+import { OrganizationSelection, User } from '@prisma/client';
 import { compare } from 'bcryptjs';
 import { hashPassword } from 'src/common/crypto/bcrypt';
 import { UserRepository } from 'src/modules/user/repositories/user.repository';
@@ -30,6 +30,10 @@ describe('ChangePasswordService', () => {
   >;
 
   const res = {} as Parameters<ChangePasswordService['execute']>[3];
+  const scope = {
+    organizationSelection: OrganizationSelection.PENDING,
+    organizationId: null,
+  };
 
   const user = {
     id: 'user-1',
@@ -68,18 +72,18 @@ describe('ChangePasswordService', () => {
     jest.mocked(compare).mockResolvedValue(true as never);
     jest.mocked(hashPassword).mockResolvedValue('hashed-new');
 
-    await service.execute('user-1', 'TempPass1!', 'NewPass1!', res);
+    await service.execute('user-1', 'TempPass1!', 'NewPass1!', res, scope);
 
     expect(userRepository.update).toHaveBeenCalledWith({
       id: 'user-1',
       password: 'hashed-new',
       mustChangePassword: false,
-      passwordChangedAt: expect.any(Date),
+      passwordChangedAt: expect.any(Date) as Date,
     });
     expect(refreshTokenRepository.revokeAllByUserId).toHaveBeenCalledWith(
       'user-1',
     );
-    expect(tokenService.issueTokenPair).toHaveBeenCalledWith('user-1');
+    expect(tokenService.issueTokenPair).toHaveBeenCalledWith('user-1', scope);
     expect(tokenService.setAuthCookies).toHaveBeenCalledWith(res, {
       accessToken: 'access',
       refreshToken: 'refresh',
@@ -94,7 +98,7 @@ describe('ChangePasswordService', () => {
     jest.mocked(compare).mockResolvedValue(false as never);
 
     await expect(
-      service.execute('user-1', 'WrongPass1!', 'NewPass1!', res),
+      service.execute('user-1', 'WrongPass1!', 'NewPass1!', res, scope),
     ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
@@ -103,7 +107,7 @@ describe('ChangePasswordService', () => {
     jest.mocked(compare).mockResolvedValue(true as never);
 
     await expect(
-      service.execute('user-1', 'TempPass1!', 'TempPass1!', res),
+      service.execute('user-1', 'TempPass1!', 'TempPass1!', res, scope),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 });

@@ -13,14 +13,15 @@
 | `POST` | `/auth/login` | `@Public()` | Email + senha → set cookies |
 | `POST` | `/auth/refresh` | `@Public()` | Refresh cookie → novos cookies |
 | `POST` | `/auth/logout` | `@Public()` | Revoga refresh, limpa cookies |
-| `GET` | `/auth/me` | Protegido (`@AllowMustChangePassword()`) | Usuário atual + memberships + `mustChangePassword` |
-| `POST` | `/auth/change-password` | Protegido (`@AllowMustChangePassword()`) | Senha atual + nova → limpa a flag, atualiza `passwordChangedAt`, revoga refresh e rotaciona cookies (HTTP 200) |
+| `GET` | `/auth/me` | Protegido (`@AllowMustChangePassword()`, sessão `PENDING`) | Usuário atual + memberships + escopo da org + `mustChangePassword` |
+| `POST` | `/auth/change-password` | Protegido (`@AllowMustChangePassword()`, sessão `PENDING`) | Senha atual + nova → limpa a flag, atualiza `passwordChangedAt`, revoga refresh e rotaciona cookies no mesmo escopo (HTTP 200) |
+| `POST` | `/auth/select-organization` | Protegido (sessão `PENDING`; senha já trocada) | Amarra a sessão a uma org ativa e emite novo par de cookies |
 
 ## Tenancy
 
 Rotas de catálogo e lançamentos: `@FarmScoped()` + header `x-farm-id`. Ver [08-tenancy.md](./08-tenancy.md).
 
-`GET /auth/me` devolve `memberships` (`farmId` null = org-wide), `platformRole` e `mustChangePassword`.
+`GET /auth/me` devolve `memberships` (`farmId` null = org-wide), `platformRole`, `mustChangePassword`, `organizationSelection` (`EXEMPT` | `PENDING` | `BOUND`), `organizationId` e `organizationName`. Sessão `PENDING` também devolve `organizations` (`id`, `name`) das orgs ativas. Sessão `BOUND` devolve só as memberships dessa org.
 
 `User.mustChangePassword` nasce `true` em `POST /users` e em `POST /memberships` quando a conta é criada (não quando só se anexa `userId`). Contas via seed/`insertUser` ficam `false`.
 
@@ -28,11 +29,31 @@ Rotas de catálogo e lançamentos: `@FarmScoped()` + header `x-farm-id`. Ver [08
 
 Decisão de produto/arquitetura: **ADR-021** em `farm-manager-docs/04-tecnico/adr/021-session-invalidation.md`.
 
-O access JWT inclui a claim `passwordChangedAt` (epoch ms de `User.passwordChangedAt`). A `JwtStrategy` rejeita com 401 tokens sem a claim ou com claim anterior ao valor atual no banco.
+O access JWT inclui a claim `passwordChangedAt` (epoch ms de `User.passwordChangedAt`) e `organizationSelection` (`organizationId` quando `BOUND`). A `JwtStrategy` rejeita com 401 tokens sem `passwordChangedAt`, com claim anterior ao valor atual, ou sem `organizationSelection`.
 
 `POST /auth/change-password` grava `passwordChangedAt = now()`, revoga todos os refresh tokens e emite cookies novos. Access tokens emitidos antes da troca deixam de ser aceitos imediatamente (não só ao expirar).
 
 `MustChangePasswordGuard` lê `mustChangePassword` do `request.user` populado pela strategy (sem `findById` extra).
+
+## Organização da sessão (PR-25)
+
+O access JWT e a linha em `refresh_tokens` carregam `organizationSelection` e, quando `BOUND`, `organizationId`.
+
+| Seleção | Quando |
+|---------|--------|
+| `EXEMPT` | `PLATFORM_ADMIN`, `PLATFORM_SUPPORT`, ou tenant sem org ativa |
+| `BOUND` | Tenant com exatamente uma org `ACTIVE` (várias memberships na mesma org contam como uma; org suspensa não entra) |
+| `PENDING` | Tenant com duas ou mais orgs `ACTIVE`. O app chama `POST /auth/select-organization` antes de qualquer rota de negócio |
+
+Sessão `PENDING` só passa em `GET /auth/me`, `POST /auth/select-organization`, `POST /auth/change-password`, `POST /auth/logout` e `POST /auth/refresh`. O resto responde 403 (`Organization selection required`).
+
+`POST /auth/select-organization` só aceita sessão `PENDING`, com membership na org e org `ACTIVE`. Revoga os refresh do usuário e emite par `BOUND`. Sessão já `BOUND` ou papel de plataforma responde 403 — trocar de org exige novo login.
+
+Refresh copia o escopo gravado. Se a org `BOUND` deixou de estar ativa para o usuário, o refresh responde 401 e limpa os cookies.
+
+Recurso de outra org responde 403 com `{ message, code: 'FORBIDDEN_ORGANIZATION' }`. O ramo de `SupportAccess` não usa essa claim: suporte continua `EXEMPT`.
+
+A migration revoga os refresh que ainda estavam válidos, para sessão antiga não renovar sem o escopo.
 
 ## Suspensão de organização (PR-20)
 
@@ -84,7 +105,7 @@ import { PlatformAdmin } from 'src/common/platform/platform-admin.decorator';
 
 ## Refresh tokens
 
-- Persistidos hasheados em tabela `refresh_tokens` (`RefreshToken` model).
+- Persistidos hasheados em tabela `refresh_tokens` (`RefreshToken` model), com `organizationId` e `organizationSelection`.
 - `TokenService` emite pares e define cookies com opções de `COOKIE_SECURE` e `COOKIE_SAME_SITE`.
 
 ## Variáveis de ambiente

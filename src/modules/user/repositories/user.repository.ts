@@ -3,6 +3,7 @@ import { CreateUserData, SearchManyQuery, UpdateUserData } from './@types';
 
 export type UserSession = User & {
   memberships: Array<{
+    organizationId: string;
     organization: {
       status: OrganizationStatus;
     };

@@ -57,8 +57,7 @@ export class CreateOnboardingController {
     type: ForbiddenDto,
   })
   @ApiConflictResponse({
-    description:
-      'Organization is missing, already has a farm, or the user belongs to more than one organization',
+    description: 'Organization is missing or already has a farm',
     type: ConflictDto,
   })
   @Post()
@@ -70,6 +69,7 @@ export class CreateOnboardingController {
     const { organization, farm } = await this.createOnboardingService.execute(
       user.userId,
       data,
+      user.organizationId,
     );
 
     return {

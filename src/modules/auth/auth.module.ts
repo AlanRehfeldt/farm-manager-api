@@ -14,15 +14,18 @@ import { RefreshController } from './controllers/refresh.controller';
 import { LogoutController } from './controllers/logout.controller';
 import { MeController } from './controllers/me.controller';
 import { ChangePasswordController } from './controllers/change-password.controller';
+import { SelectOrganizationController } from './controllers/select-organization.controller';
 import { LoginService } from './services/login.service';
 import { RefreshService } from './services/refresh.service';
 import { LogoutService } from './services/logout.service';
 import { MeService } from './services/me.service';
 import { ChangePasswordService } from './services/change-password.service';
+import { SelectOrganizationService } from './services/select-organization.service';
 import { TokenService } from './services/token.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { MustChangePasswordGuard } from './guards/must-change-password.guard';
+import { OrganizationSelectionGuard } from './guards/organization-selection.guard';
 import { REFRESH_TOKEN_REPOSITORY } from './repositories/refresh-token.repository';
 import { PrismaRefreshTokenRepository } from './repositories/prisma-refresh-token.repository';
 
@@ -52,6 +55,7 @@ import { PrismaRefreshTokenRepository } from './repositories/prisma-refresh-toke
     LogoutController,
     MeController,
     ChangePasswordController,
+    SelectOrganizationController,
   ],
   providers: [
     {
@@ -64,6 +68,7 @@ import { PrismaRefreshTokenRepository } from './repositories/prisma-refresh-toke
     LogoutService,
     MeService,
     ChangePasswordService,
+    SelectOrganizationService,
     JwtStrategy,
     AuthRateLimitGuard,
     {
@@ -74,6 +79,11 @@ import { PrismaRefreshTokenRepository } from './repositories/prisma-refresh-toke
       provide: APP_GUARD,
       useClass: MustChangePasswordGuard,
     },
+    {
+      provide: APP_GUARD,
+      useClass: OrganizationSelectionGuard,
+    },
   ],
+  exports: [TokenService],
 })
 export class AuthModule {}

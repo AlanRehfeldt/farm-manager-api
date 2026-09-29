@@ -9,6 +9,7 @@ import {
   MEMBERSHIP_REPOSITORY,
   MembershipRepository,
 } from 'src/modules/membership/repositories/membership.repository';
+import { forbiddenOrganization } from 'src/common/tenancy/forbidden-organization';
 import { UpdateFarmData } from '../repositories/@types';
 import {
   FARM_REPOSITORY,
@@ -24,7 +25,11 @@ export class UpdateFarmService {
     private readonly membershipRepository: MembershipRepository,
   ) {}
 
-  async execute(userId: string, data: UpdateFarmData) {
+  async execute(
+    userId: string,
+    data: UpdateFarmData,
+    sessionOrganizationId: string | null,
+  ) {
     const farm = await this.farmRepository.findAccessibleByUser(
       data.id,
       userId,
@@ -32,6 +37,13 @@ export class UpdateFarmService {
 
     if (!farm) {
       throw new NotFoundException('Farm does not exist');
+    }
+
+    if (
+      sessionOrganizationId &&
+      farm.organizationId !== sessionOrganizationId
+    ) {
+      throw forbiddenOrganization();
     }
 
     const allowed = await this.membershipRepository.hasOrgOperationalAccess(

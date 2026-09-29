@@ -7,10 +7,15 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { OrganizationStatus, Role } from '@prisma/client';
+import {
+  OrganizationSelection,
+  OrganizationStatus,
+  Role,
+} from '@prisma/client';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { AuthenticatedUser } from 'src/modules/auth/decorators/current-user.decorator';
 import { FARM_ID_HEADER, FarmRequestContext } from './constants';
+import { forbiddenOrganization } from './forbidden-organization';
 
 type RequestWithTenancy = Request & {
   user?: AuthenticatedUser;
@@ -50,6 +55,13 @@ export class FarmMembershipGuard implements CanActivate {
 
     if (farm.organization.status !== OrganizationStatus.ACTIVE) {
       throw new ForbiddenException('Organization is suspended');
+    }
+
+    if (
+      request.user?.organizationSelection === OrganizationSelection.BOUND &&
+      request.user.organizationId !== farm.organizationId
+    ) {
+      throw forbiddenOrganization();
     }
 
     const membership = await this.prisma.membership.findFirst({

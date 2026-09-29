@@ -9,6 +9,7 @@ import {
 import { NotFoundDto } from 'src/common/errors/not-found.dto';
 import { UnauthorizedDto } from 'src/common/errors/unauthorized.dto';
 import { AllowMustChangePassword } from '../decorators/allow-must-change-password.decorator';
+import { AllowPendingOrganizationSelection } from '../decorators/allow-pending-organization-selection.decorator';
 import {
   AuthenticatedUser,
   CurrentUser,
@@ -35,9 +36,10 @@ export class MeController {
     type: NotFoundDto,
   })
   @AllowMustChangePassword()
+  @AllowPendingOrganizationSelection()
   @Get('/me')
   async me(@CurrentUser() user: AuthenticatedUser) {
-    const result = await this.meService.execute(user.userId);
+    const result = await this.meService.execute(user);
 
     return {
       statusCode: HttpStatus.OK,

@@ -12,6 +12,7 @@ import { BadRequestDto } from 'src/common/errors/bad-request.dto';
 import { ForbiddenDto } from 'src/common/errors/forbidden.dto';
 import { UnauthorizedDto } from 'src/common/errors/unauthorized.dto';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
+import { assertSessionOrganization } from 'src/common/tenancy/forbidden-organization';
 import {
   AuthenticatedUser,
   CurrentUser,
@@ -61,6 +62,8 @@ export class FetchMembershipsController {
     @Query(new ZodValidationPipe(fetchMembershipsSchema))
     query: FetchMembershipsQueryDto,
   ) {
+    assertSessionOrganization(user, query.organizationId!);
+
     return this.fetchMembershipsService.execute(user.userId, {
       organizationId: query.organizationId!,
       farmId: query.farmId,

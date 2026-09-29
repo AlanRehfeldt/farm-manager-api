@@ -46,7 +46,7 @@ No create de Product/Supplier/Employee, omitir `farmId` = compartilhado; se envi
 
 | Recurso | Auth extra |
 |---------|------------|
-| `POST /onboarding` | ADMIN org-wide de uma org já provisionada e sem fazenda; cria só a primeira fazenda. Sem membership, com fazenda existente ou com mais de uma org → 409 |
+| `POST /onboarding` | ADMIN org-wide da org do token, já provisionada e sem fazenda; cria só a primeira fazenda. Sem org no token, sem membership nessa org ou com fazenda existente → 409 |
 | `POST /organizations` | usuário autenticado sem membership torna-se ADMIN org-wide (não é o fluxo de cliente; o vendor usa `/platform/*`) |
 | `POST /farms` | ADMIN da org (service) |
 | `POST /memberships` | ADMIN org-wide; `farmIds[]` (vazio = org-wide) ou `farmId` legado; `userId` existente **ou** name/email/password; criação de usuário + memberships é atômica |
@@ -110,4 +110,12 @@ Na suspensão, refresh tokens são revogados para membros que não são platform
 
 ## Fora deste recorte
 
-Permissões nomeadas (ADR-013), join table cadastro × N fazendas, `organizationId` no JWT (PR-25), billing (PR-23), reopen de safra fechada (planejado INV-REOPEN). O console vendor (`farm-manager-admin`, PR-19) existe à parte e não usa `x-farm-id`. Impersonation está rejeitada.
+Permissões nomeadas (ADR-013), join table cadastro × N fazendas, billing (PR-23), reopen de safra fechada (planejado INV-REOPEN). O console vendor (`farm-manager-admin`, PR-19) existe à parte e não usa `x-farm-id`. Impersonation está rejeitada.
+
+## Sessão por organização (PR-25)
+
+Tenant com uma org ativa recebe `organizationId` no access JWT e no refresh. Com mais de uma, a sessão fica `PENDING` até `POST /auth/select-organization`. `PLATFORM_ADMIN` e `PLATFORM_SUPPORT` ficam `EXEMPT` (sem `organizationId`).
+
+`FarmMembershipGuard`: sessão `BOUND` cuja fazenda é de outra org responde 403 `{ code: 'FORBIDDEN_ORGANIZATION' }` antes da membership. Concessão de suporte não olha essa claim.
+
+Rotas sem `x-farm-id` (`/farms`, `/organizations/:id`, `/memberships`) recusam org diferente da claim com o mesmo código. Listagem sem filtro, em sessão `BOUND`, fica na org do token. `POST /organizations` (usuário ainda sem membership) reemite o par já `BOUND` na org criada.

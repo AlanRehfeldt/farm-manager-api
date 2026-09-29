@@ -1,7 +1,11 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Env } from 'src/env';
-import { OrganizationStatus, PlatformRole } from '@prisma/client';
+import {
+  OrganizationSelection,
+  OrganizationStatus,
+  PlatformRole,
+} from '@prisma/client';
 import { UserRepository } from 'src/modules/user/repositories/user.repository';
 
 jest.mock('@nestjs/passport', () => ({
@@ -74,12 +78,24 @@ describe('JwtStrategy', () => {
       strategy.validate({
         sub: 'user-1',
         passwordChangedAt: passwordChangedAt.getTime(),
+        organizationSelection: OrganizationSelection.EXEMPT,
       }),
     ).resolves.toEqual({
       userId: 'user-1',
       mustChangePassword: false,
       platformRole: PlatformRole.NONE,
+      organizationSelection: OrganizationSelection.EXEMPT,
+      organizationId: null,
     });
+  });
+
+  it('rejects an access token that has no organization selection', async () => {
+    await expect(
+      strategy.validate({
+        sub: 'user-1',
+        passwordChangedAt: passwordChangedAt.getTime(),
+      }),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
   it('accepts a platform admin even when every membership org is suspended', async () => {
@@ -88,20 +104,21 @@ describe('JwtStrategy', () => {
       passwordChangedAt,
       mustChangePassword: false,
       platformRole: PlatformRole.PLATFORM_ADMIN,
-      memberships: [
-        { organization: { status: OrganizationStatus.SUSPENDED } },
-      ],
+      memberships: [{ organization: { status: OrganizationStatus.SUSPENDED } }],
     } as never);
 
     await expect(
       strategy.validate({
         sub: 'user-1',
         passwordChangedAt: passwordChangedAt.getTime(),
+        organizationSelection: OrganizationSelection.EXEMPT,
       }),
     ).resolves.toEqual({
       userId: 'user-1',
       mustChangePassword: false,
       platformRole: PlatformRole.PLATFORM_ADMIN,
+      organizationSelection: OrganizationSelection.EXEMPT,
+      organizationId: null,
     });
   });
 
@@ -111,9 +128,7 @@ describe('JwtStrategy', () => {
       passwordChangedAt,
       mustChangePassword: false,
       platformRole: PlatformRole.NONE,
-      memberships: [
-        { organization: { status: OrganizationStatus.SUSPENDED } },
-      ],
+      memberships: [{ organization: { status: OrganizationStatus.SUSPENDED } }],
     } as never);
 
     await expect(
@@ -131,8 +146,14 @@ describe('JwtStrategy', () => {
       mustChangePassword: false,
       platformRole: PlatformRole.NONE,
       memberships: [
-        { organization: { status: OrganizationStatus.SUSPENDED } },
-        { organization: { status: OrganizationStatus.ACTIVE } },
+        {
+          organizationId: 'org-suspended',
+          organization: { status: OrganizationStatus.SUSPENDED },
+        },
+        {
+          organizationId: 'org-active',
+          organization: { status: OrganizationStatus.ACTIVE },
+        },
       ],
     } as never);
 
@@ -140,11 +161,43 @@ describe('JwtStrategy', () => {
       strategy.validate({
         sub: 'user-1',
         passwordChangedAt: passwordChangedAt.getTime(),
+        organizationSelection: OrganizationSelection.BOUND,
+        organizationId: 'org-active',
       }),
     ).resolves.toEqual({
       userId: 'user-1',
       mustChangePassword: false,
       platformRole: PlatformRole.NONE,
+      organizationSelection: OrganizationSelection.BOUND,
+      organizationId: 'org-active',
     });
+  });
+
+  it('rejects a bound session whose organization is no longer active', async () => {
+    userRepository.findSessionById.mockResolvedValue({
+      id: 'user-1',
+      passwordChangedAt,
+      mustChangePassword: false,
+      platformRole: PlatformRole.NONE,
+      memberships: [
+        {
+          organizationId: 'org-suspended',
+          organization: { status: OrganizationStatus.SUSPENDED },
+        },
+        {
+          organizationId: 'org-active',
+          organization: { status: OrganizationStatus.ACTIVE },
+        },
+      ],
+    } as never);
+
+    await expect(
+      strategy.validate({
+        sub: 'user-1',
+        passwordChangedAt: passwordChangedAt.getTime(),
+        organizationSelection: OrganizationSelection.BOUND,
+        organizationId: 'org-suspended',
+      }),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 });

@@ -1,5 +1,5 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { PlatformRole } from '@prisma/client';
+import { OrganizationSelection, PlatformRole } from '@prisma/client';
 import {
   MEMBERSHIP_REPOSITORY,
   MembershipRepository,
@@ -12,6 +12,7 @@ import {
   USER_REPOSITORY,
   UserRepository,
 } from 'src/modules/user/repositories/user.repository';
+import { AuthenticatedUser } from '../decorators/current-user.decorator';
 import { MeResultDto } from '../dtos/response/me-result.dto';
 
 @Injectable()
@@ -25,27 +26,57 @@ export class MeService {
     private readonly platformRepository: PlatformRepository,
   ) {}
 
-  async execute(userId: string): Promise<MeResultDto> {
-    const user = await this.userRepository.findById(userId);
+  async execute(actor: AuthenticatedUser): Promise<MeResultDto> {
+    const user = await this.userRepository.findById(actor.userId);
 
     if (!user) {
       throw new NotFoundException('User does not exist');
     }
 
-    const memberships = await this.membershipRepository.findManyByUser(userId);
+    const memberships = await this.membershipRepository.findManyByUser(
+      actor.userId,
+    );
+    const visibleMemberships =
+      actor.organizationSelection === OrganizationSelection.BOUND &&
+      actor.organizationId
+        ? memberships.filter(
+            (membership) => membership.organizationId === actor.organizationId,
+          )
+        : memberships;
+    const activeOrganizations =
+      actor.organizationSelection === OrganizationSelection.PENDING ||
+      actor.organizationSelection === OrganizationSelection.BOUND
+        ? await this.membershipRepository.listActiveOrganizationsByUser(
+            actor.userId,
+          )
+        : [];
     const supportAccesses =
       user.platformRole === PlatformRole.PLATFORM_SUPPORT
-        ? await this.platformRepository.listActiveSupportAccess(userId)
+        ? await this.platformRepository.listActiveSupportAccess(actor.userId)
         : [];
     const { password, passwordChangedAt, ...userWithoutPassword } = user;
     void password;
     void passwordChangedAt;
 
+    const organizationName =
+      actor.organizationSelection === OrganizationSelection.BOUND
+        ? (activeOrganizations.find(
+            (organization) => organization.id === actor.organizationId,
+          )?.name ?? null)
+        : null;
+
     return new MeResultDto({
       ...userWithoutPassword,
       employeeId: userWithoutPassword.employeeId ?? undefined,
-      memberships,
+      memberships: visibleMemberships,
       supportAccesses,
+      organizationSelection: actor.organizationSelection,
+      organizationId: actor.organizationId,
+      organizationName,
+      organizations:
+        actor.organizationSelection === OrganizationSelection.PENDING
+          ? activeOrganizations
+          : [],
     });
   }
 }
