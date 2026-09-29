@@ -136,7 +136,6 @@ export class CreateMembershipService {
             name: input.name,
             email: input.email,
             password: encryptedPassword,
-            role: Role.USER,
             mustChangePassword: true,
           },
           membershipRows,

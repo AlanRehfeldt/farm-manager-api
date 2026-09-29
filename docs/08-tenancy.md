@@ -8,7 +8,7 @@
 - **Farm** — unidade operacional (header `x-farm-id`). Unique `(organizationId, name)`.
 - **Membership** — `ADMIN` | `USER`. `farmId` null = todas as fazendas da org; preenchido = só aquela. Várias linhas pontuais por `(user, org)` (PR-24); **não** misturar org-wide com pontual. Índices únicos parciais no Postgres.
 
-`User.role` permanece (legado). Autorização de fazenda = Membership (`ADMIN` | `USER`). **`User.platformRole`** (`NONE` | `PLATFORM_ADMIN`) é ortogonal ao tenant — ADR-018 em `farm-manager-docs`. ACL nomeada (ADR-013) **não** implementada; mutações sensíveis usam `@FarmAdmin()` (membership `ADMIN` org-wide ou na farm do header).
+Autorização de fazenda = Membership (`ADMIN` | `USER`). A coluna legada `User.role` foi removida (PR-18). **`User.platformRole`** (`NONE` | `PLATFORM_ADMIN`) é ortogonal ao tenant — ADR-018 em `farm-manager-docs`. ACL nomeada (ADR-013) **não** implementada; mutações sensíveis usam `@FarmAdmin()` (membership `ADMIN` org-wide ou na farm do header).
 
 ## Contexto HTTP
 
@@ -46,25 +46,32 @@ No create de Product/Supplier/Employee, omitir `farmId` = compartilhado; se envi
 
 | Recurso | Auth extra |
 |---------|------------|
-| `POST /onboarding` | autenticado sem membership; cria org + primeira farm + ADMIN org-wide |
-| `POST /organizations` | usuário autenticado torna-se ADMIN org-wide |
+| `POST /onboarding` | ADMIN org-wide de uma org já provisionada e sem fazenda; cria só a primeira fazenda. Sem membership, com fazenda existente ou com mais de uma org → 409 |
+| `POST /organizations` | usuário autenticado sem membership torna-se ADMIN org-wide (não é o fluxo de cliente; o vendor usa `/platform/*`) |
 | `POST /farms` | ADMIN da org (service) |
 | `POST /memberships` | ADMIN org-wide; `farmIds[]` (vazio = org-wide) ou `farmId` legado; `userId` existente **ou** name/email/password; criação de usuário + memberships é atômica |
 | `PATCH /memberships/users/:userId` | ADMIN org-wide; nome, e-mail, papel, `farmIds` (replace); perfil + memberships em uma transação |
 | `DELETE /memberships/users/:userId?organizationId=` | ADMIN org-wide; remove todas as memberships do usuário na org; **403** se o ator remove a si mesmo |
 | `GET /memberships` | ADMIN; inclui `user` (id, name, email); **exclui** `platformRole != NONE` |
 | `GET /auth/me` | inclui `memberships` |
-| `POST /users` | `@PlatformAdmin()` — vendor provisiona contas (ADR-018) |
+| `POST /users` | `@PlatformAdmin()` — cria usuário **sem** vínculo de tenant (ADR-018). Cliente novo entra por `POST /platform/organizations` |
 | `GET /users` | `@PlatformAdmin()` |
+| `POST /platform/organizations` | `@PlatformAdmin()` — org + fazenda + ADMIN do cliente (`mustChangePassword`) numa transação; seed de categorias; o vendor não vira membro |
+| `GET /platform/organizations` | `@PlatformAdmin()` — listagem com `farmCount`, `seasonCount`, `entryCount` (transações + atividades + colheitas) e `lastAccessAt` (último refresh token de um membro) |
+| `GET /platform/users` | `@PlatformAdmin()` — usuários com memberships; filtro `organizationId` |
+| `POST /platform/users` | `@PlatformAdmin()` — usuário de cliente já numa org (`farmIds` omitido = org-wide) |
+| `POST /platform/users/:id/reset-password` | `@PlatformAdmin()` — nova senha, `mustChangePassword` e revogação dos refresh |
 | `GET/PUT/DELETE /users/:id` | próprio usuário **ou** `@PlatformAdmin()` (service) |
 
 ## Bootstrap
 
-Fluxo piloto (PR-05.1):
+Fluxo do vendor (PR-18):
 
 1. `npm run seed:platform-admin` — cria vendor (`PLATFORM_ADMIN`) via env
-2. Vendor: `POST /users` (autenticado) → cria conta do cliente
-3. Cliente: login → `POST /onboarding` (org + primeira farm) → home com `GET /farms` e `x-farm-id` em catálogo/transações
+2. Vendor: `POST /platform/organizations` → org + fazenda + ADMIN do cliente (`mustChangePassword`)
+3. Cliente: login → `POST /auth/change-password` → home com `GET /farms` e `x-farm-id` em catálogo/transações
+
+`POST /onboarding` só cria a primeira fazenda quando a org já existe e ainda não tem fazenda. O atalho em que o platform admin abre a organização na SPA não vale mais.
 
 Alternativa para usuários dentro da org: ADMIN usa `POST /memberships` (Configurações → Usuários no app).
 
@@ -84,4 +91,4 @@ Fechamento de safra (PR-13): `PATCH /crop-seasons/:id/close` cria `SeasonCosting
 
 ## Fora deste recorte
 
-Permissões nomeadas (ADR-013), join table cadastro × N fazendas, namespace `/platform/*` (PR-18+), reopen de safra fechada (planejado INV-REOPEN).
+Permissões nomeadas (ADR-013), join table cadastro × N fazendas, console vendor (PR-19), suspensão, auditoria e impersonation (PR-20–PR-26), reopen de safra fechada (planejado INV-REOPEN).

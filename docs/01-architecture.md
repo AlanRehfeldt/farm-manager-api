@@ -49,6 +49,7 @@ Em `src/app.module.ts`:
 | `OrganizationModule` | Tenancy — org |
 | `FarmModule` | Tenancy — fazendas |
 | `MembershipModule` | Tenancy — papéis ADMIN/USER |
+| `PlatformApiModule` | Platform — `/platform/*` (provisionamento cross-tenant, PR-18). O guard `@PlatformAdmin()` continua em `src/common/platform/` |
 | `UserModule` | Identity |
 | `EmployeeModule` | People |
 | `SupplierModule` | Catalog |
@@ -82,8 +83,8 @@ O mapa alvo de contextos e fronteiras está em `farm-manager-docs/04-tecnico/03-
 | Capacidade | No código hoje | Planejado (docs/ADRs) |
 |------------|----------------|-------------------------|
 | Auth JWT cookie | Sim | — |
-| `User.platformRole` + `@PlatformAdmin()` | Sim (PR-05.1) | Namespace `/platform/*`, console vendor (PR-18+) |
-| Role enum em `User` | Sim (legado; authz de fazenda = Membership) | ADR-013 permissions; remoção PR-18 |
+| `User.platformRole` + `@PlatformAdmin()` + `/platform/*` | Sim (PR-05.1, PR-18) | Console vendor (PR-19) |
+| Role enum em `User` | Não (coluna removida no PR-18) | Authz de fazenda = `Membership.role`; ACL nomeada ADR-013 |
 | Tenancy por farm/org | Sim (`@FarmScoped()`, `@FarmId()`, `@OrganizationId()`) | ACL nomeada ADR-013 |
 | Field, Crop, Variety, Machine, CropSeason, CropPlanting | Sim (PR-06) | — |
 | CostEntry ledger | Sim (writers path A + path B; **relatório PR-13**) | ADR-006, ADR-007 |

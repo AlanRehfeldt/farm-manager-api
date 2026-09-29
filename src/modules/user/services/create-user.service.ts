@@ -24,7 +24,7 @@ export class CreateUserService {
     private readonly employeeRepository: EmployeeRepository,
   ) {}
 
-  async execute({ name, email, password, role, employeeId }: CreateUserData) {
+  async execute({ name, email, password, employeeId }: CreateUserData) {
     const checkIfEmailExists = await this.userRepository.findByEmail(email);
     if (checkIfEmailExists) {
       throw new ConflictException('Email already exists');
@@ -44,7 +44,6 @@ export class CreateUserService {
       name,
       email,
       password: encryptedPassword,
-      role,
       employeeId,
       mustChangePassword: true,
     });

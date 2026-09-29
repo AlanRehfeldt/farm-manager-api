@@ -120,7 +120,6 @@ model User {
   name                String
   email               String       @unique
   password            String
-  role                Role         @default(USER)
   platformRole        PlatformRole @default(NONE)
   mustChangePassword  Boolean      @default(false)
   passwordChangedAt    DateTime     @default(now())

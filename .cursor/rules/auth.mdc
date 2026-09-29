@@ -41,7 +41,7 @@ Públicas hoje: `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`.
 
 - `@Roles()` / guards de permissão nomeada (ADR-013)
 - Bearer token como fluxo principal
-- Namespace `/platform/*` (PR-18+)
+- Console vendor (`farm-manager-admin`, PR-19)
 
 Tenancy de fazenda **não** está no JwtAuthGuard. Rotas de catálogo/lançamentos usam `@FarmScoped()` (`x-farm-id`). Ver `docs/08-tenancy.md` e `.cursor/rules/tenancy.mdc`.
 

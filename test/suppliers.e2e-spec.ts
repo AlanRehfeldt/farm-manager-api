@@ -5,7 +5,7 @@ import { Server } from 'node:http';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/common/prisma/prisma.service';
-import { insertUser } from './helpers/insert-user';
+import { provisionOrganization } from './helpers/provision-organization';
 
 type ApiCommandResponse<T> = {
   statusCode: number;
@@ -15,15 +15,6 @@ type ApiCommandResponse<T> = {
 
 function commandResult<T>(res: request.Response): T {
   return (res.body as ApiCommandResponse<T>).result;
-}
-
-function cookieHeader(res: request.Response): string {
-  const setCookie = res.headers['set-cookie'];
-  if (!setCookie) {
-    throw new Error('Missing Set-Cookie header');
-  }
-  const cookies = Array.isArray(setCookie) ? setCookie : [setCookie];
-  return cookies.map((cookie: string) => cookie.split(';')[0]).join('; ');
 }
 
 type SupplierResult = {
@@ -67,28 +58,19 @@ describe('Suppliers (e2e)', () => {
     await app.init();
     server = app.getHttpServer() as Server;
 
-    await insertUser(app.get(PrismaService), {
-      name: 'Supplier Admin',
-      email: adminEmail,
-      password: adminPassword,
-    });
-
-    const loginRes = await request(server)
-      .post('/auth/login')
-      .send({ email: adminEmail, password: adminPassword })
-      .expect(201);
-    adminCookies = cookieHeader(loginRes);
-
-    const onboardingRes = await request(server)
-      .post('/onboarding')
-      .set('Cookie', adminCookies)
-      .send({
+    const provisioned = await provisionOrganization(
+      server,
+      app.get(PrismaService),
+      {
         organizationName: `Supplier Org ${suffix}`,
         farmName: `Sede Sup ${suffix}`,
-      })
-      .expect(201);
-
-    farmId = commandResult<{ farm: { id: string } }>(onboardingRes).farm.id;
+        adminName: 'Supplier Admin',
+        adminEmail,
+        adminPassword,
+      },
+    );
+    adminCookies = provisioned.adminCookies;
+    farmId = provisioned.farmId;
   });
 
   afterAll(async () => {

@@ -17,7 +17,6 @@ const fetchUsersSchema = z.object({
   id: z.uuid().optional(),
   name: z.string().optional(),
   email: z.string().optional(),
-  role: z.enum(['ADMIN', 'USER']).optional(),
   employeeId: z.uuid().optional(),
   page: z.coerce.number().optional().default(1),
   perPage: z.coerce.number().optional().default(10),

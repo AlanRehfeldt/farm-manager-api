@@ -1,5 +1,15 @@
-import { ConflictException, Inject, Injectable } from '@nestjs/common';
-import { SeedCostCategoriesService } from 'src/modules/cost-category/services/seed-cost-categories.service';
+import {
+  ConflictException,
+  ForbiddenException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { Role } from '@prisma/client';
+import {
+  FARM_REPOSITORY,
+  FarmRepository,
+} from 'src/modules/farm/repositories/farm.repository';
 import {
   MEMBERSHIP_REPOSITORY,
   MembershipRepository,
@@ -10,7 +20,6 @@ import {
 } from 'src/modules/organization/repositories/organization.repository';
 
 type CreateOnboardingInput = {
-  organizationName: string;
   farmName: string;
   timezone?: string;
 };
@@ -22,25 +31,68 @@ export class CreateOnboardingService {
     private readonly organizationRepository: OrganizationRepository,
     @Inject(MEMBERSHIP_REPOSITORY)
     private readonly membershipRepository: MembershipRepository,
-    private readonly seedCostCategoriesService: SeedCostCategoriesService,
+    @Inject(FARM_REPOSITORY)
+    private readonly farmRepository: FarmRepository,
   ) {}
 
   async execute(userId: string, input: CreateOnboardingInput) {
     const memberships = await this.membershipRepository.findManyByUser(userId);
 
-    if (memberships.length > 0) {
-      throw new ConflictException('User already belongs to an organization');
+    if (memberships.length === 0) {
+      throw new ConflictException(
+        'Organization must be provisioned by the platform',
+      );
     }
 
-    const { organization, farm } =
-      await this.organizationRepository.createWithOwnerAndFirstFarm({
-        organizationName: input.organizationName,
-        farmName: input.farmName,
-        timezone: input.timezone,
-        ownerUserId: userId,
-      });
+    const organizationIds = [
+      ...new Set(memberships.map((membership) => membership.organizationId)),
+    ];
 
-    await this.seedCostCategoriesService.execute(organization.id);
+    if (organizationIds.length !== 1) {
+      throw new ConflictException('User belongs to more than one organization');
+    }
+
+    const organizationId = organizationIds[0];
+    if (!organizationId) {
+      throw new ConflictException(
+        'Organization must be provisioned by the platform',
+      );
+    }
+
+    const isOrgAdmin = memberships.some(
+      (membership) =>
+        membership.organizationId === organizationId &&
+        membership.role === Role.ADMIN &&
+        membership.farmId === null,
+    );
+
+    if (!isOrgAdmin) {
+      throw new ForbiddenException(
+        'Only organization admins can create the first farm',
+      );
+    }
+
+    const farmCount =
+      await this.farmRepository.countByOrganization(organizationId);
+
+    if (farmCount > 0) {
+      throw new ConflictException('Organization already has a farm');
+    }
+
+    const farm = await this.farmRepository.create({
+      organizationId,
+      name: input.farmName,
+      timezone: input.timezone,
+    });
+
+    const organization = await this.organizationRepository.findByIdForUser(
+      organizationId,
+      userId,
+    );
+
+    if (!organization) {
+      throw new NotFoundException('Organization not found');
+    }
 
     return { organization, farm };
   }

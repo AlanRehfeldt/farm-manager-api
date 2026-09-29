@@ -3,6 +3,7 @@ import {
   ApiBadRequestResponse,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
@@ -10,6 +11,7 @@ import {
 import z from 'zod';
 import { BadRequestDto } from 'src/common/errors/bad-request.dto';
 import { ConflictDto } from 'src/common/errors/conflict.dto';
+import { ForbiddenDto } from 'src/common/errors/forbidden.dto';
 import { UnauthorizedDto } from 'src/common/errors/unauthorized.dto';
 import { ZodValidationPipe } from 'src/common/pipes/zod-validation-pipe';
 import {
@@ -21,14 +23,6 @@ import { CreateOnboardingResponseDto } from '../dtos/response/create-onboarding.
 import { CreateOnboardingService } from '../services/create-onboarding.service';
 
 const createOnboardingBodySchema = z.object({
-  organizationName: z
-    .string()
-    .min(2, {
-      message: 'Organization name must be at least 2 characters long.',
-    })
-    .max(150, {
-      message: 'Organization name must be at most 150 characters long.',
-    }),
   farmName: z
     .string()
     .min(2, { message: 'Farm name must be at least 2 characters long.' })
@@ -43,9 +37,11 @@ export class CreateOnboardingController {
     private readonly createOnboardingService: CreateOnboardingService,
   ) {}
 
-  @ApiOperation({ summary: 'Create organization and first farm in one flow' })
+  @ApiOperation({
+    summary: 'Create the first farm of an already provisioned organization',
+  })
   @ApiCreatedResponse({
-    description: 'Onboarding completed successfully',
+    description: 'First farm created successfully',
     type: CreateOnboardingResponseDto,
   })
   @ApiBadRequestResponse({
@@ -56,8 +52,13 @@ export class CreateOnboardingController {
     description: 'Unauthorized',
     type: UnauthorizedDto,
   })
+  @ApiForbiddenResponse({
+    description: 'Only organization admins can create the first farm',
+    type: ForbiddenDto,
+  })
   @ApiConflictResponse({
-    description: 'User already belongs to an organization',
+    description:
+      'Organization is missing, already has a farm, or the user belongs to more than one organization',
     type: ConflictDto,
   })
   @Post()
@@ -73,7 +74,7 @@ export class CreateOnboardingController {
 
     return {
       statusCode: HttpStatus.CREATED,
-      message: 'Onboarding completed successfully',
+      message: 'First farm created successfully',
       result: { organization, farm },
     };
   }

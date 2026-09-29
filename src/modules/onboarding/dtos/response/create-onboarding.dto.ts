@@ -6,7 +6,7 @@ export class CreateOnboardingResponseDto {
   @ApiProperty({ default: HttpStatus.CREATED })
   statusCode!: number;
 
-  @ApiProperty({ default: 'Onboarding completed successfully' })
+  @ApiProperty({ default: 'First farm created successfully' })
   message!: string;
 
   @ApiProperty({ type: OnboardingResultDto })

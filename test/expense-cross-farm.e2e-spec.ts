@@ -5,7 +5,7 @@ import { Server } from 'node:http';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/common/prisma/prisma.service';
-import { insertUser } from './helpers/insert-user';
+import { provisionOrganization } from './helpers/provision-organization';
 
 type ApiCommandResponse<T> = {
   statusCode: number;
@@ -24,15 +24,6 @@ function commandResult<T>(res: request.Response): T {
 
 function listResults<T>(res: request.Response): T[] {
   return (res.body as ApiListResponse<T>).results;
-}
-
-function cookieHeader(res: request.Response): string {
-  const setCookie = res.headers['set-cookie'];
-  if (!setCookie) {
-    throw new Error('Missing Set-Cookie header');
-  }
-  const cookies = Array.isArray(setCookie) ? setCookie : [setCookie];
-  return cookies.map((cookie: string) => cookie.split(';')[0]).join('; ');
 }
 
 /**
@@ -70,33 +61,16 @@ describe('Expense cross-farm allocation (e2e)', () => {
     server = app.getHttpServer() as Server;
     prisma = app.get(PrismaService);
 
-    await insertUser(prisma, {
-      name: 'Cross Farm Admin',
-      email: adminEmail,
-      password: adminPassword,
+    const provisioned = await provisionOrganization(server, prisma, {
+      organizationName: `Cross Farm Org ${suffix}`,
+      farmName: `Fazenda A ${suffix}`,
+      adminName: 'Cross Farm Admin',
+      adminEmail,
+      adminPassword,
     });
-
-    const loginRes = await request(server)
-      .post('/auth/login')
-      .send({ email: adminEmail, password: adminPassword })
-      .expect(201);
-    adminCookies = cookieHeader(loginRes);
-
-    const onboardingRes = await request(server)
-      .post('/onboarding')
-      .set('Cookie', adminCookies)
-      .send({
-        organizationName: `Cross Farm Org ${suffix}`,
-        farmName: `Fazenda A ${suffix}`,
-      })
-      .expect(201);
-
-    const onboarded = commandResult<{
-      organization: { id: string };
-      farm: { id: string };
-    }>(onboardingRes);
-    organizationId = onboarded.organization.id;
-    farmAId = onboarded.farm.id;
+    adminCookies = provisioned.adminCookies;
+    organizationId = provisioned.organizationId;
+    farmAId = provisioned.farmId;
 
     const farmBRes = await request(server)
       .post('/farms')

@@ -63,6 +63,10 @@ export class PrismaFarmRepository implements FarmRepository {
     });
   }
 
+  async countByOrganization(organizationId: string): Promise<number> {
+    return this.prisma.farm.count({ where: { organizationId } });
+  }
+
   private accessibleWhere(userId: string): Prisma.FarmWhereInput[] {
     return [
       {

@@ -58,7 +58,6 @@ export class PrismaUserRepository implements UserRepository {
     return await this.prisma.user.findMany({
       where: {
         id: query.id,
-        role: query.role,
         employeeId: query.employeeId,
         name: {
           contains: query.name,
@@ -81,7 +80,6 @@ export class PrismaUserRepository implements UserRepository {
     return await this.prisma.user.count({
       where: {
         id: query.id,
-        role: query.role,
         employeeId: query.employeeId,
         name: {
           contains: query.name,

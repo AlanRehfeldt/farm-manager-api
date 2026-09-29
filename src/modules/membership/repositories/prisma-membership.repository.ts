@@ -90,7 +90,6 @@ export class PrismaMembershipRepository implements MembershipRepository {
           name: user.name,
           email: user.email,
           password: user.password,
-          role: user.role,
           mustChangePassword: user.mustChangePassword,
         },
       });

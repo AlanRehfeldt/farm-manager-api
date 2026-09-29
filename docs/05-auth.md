@@ -52,9 +52,11 @@ O access JWT inclui a claim `passwordChangedAt` (epoch ms de `User.passwordChang
 
 ## Platform admin
 
-Decorator `@PlatformAdmin()` em `src/common/platform/` — guard lê `User.platformRole` no banco. Usado em `POST /users` e `GET /users`. Rotas `GET/PUT/DELETE /users/:id` checam próprio usuário ou platform admin no service.
+Decorator `@PlatformAdmin()` em `src/common/platform/` — guard lê `User.platformRole` no banco. Usado em `POST /users`, `GET /users` e em todo o namespace `/platform/*` (`PlatformApiModule`). Rotas `GET/PUT/DELETE /users/:id` checam próprio usuário ou platform admin no service.
 
-Bootstrap do vendor: `npm run seed:platform-admin` (env `PLATFORM_ADMIN_*`). Ver [06-persistence.md](./06-persistence.md).
+`/platform/*` não usa `x-farm-id`. O vendor provisiona org + fazenda + ADMIN do cliente em `POST /platform/organizations` e **não** recebe `Membership`. Reset de senha (`POST /platform/users/:id/reset-password`) atualiza `passwordChangedAt` e revoga os refresh daquele usuário.
+
+Bootstrap do vendor: `npm run seed:platform-admin` (env `PLATFORM_ADMIN_*`). Ver [06-persistence.md](./06-persistence.md) e [08-tenancy.md](./08-tenancy.md).
 
 ## Decorators
 
@@ -103,7 +105,7 @@ Requisições cross-origin precisam de `credentials: 'include'` (ou equivalente)
 | Guards de role (`ADMIN` vs `USER`) em rotas de catálogo | ADR-013; hoje ADMIN é checado no service de org/farm/membership |
 | ACL nomeada | ADR-013 |
 | Bearer como fluxo principal | Não — cookies são o padrão atual |
-| Namespace `/platform/*` e console vendor | PR-18+ |
+| Console vendor (`farm-manager-admin`) | PR-19 |
 
 Não documentar Bearer no OpenAPI como mecanismo principal sem mudança de arquitetura.
 
@@ -112,5 +114,6 @@ Não documentar Bearer no OpenAPI como mecanismo principal sem mudança de arqui
 - [08-tenancy.md](./08-tenancy.md)
 - `src/modules/auth/`
 - `src/common/platform/`
+- `src/modules/platform/`
 - [03-http.md](./03-http.md)
 - `farm-manager-docs/03-modulos/04-implementation-roadmap.md` (PR-02 auth, PR-05.1 platform)

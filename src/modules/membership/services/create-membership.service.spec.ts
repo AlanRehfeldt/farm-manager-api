@@ -90,7 +90,6 @@ describe('CreateMembershipService', () => {
         name: 'New Operator',
         email: 'new@example.com',
         password: 'hashed-password',
-        role: Role.USER,
         mustChangePassword: true,
       },
       [

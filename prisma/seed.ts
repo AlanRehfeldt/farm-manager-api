@@ -1,5 +1,5 @@
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PlatformRole, PrismaClient, Role } from '@prisma/client';
+import { PlatformRole, PrismaClient } from '@prisma/client';
 import { hashPassword } from '../src/common/crypto/bcrypt';
 import { COST_CATEGORY_SEED } from '../src/modules/cost-category/constants/cost-category-seed';
 
@@ -78,7 +78,6 @@ async function seedPlatformAdminIfConfigured() {
       name,
       email,
       password: encryptedPassword,
-      role: Role.USER,
       platformRole: PlatformRole.PLATFORM_ADMIN,
     },
     update: {

@@ -341,7 +341,6 @@ describe('Org users (e2e)', () => {
           name: 'Orphan Create User',
           email: orphanEmail,
           password: 'hashed-password',
-          role: Role.USER,
           mustChangePassword: true,
         },
         [

@@ -119,6 +119,7 @@ describe('CreateExpenseService', () => {
     findAccessibleByUser,
     searchAccessibleByUser: jest.fn(),
     countAccessibleByUser: jest.fn(),
+    countByOrganization: jest.fn(),
   };
 
   const service = new CreateExpenseService(

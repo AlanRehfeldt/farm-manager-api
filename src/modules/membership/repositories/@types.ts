@@ -11,7 +11,6 @@ export type CreateUserWithMembershipsData = {
   name: string;
   email: string;
   password: string;
-  role: Role;
   mustChangePassword: boolean;
 };
 

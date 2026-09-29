@@ -10,7 +10,7 @@ import {
   CostingRepository,
 } from '../src/modules/costing/repositories/costing.repository';
 import { changePassword } from './helpers/change-password';
-import { insertUser } from './helpers/insert-user';
+import { provisionOrganization } from './helpers/provision-organization';
 
 type ApiCommandResponse<T> = {
   statusCode: number;
@@ -77,33 +77,16 @@ describe('Labor month closing (e2e)', () => {
     server = app.getHttpServer() as Server;
     prisma = app.get(PrismaService);
 
-    await insertUser(prisma, {
-      name: 'Labor Org Admin',
-      email: orgAdminEmail,
-      password: orgAdminPassword,
+    const provisioned = await provisionOrganization(server, prisma, {
+      organizationName: `Labor Org ${suffix}`,
+      farmName: `Fazenda ${suffix}`,
+      adminName: 'Labor Org Admin',
+      adminEmail: orgAdminEmail,
+      adminPassword: orgAdminPassword,
     });
-
-    const loginOrg = await request(server)
-      .post('/auth/login')
-      .send({ email: orgAdminEmail, password: orgAdminPassword })
-      .expect(201);
-    orgAdminCookies = cookieHeader(loginOrg);
-
-    const onboardingRes = await request(server)
-      .post('/onboarding')
-      .set('Cookie', orgAdminCookies)
-      .send({
-        organizationName: `Labor Org ${suffix}`,
-        farmName: `Fazenda ${suffix}`,
-      })
-      .expect(201);
-
-    const onboarded = commandResult<{
-      organization: { id: string };
-      farm: { id: string };
-    }>(onboardingRes);
-    organizationId = onboarded.organization.id;
-    farmId = onboarded.farm.id;
+    orgAdminCookies = provisioned.adminCookies;
+    organizationId = provisioned.organizationId;
+    farmId = provisioned.farmId;
 
     const farmAdminRes = await request(server)
       .post('/memberships')

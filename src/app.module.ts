@@ -19,6 +19,7 @@ import { OrganizationModule } from './modules/organization/organization.module';
 import { FarmModule } from './modules/farm/farm.module';
 import { MembershipModule } from './modules/membership/membership.module';
 import { OnboardingModule } from './modules/onboarding/onboarding.module';
+import { PlatformApiModule } from './modules/platform/platform.module';
 import { FieldModule } from './modules/field/field.module';
 import { CropModule } from './modules/crop/crop.module';
 import { MachineModule } from './modules/machine/machine.module';
@@ -48,6 +49,7 @@ import { IdempotencyModule } from './common/idempotency/idempotency.module';
     FarmModule,
     MembershipModule,
     OnboardingModule,
+    PlatformApiModule,
     UserModule,
     EmployeeModule,
     SupplierModule,

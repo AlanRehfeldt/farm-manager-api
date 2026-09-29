@@ -28,7 +28,6 @@ const createUserBodySchema = z.object({
     .min(10, { message: 'Email must be at least 10 characters long.' })
     .max(100, { message: 'Email must be at most 100 characters long.' }),
   password: passwordSchema,
-  role: z.enum(['ADMIN', 'USER']).optional(),
   employeeId: z.uuid({ message: 'Invalid UUID for employeeId.' }).optional(),
 });
 

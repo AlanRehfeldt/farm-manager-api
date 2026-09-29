@@ -18,6 +18,7 @@ export interface FarmRepository {
     userId: string,
     query: SearchManyQuery,
   ): Promise<number>;
+  countByOrganization(organizationId: string): Promise<number>;
 }
 
 export const FARM_REPOSITORY = 'FARM_REPOSITORY';
