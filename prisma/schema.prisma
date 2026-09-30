@@ -105,6 +105,10 @@ model Farm {
   @@map("farms")
 }
 
+/// Membership org-wide (`farmId` nulo) e por fazenda usam índices parciais
+/// `memberships_user_org_wide_unique` e `memberships_user_org_farm_unique`
+/// em `prisma/migrations/20260903190000_membership_partial_uniques/migration.sql`.
+/// O Prisma não recria índice parcial com `@@unique`.
 model Membership {
   id             String   @id @default(uuid())
   userId         String
@@ -148,6 +152,10 @@ model User {
   @@map("users")
 }
 
+/// Concessão ativa (`revokedAt` nulo) é única por usuário e organização no índice
+/// parcial `support_accesses_active_user_org_unique`, em
+/// `prisma/migrations/20260929180000_support_access_and_audit_log/migration.sql`.
+/// O Prisma não recria esse índice com `@@unique`.
 model SupportAccess {
   id              String    @id @default(uuid())
   userId          String

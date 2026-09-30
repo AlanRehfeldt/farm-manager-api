@@ -73,6 +73,14 @@ npx prisma generate
 
 Migrations em `prisma/migrations/`. Não editar migrations já aplicadas — criar nova migration.
 
+## Índices parciais
+
+O Prisma não expressa `WHERE` em `@@unique`. Estes três índices existem só no SQL da migration; um `prisma migrate diff` a partir do schema não os recria. Não substituir por `@@unique`.
+
+- `support_accesses_active_user_org_unique` em `support_accesses` (`userId`, `organizationId`) onde `revokedAt` é nulo — `prisma/migrations/20260929180000_support_access_and_audit_log/migration.sql`. `GrantSupportAccessService` mapeia o `P2002` desse índice para 409. Sem ele, conceder duas vezes cria duas linhas ativas e revogar uma não encerra a outra.
+- `memberships_user_org_wide_unique` em `memberships` (`userId`, `organizationId`) onde `farmId` é nulo — `prisma/migrations/20260903190000_membership_partial_uniques/migration.sql`.
+- `memberships_user_org_farm_unique` em `memberships` (`userId`, `organizationId`, `farmId`) onde `farmId` não é nulo — a mesma migration. Postgres trata nulos como distintos em `UNIQUE`, então o vínculo org-wide precisa do índice próprio.
+
 ## Transações
 
 `prisma.$transaction()` é usado em create de Organization (org + membership ADMIN). Para use cases que alteram múltiplas tabelas e exigem atomicidade, usar transação no repository ou service que orquestra:
