@@ -2,11 +2,6 @@ import { CostCategory } from '@prisma/client';
 import { SearchManyQuery } from './@types';
 
 export interface CostCategoryRepository {
-  upsertSeed(
-    organizationId: string,
-    code: string,
-    name: string,
-  ): Promise<CostCategory>;
   findByCode(
     organizationId: string,
     code: string,

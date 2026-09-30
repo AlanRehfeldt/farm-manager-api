@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from 'src/common/prisma/prisma.module';
-import { CostCategoryModule } from '../cost-category/cost-category.module';
 import { FarmModule } from '../farm/farm.module';
 import { MembershipModule } from '../membership/membership.module';
 import { UserModule } from '../user/user.module';
@@ -34,13 +33,7 @@ import { ResetPlatformUserPasswordService } from './services/reset-platform-user
 import { UpdatePlatformOrganizationStatusService } from './services/update-platform-organization-status.service';
 
 @Module({
-  imports: [
-    PrismaModule,
-    CostCategoryModule,
-    FarmModule,
-    MembershipModule,
-    UserModule,
-  ],
+  imports: [PrismaModule, FarmModule, MembershipModule, UserModule],
   controllers: [
     CreatePlatformOrganizationController,
     FetchPlatformOrganizationsController,

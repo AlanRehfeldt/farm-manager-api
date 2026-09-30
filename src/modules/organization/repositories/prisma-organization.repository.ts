@@ -1,66 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { Organization, OrganizationStatus, Role } from '@prisma/client';
+import { Organization, OrganizationStatus } from '@prisma/client';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { OrganizationRepository } from './organization.repository';
-import {
-  CreateOrganizationData,
-  CreateOrganizationWithFirstFarmData,
-  OrganizationWithFirstFarmResult,
-  SearchManyQuery,
-  UpdateOrganizationData,
-} from './@types';
+import { SearchManyQuery, UpdateOrganizationData } from './@types';
 
 @Injectable()
 export class PrismaOrganizationRepository implements OrganizationRepository {
   constructor(private readonly prisma: PrismaService) {}
-
-  async createWithOwner(data: CreateOrganizationData): Promise<Organization> {
-    return this.prisma.$transaction(async (tx) => {
-      const organization = await tx.organization.create({
-        data: { name: data.name },
-      });
-
-      await tx.membership.create({
-        data: {
-          userId: data.ownerUserId,
-          organizationId: organization.id,
-          farmId: null,
-          role: Role.ADMIN,
-        },
-      });
-
-      return organization;
-    });
-  }
-
-  async createWithOwnerAndFirstFarm(
-    data: CreateOrganizationWithFirstFarmData,
-  ): Promise<OrganizationWithFirstFarmResult> {
-    return this.prisma.$transaction(async (tx) => {
-      const organization = await tx.organization.create({
-        data: { name: data.organizationName },
-      });
-
-      await tx.membership.create({
-        data: {
-          userId: data.ownerUserId,
-          organizationId: organization.id,
-          farmId: null,
-          role: Role.ADMIN,
-        },
-      });
-
-      const farm = await tx.farm.create({
-        data: {
-          organizationId: organization.id,
-          name: data.farmName,
-          timezone: data.timezone,
-        },
-      });
-
-      return { organization, farm };
-    });
-  }
 
   async update(data: UpdateOrganizationData): Promise<Organization> {
     const { id, ...fields } = data;

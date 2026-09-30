@@ -7,7 +7,7 @@ import { Prisma } from '@prisma/client';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/common/prisma/prisma.service';
 import { changePassword } from './helpers/change-password';
-import { insertUser } from './helpers/insert-user';
+import { provisionOrganization } from './helpers/provision-organization';
 
 type ApiCommandResponse<T> = {
   statusCode: number;
@@ -52,7 +52,6 @@ describe('Tenancy (e2e)', () => {
 
   let adminCookies: string;
   let norteCookies: string;
-  let outsiderCookies: string;
   let organizationId: string;
   let sedeId: string;
   let norteId: string;
@@ -74,31 +73,16 @@ describe('Tenancy (e2e)', () => {
     server = app.getHttpServer() as Server;
     prisma = app.get(PrismaService);
 
-    await insertUser(prisma, {
-      name: 'Admin Rehfeldt',
-      email: adminEmail,
-      password: adminPassword,
+    const admin = await provisionOrganization(server, prisma, {
+      organizationName: `Rehfeldt ${suffix}`,
+      farmName: `Sede ${suffix}`,
+      adminName: 'Admin Rehfeldt',
+      adminEmail,
+      adminPassword,
     });
-
-    const loginAdmin = await request(server)
-      .post('/auth/login')
-      .send({ email: adminEmail, password: adminPassword })
-      .expect(201);
-    adminCookies = cookieHeader(loginAdmin);
-
-    const orgRes = await request(server)
-      .post('/organizations')
-      .set('Cookie', adminCookies)
-      .send({ name: `Rehfeldt ${suffix}` })
-      .expect(201);
-    organizationId = commandResult<{ id: string }>(orgRes).id;
-
-    const sedeRes = await request(server)
-      .post('/farms')
-      .set('Cookie', adminCookies)
-      .send({ organizationId, name: `Sede ${suffix}` })
-      .expect(201);
-    sedeId = commandResult<{ id: string }>(sedeRes).id;
+    adminCookies = admin.adminCookies;
+    organizationId = admin.organizationId;
+    sedeId = admin.farmId;
 
     const norteRes = await request(server)
       .post('/farms')
@@ -131,33 +115,14 @@ describe('Tenancy (e2e)', () => {
       'NorteOp2!x',
     );
 
-    await insertUser(prisma, {
-      name: 'Outra Org User',
-      email: outsiderEmail,
-      password: outsiderPassword,
+    const outsider = await provisionOrganization(server, prisma, {
+      organizationName: `Outra Org ${suffix}`,
+      farmName: `Fazenda B ${suffix}`,
+      adminName: 'Outra Org User',
+      adminEmail: outsiderEmail,
+      adminPassword: outsiderPassword,
     });
-
-    const loginOutsider = await request(server)
-      .post('/auth/login')
-      .send({ email: outsiderEmail, password: outsiderPassword })
-      .expect(201);
-    outsiderCookies = cookieHeader(loginOutsider);
-
-    const otherOrg = await request(server)
-      .post('/organizations')
-      .set('Cookie', outsiderCookies)
-      .send({ name: `Outra Org ${suffix}` })
-      .expect(201);
-
-    const otherFarm = await request(server)
-      .post('/farms')
-      .set('Cookie', outsiderCookies)
-      .send({
-        organizationId: commandResult<{ id: string }>(otherOrg).id,
-        name: `Fazenda B ${suffix}`,
-      })
-      .expect(201);
-    otherFarmId = commandResult<{ id: string }>(otherFarm).id;
+    otherFarmId = outsider.farmId;
   }, 60000);
 
   afterAll(async () => {

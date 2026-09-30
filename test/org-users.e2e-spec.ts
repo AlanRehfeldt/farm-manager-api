@@ -12,6 +12,7 @@ import {
 } from '../src/modules/membership/repositories/membership.repository';
 import { changePassword } from './helpers/change-password';
 import { insertUser } from './helpers/insert-user';
+import { provisionOrganization } from './helpers/provision-organization';
 
 type ApiCommandResponse<T> = {
   statusCode: number;
@@ -72,31 +73,16 @@ describe('Org users (e2e)', () => {
     server = app.getHttpServer() as Server;
     prisma = app.get(PrismaService);
 
-    await insertUser(prisma, {
-      name: 'Org Users Admin',
-      email: adminEmail,
-      password: adminPassword,
+    const admin = await provisionOrganization(server, prisma, {
+      organizationName: `Org Users ${suffix}`,
+      farmName: `A ${suffix}`,
+      adminName: 'Org Users Admin',
+      adminEmail,
+      adminPassword,
     });
-
-    const loginAdmin = await request(server)
-      .post('/auth/login')
-      .send({ email: adminEmail, password: adminPassword })
-      .expect(201);
-    adminCookies = cookieHeader(loginAdmin);
-
-    const orgRes = await request(server)
-      .post('/organizations')
-      .set('Cookie', adminCookies)
-      .send({ name: `Org Users ${suffix}` })
-      .expect(201);
-    organizationId = commandResult<{ id: string }>(orgRes).id;
-
-    const farmA = await request(server)
-      .post('/farms')
-      .set('Cookie', adminCookies)
-      .send({ organizationId, name: `A ${suffix}` })
-      .expect(201);
-    farmAId = commandResult<{ id: string }>(farmA).id;
+    adminCookies = admin.adminCookies;
+    organizationId = admin.organizationId;
+    farmAId = admin.farmId;
 
     const farmB = await request(server)
       .post('/farms')

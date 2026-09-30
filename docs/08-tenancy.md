@@ -47,7 +47,6 @@ No create de Product/Supplier/Employee, omitir `farmId` = compartilhado; se envi
 | Recurso | Auth extra |
 |---------|------------|
 | `POST /onboarding` | ADMIN org-wide da org do token, já provisionada e sem fazenda; cria só a primeira fazenda. Sem org no token, sem membership nessa org ou com fazenda existente → 409 |
-| `POST /organizations` | usuário autenticado sem membership torna-se ADMIN org-wide (não é o fluxo de cliente; o vendor usa `/platform/*`) |
 | `POST /farms` | ADMIN da org (service) |
 | `POST /memberships` | ADMIN org-wide; `farmIds[]` (vazio = org-wide) ou `farmId` legado; `userId` existente **ou** name/email/password; criação de usuário + memberships é atômica |
 | `PATCH /memberships/users/:userId` | ADMIN org-wide; nome, e-mail, papel, `farmIds` (replace); perfil + memberships em uma transação |
@@ -56,7 +55,7 @@ No create de Product/Supplier/Employee, omitir `farmId` = compartilhado; se envi
 | `GET /auth/me` | inclui `memberships` |
 | `POST /users` | `@PlatformAdmin()` — cria usuário **sem** vínculo de tenant (ADR-018). Cliente novo entra por `POST /platform/organizations` |
 | `GET /users` | `@PlatformAdmin()` |
-| `POST /platform/organizations` | `@PlatformAdmin()` — org + fazenda + ADMIN do cliente (`mustChangePassword`) numa transação; seed de categorias; o vendor não vira membro |
+| `POST /platform/organizations` | `@PlatformAdmin()` — org + fazenda + ADMIN do cliente (`mustChangePassword`) e seed de categorias na mesma transação; o vendor não vira membro |
 | `GET /platform/organizations` | `@PlatformAdmin()` — listagem com `status`, `farmCount`, `seasonCount`, `entryCount` (transações + atividades + colheitas) e `lastAccessAt` (último refresh token de um membro) |
 | `PATCH /platform/organizations/:organizationId/status` | `@PlatformAdmin()` — `ACTIVE` ou `SUSPENDED`; idempotente; suspensão revoga refresh de membros sem outra org ativa |
 | `GET /platform/users` | `@PlatformAdmin()` — usuários com memberships; filtro `organizationId` |
@@ -118,4 +117,4 @@ Tenant com uma org ativa recebe `organizationId` no access JWT e no refresh. Com
 
 `FarmMembershipGuard`: sessão `BOUND` cuja fazenda é de outra org responde 403 `{ code: 'FORBIDDEN_ORGANIZATION' }` antes da membership. Concessão de suporte não olha essa claim.
 
-Rotas sem `x-farm-id` (`/farms`, `/organizations/:id`, `/memberships`) recusam org diferente da claim com o mesmo código. Listagem sem filtro, em sessão `BOUND`, fica na org do token. `POST /organizations` (usuário ainda sem membership) reemite o par já `BOUND` na org criada.
+Rotas sem `x-farm-id` (`/farms`, `/organizations/:id`, `/memberships`) recusam org diferente da claim com o mesmo código. Listagem sem filtro, em sessão `BOUND`, fica na org do token.

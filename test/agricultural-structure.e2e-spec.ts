@@ -6,6 +6,7 @@ import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/common/prisma/prisma.service';
 import { insertUser } from './helpers/insert-user';
+import { provisionOrganization } from './helpers/provision-organization';
 
 type ApiCommandResponse<T> = {
   statusCode: number;
@@ -69,11 +70,16 @@ describe('Agricultural structure (e2e)', () => {
     server = app.getHttpServer() as Server;
     prisma = app.get(PrismaService);
 
-    await insertUser(prisma, {
-      name: 'Agri Admin',
-      email: adminEmail,
-      password: adminPassword,
+    const admin = await provisionOrganization(server, prisma, {
+      organizationName: `Agri Org ${suffix}`,
+      farmName: `Sede ${suffix}`,
+      adminName: 'Agri Admin',
+      adminEmail,
+      adminPassword,
     });
+    adminCookies = admin.adminCookies;
+    organizationId = admin.organizationId;
+    farmId = admin.farmId;
 
     await insertUser(prisma, {
       name: 'Agri Outsider',
@@ -81,31 +87,11 @@ describe('Agricultural structure (e2e)', () => {
       password: outsiderPassword,
     });
 
-    const loginAdmin = await request(server)
-      .post('/auth/login')
-      .send({ email: adminEmail, password: adminPassword })
-      .expect(201);
-    adminCookies = cookieHeader(loginAdmin);
-
     const loginOutsider = await request(server)
       .post('/auth/login')
       .send({ email: outsiderEmail, password: outsiderPassword })
       .expect(201);
     outsiderCookies = cookieHeader(loginOutsider);
-
-    const orgRes = await request(server)
-      .post('/organizations')
-      .set('Cookie', adminCookies)
-      .send({ name: `Agri Org ${suffix}` })
-      .expect(201);
-    organizationId = commandResult<{ id: string }>(orgRes).id;
-
-    const farmRes = await request(server)
-      .post('/farms')
-      .set('Cookie', adminCookies)
-      .send({ organizationId, name: `Sede ${suffix}` })
-      .expect(201);
-    farmId = commandResult<{ id: string }>(farmRes).id;
 
     const otherFarmRes = await request(server)
       .post('/farms')
@@ -172,7 +158,7 @@ describe('Agricultural structure (e2e)', () => {
       })
       .expect(201);
     seasonId = commandResult<{ id: string; status: string }>(seasonRes).id;
-  });
+  }, 60000);
 
   afterAll(async () => {
     await app.close();

@@ -8,29 +8,6 @@ import { CostCategoryRepository } from './cost-category.repository';
 export class PrismaCostCategoryRepository implements CostCategoryRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async upsertSeed(
-    organizationId: string,
-    code: string,
-    name: string,
-  ): Promise<CostCategory> {
-    return this.prisma.costCategory.upsert({
-      where: {
-        organizationId_code: {
-          organizationId,
-          code,
-        },
-      },
-      create: {
-        organizationId,
-        code,
-        name,
-      },
-      update: {
-        name,
-      },
-    });
-  }
-
   async findByCode(
     organizationId: string,
     code: string,

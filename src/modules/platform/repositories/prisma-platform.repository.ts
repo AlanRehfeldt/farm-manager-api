@@ -8,6 +8,7 @@ import {
   Role,
 } from '@prisma/client';
 import { PrismaService } from 'src/common/prisma/prisma.service';
+import { seedCostCategories } from 'src/modules/cost-category/domain/seed-cost-categories';
 import {
   PlatformOrganizationListItem,
   PlatformUserListItem,
@@ -77,6 +78,8 @@ export class PrismaPlatformRepository implements PlatformRepository {
         targetId: organization.id,
         organizationId: organization.id,
       });
+
+      await seedCostCategories(tx, organization.id);
 
       return {
         organization,

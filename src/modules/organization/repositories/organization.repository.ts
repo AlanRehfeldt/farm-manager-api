@@ -1,17 +1,7 @@
 import { Organization } from '@prisma/client';
-import {
-  CreateOrganizationData,
-  CreateOrganizationWithFirstFarmData,
-  OrganizationWithFirstFarmResult,
-  SearchManyQuery,
-  UpdateOrganizationData,
-} from './@types';
+import { SearchManyQuery, UpdateOrganizationData } from './@types';
 
 export interface OrganizationRepository {
-  createWithOwner(data: CreateOrganizationData): Promise<Organization>;
-  createWithOwnerAndFirstFarm(
-    data: CreateOrganizationWithFirstFarmData,
-  ): Promise<OrganizationWithFirstFarmResult>;
   update(data: UpdateOrganizationData): Promise<Organization>;
   findByIdForUser(id: string, userId: string): Promise<Organization | null>;
   searchManyForUser(

@@ -6,7 +6,7 @@ import { Server } from 'node:http';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/common/prisma/prisma.service';
-import { insertUser } from './helpers/insert-user';
+import { provisionOrganization } from './helpers/provision-organization';
 
 type ApiCommandResponse<T> = {
   statusCode: number;
@@ -16,15 +16,6 @@ type ApiCommandResponse<T> = {
 
 function commandResult<T>(res: request.Response): T {
   return (res.body as ApiCommandResponse<T>).result;
-}
-
-function cookieHeader(res: request.Response): string {
-  const setCookie = res.headers['set-cookie'];
-  if (!setCookie) {
-    throw new Error('Missing Set-Cookie header');
-  }
-  const cookies = Array.isArray(setCookie) ? setCookie : [setCookie];
-  return cookies.map((cookie: string) => cookie.split(';')[0]).join('; ');
 }
 
 describe('Idempotency (e2e INV-IDEM)', () => {
@@ -51,31 +42,15 @@ describe('Idempotency (e2e INV-IDEM)', () => {
     server = app.getHttpServer() as Server;
     prisma = app.get(PrismaService);
 
-    await insertUser(prisma, {
-      name: 'Idem Admin',
-      email: adminEmail,
-      password: adminPassword,
+    const admin = await provisionOrganization(server, prisma, {
+      organizationName: `Idem Org ${suffix}`,
+      farmName: `Idem Farm ${suffix}`,
+      adminName: 'Idem Admin',
+      adminEmail,
+      adminPassword,
     });
-
-    const loginAdmin = await request(server)
-      .post('/auth/login')
-      .send({ email: adminEmail, password: adminPassword })
-      .expect(201);
-    adminCookies = cookieHeader(loginAdmin);
-
-    const orgRes = await request(server)
-      .post('/organizations')
-      .set('Cookie', adminCookies)
-      .send({ name: `Idem Org ${suffix}` })
-      .expect(201);
-    const organizationId = commandResult<{ id: string }>(orgRes).id;
-
-    const farmRes = await request(server)
-      .post('/farms')
-      .set('Cookie', adminCookies)
-      .send({ organizationId, name: `Idem Farm ${suffix}` })
-      .expect(201);
-    farmId = commandResult<{ id: string }>(farmRes).id;
+    adminCookies = admin.adminCookies;
+    farmId = admin.farmId;
 
     const uomRes = await request(server)
       .post('/unit-of-measurements')

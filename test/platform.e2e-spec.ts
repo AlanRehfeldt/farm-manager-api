@@ -47,12 +47,15 @@ describe('Platform provisioning (e2e)', () => {
   const regularPassword = 'Regular1!x';
   const platformEmail = `plat.vendor.${suffix}@example.com`;
   const platformPassword = 'Platfm1!x';
+  const supportEmail = `plat.support.${suffix}@example.com`;
+  const supportPassword = 'Supprt1!x';
   const adminEmail = `plat.client.${suffix}@example.com`;
   const adminPassword = 'Client1!x';
   const organizationName = `Platform Org ${suffix}`;
 
   let regularCookies: string;
   let platformCookies: string;
+  let supportCookies: string;
   let organizationId: string;
   let farmId: string;
   let adminUserId: string;
@@ -81,6 +84,13 @@ describe('Platform provisioning (e2e)', () => {
       platformRole: PlatformRole.PLATFORM_ADMIN,
     });
 
+    await insertUser(prisma, {
+      name: 'Support User',
+      email: supportEmail,
+      password: supportPassword,
+      platformRole: PlatformRole.PLATFORM_SUPPORT,
+    });
+
     const regularLogin = await request(server)
       .post('/auth/login')
       .send({ email: regularEmail, password: regularPassword })
@@ -92,6 +102,12 @@ describe('Platform provisioning (e2e)', () => {
       .send({ email: platformEmail, password: platformPassword })
       .expect(201);
     platformCookies = cookieHeader(platformLogin);
+
+    const supportLogin = await request(server)
+      .post('/auth/login')
+      .send({ email: supportEmail, password: supportPassword })
+      .expect(201);
+    supportCookies = cookieHeader(supportLogin);
   });
 
   afterAll(async () => {
@@ -128,6 +144,26 @@ describe('Platform provisioning (e2e)', () => {
       })
       .expect(403);
   });
+
+  it.each([
+    ['tenant without membership', () => regularCookies, () => regularEmail],
+    ['PLATFORM_SUPPORT', () => supportCookies, () => supportEmail],
+    ['PLATFORM_ADMIN', () => platformCookies, () => platformEmail],
+  ])(
+    'POST /organizations returns 404 for %s and does not create a membership',
+    async (_label, cookies, email) => {
+      await request(server)
+        .post('/organizations')
+        .set('Cookie', cookies())
+        .send({ name: `Legacy ${suffix}` })
+        .expect(404);
+
+      const memberships = await prisma.membership.count({
+        where: { user: { email: email() } },
+      });
+      expect(memberships).toBe(0);
+    },
+  );
 
   it('provisions the client admin without a vendor membership', async () => {
     const res = await request(server)

@@ -76,7 +76,6 @@ describe('CreateExpenseService', () => {
   };
 
   const costCategoryRepository: jest.Mocked<CostCategoryRepository> = {
-    upsertSeed: jest.fn(),
     findByCode: jest.fn(),
     findById: jest.fn(),
     searchMany: jest.fn(),
