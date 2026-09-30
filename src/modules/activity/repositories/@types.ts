@@ -57,6 +57,7 @@ export type EmployeeMeta = {
 };
 
 export type CreateActivityData = {
+  organizationId: string;
   farmId: string;
   cropSeasonId: string;
   fieldId: string;

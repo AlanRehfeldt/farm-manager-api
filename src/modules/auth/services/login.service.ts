@@ -4,6 +4,7 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { OrganizationSelection, PlatformRole } from '@prisma/client';
 import { compare } from 'bcryptjs';
 import { Response } from 'express';
 import { isTenantSessionSuspended } from 'src/common/tenancy/tenant-session';
@@ -12,6 +13,10 @@ import {
   UserRepository,
 } from 'src/modules/user/repositories/user.repository';
 import { UserDto } from 'src/modules/user/dtos/entity/user.entity';
+import {
+  ORGANIZATION_REPOSITORY,
+  OrganizationRepository,
+} from 'src/modules/organization/repositories/organization.repository';
 import { resolveLoginOrganizationScope } from '../organization-session';
 import { TokenService } from './token.service';
 
@@ -20,6 +25,8 @@ export class LoginService {
   constructor(
     @Inject(USER_REPOSITORY)
     private readonly userRepository: UserRepository,
+    @Inject(ORGANIZATION_REPOSITORY)
+    private readonly organizationRepository: OrganizationRepository,
     private readonly tokenService: TokenService,
   ) {}
 
@@ -43,11 +50,21 @@ export class LoginService {
       throw new ForbiddenException('Organization is suspended');
     }
 
-    const tokens = await this.tokenService.issueTokenPair(
-      user.id,
-      resolveLoginOrganizationScope(user),
-    );
+    const scope = resolveLoginOrganizationScope(user);
+    const tokens = await this.tokenService.issueTokenPair(user.id, scope);
     this.tokenService.setAuthCookies(res, tokens);
+
+    if (
+      user.platformRole === PlatformRole.NONE &&
+      scope.organizationSelection === OrganizationSelection.BOUND &&
+      scope.organizationId
+    ) {
+      await this.organizationRepository.touchLastAccessAt(
+        scope.organizationId,
+        new Date(),
+        0,
+      );
+    }
 
     const {
       password: passwordHash,

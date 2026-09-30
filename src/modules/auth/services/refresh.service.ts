@@ -1,4 +1,5 @@
 import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { OrganizationSelection, PlatformRole } from '@prisma/client';
 import { Request, Response } from 'express';
 import { isTenantSessionSuspended } from 'src/common/tenancy/tenant-session';
 import {
@@ -15,6 +16,11 @@ import {
   boundOrganizationStillActive,
   exemptTenantSessionStillValid,
 } from '../organization-session';
+import { LAST_ACCESS_REFRESH_MIN_AGE_MS } from 'src/modules/platform/domain/adoption-window';
+import {
+  ORGANIZATION_REPOSITORY,
+  OrganizationRepository,
+} from 'src/modules/organization/repositories/organization.repository';
 import { TokenService } from './token.service';
 
 @Injectable()
@@ -25,6 +31,8 @@ export class RefreshService {
     private readonly refreshTokenRepository: RefreshTokenRepository,
     @Inject(USER_REPOSITORY)
     private readonly userRepository: UserRepository,
+    @Inject(ORGANIZATION_REPOSITORY)
+    private readonly organizationRepository: OrganizationRepository,
   ) {}
 
   async execute(req: Request, res: Response): Promise<{ message: string }> {
@@ -82,6 +90,18 @@ export class RefreshService {
       scope,
     );
     this.tokenService.setAuthCookies(res, tokens);
+
+    if (
+      user.platformRole === PlatformRole.NONE &&
+      scope.organizationSelection === OrganizationSelection.BOUND &&
+      scope.organizationId
+    ) {
+      await this.organizationRepository.touchLastAccessAt(
+        scope.organizationId,
+        new Date(),
+        LAST_ACCESS_REFRESH_MIN_AGE_MS,
+      );
+    }
 
     return { message: 'Token refreshed' };
   }

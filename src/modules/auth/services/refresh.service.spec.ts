@@ -8,6 +8,8 @@ import {
   OrganizationStatus,
   PlatformRole,
 } from '@prisma/client';
+import { LAST_ACCESS_REFRESH_MIN_AGE_MS } from 'src/modules/platform/domain/adoption-window';
+import { OrganizationRepository } from 'src/modules/organization/repositories/organization.repository';
 import { UserRepository } from 'src/modules/user/repositories/user.repository';
 import { RefreshTokenRepository } from '../repositories/refresh-token.repository';
 import { RefreshService } from './refresh.service';
@@ -30,6 +32,9 @@ describe('RefreshService', () => {
       | 'issueTokenPair'
       | 'setAuthCookies'
     >
+  >;
+  let organizationRepository: jest.Mocked<
+    Pick<OrganizationRepository, 'touchLastAccessAt'>
   >;
 
   const res = {} as Parameters<RefreshService['execute']>[1];
@@ -59,10 +64,15 @@ describe('RefreshService', () => {
       setAuthCookies: jest.fn(),
     };
 
+    organizationRepository = {
+      touchLastAccessAt: jest.fn(),
+    };
+
     service = new RefreshService(
       tokenService as unknown as TokenService,
       refreshTokenRepository as unknown as RefreshTokenRepository,
       userRepository as unknown as UserRepository,
+      organizationRepository as unknown as OrganizationRepository,
     );
   });
 
@@ -149,6 +159,11 @@ describe('RefreshService', () => {
       organizationSelection: OrganizationSelection.BOUND,
       organizationId: 'org-1',
     });
+    expect(organizationRepository.touchLastAccessAt).toHaveBeenCalledWith(
+      'org-1',
+      expect.any(Date),
+      LAST_ACCESS_REFRESH_MIN_AGE_MS,
+    );
   });
 
   it('rejects refresh when the bound organization is no longer active', async () => {
@@ -240,5 +255,6 @@ describe('RefreshService', () => {
       organizationId: null,
     });
     expect(tokenService.clearAuthCookies).not.toHaveBeenCalled();
+    expect(organizationRepository.touchLastAccessAt).not.toHaveBeenCalled();
   });
 });

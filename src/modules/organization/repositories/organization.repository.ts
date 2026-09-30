@@ -9,6 +9,11 @@ export interface OrganizationRepository {
     query: SearchManyQuery,
   ): Promise<Organization[]>;
   countForUser(userId: string, query: SearchManyQuery): Promise<number>;
+  touchLastAccessAt(
+    organizationId: string,
+    at: Date,
+    minimumAgeMs: number,
+  ): Promise<void>;
 }
 
 export const ORGANIZATION_REPOSITORY = 'ORGANIZATION_REPOSITORY';

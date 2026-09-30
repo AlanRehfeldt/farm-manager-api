@@ -14,6 +14,12 @@ export class PlatformOrganizationDto {
   })
   status!: OrganizationStatus;
 
+  @ApiPropertyOptional({ example: 'Juazeiro', nullable: true })
+  city!: string | null;
+
+  @ApiPropertyOptional({ example: 'BA', nullable: true })
+  state!: string | null;
+
   @ApiProperty({ example: '2026-09-29T00:00:00.000Z' })
   createdAt!: Date;
 
@@ -23,21 +29,19 @@ export class PlatformOrganizationDto {
   @ApiProperty({ example: 1 })
   farmCount!: number;
 
-  @ApiProperty({ example: 0 })
-  seasonCount!: number;
-
-  @ApiProperty({
-    example: 0,
+  @ApiPropertyOptional({
+    example: '2026-09-29T12:00:00.000Z',
+    nullable: true,
     description:
-      'Operational entries: transactions + activities + harvests across the organization farms.',
+      'Latest tenant login or refresh bound to this organization. Null when nobody has authenticated.',
   })
-  entryCount!: number;
+  lastAccessAt!: Date | null;
 
   @ApiPropertyOptional({
     example: '2026-09-29T12:00:00.000Z',
     nullable: true,
     description:
-      'Latest refresh-token creation among members of the organization. Null when nobody has authenticated.',
+      'createdAt of the latest field activity recorded in the organization. Null when none exists.',
   })
-  lastAccessAt!: Date | null;
+  lastActivityAt!: Date | null;
 }

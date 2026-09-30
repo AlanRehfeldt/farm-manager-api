@@ -4,6 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PrismaModule } from 'src/common/prisma/prisma.module';
+import { OrganizationModule } from '../organization/organization.module';
 import { UserModule } from '../user/user.module';
 import { MembershipModule } from '../membership/membership.module';
 import { PlatformApiModule } from '../platform/platform.module';
@@ -34,6 +35,7 @@ import { PrismaRefreshTokenRepository } from './repositories/prisma-refresh-toke
     PassportModule,
     PrismaModule,
     UserModule,
+    OrganizationModule,
     MembershipModule,
     PlatformApiModule,
     JwtModule.registerAsync({

@@ -6,7 +6,11 @@ import { UserModule } from '../user/user.module';
 import { CreatePlatformOrganizationController } from './controllers/create-platform-organization.controller';
 import { CreatePlatformUserController } from './controllers/create-platform-user.controller';
 import { FetchPlatformOrganizationFarmsController } from './controllers/fetch-platform-organization-farms.controller';
+import { FetchAdoptionSummaryController } from './controllers/fetch-adoption-summary.controller';
 import { FetchPlatformOrganizationsController } from './controllers/fetch-platform-organizations.controller';
+import { GetPlatformOrganizationController } from './controllers/get-platform-organization.controller';
+import { RemovePlatformOrganizationUserController } from './controllers/remove-platform-organization-user.controller';
+import { UpdatePlatformOrganizationController } from './controllers/update-platform-organization.controller';
 import { FetchPlatformUsersController } from './controllers/fetch-platform-users.controller';
 import { ResetPlatformUserPasswordController } from './controllers/reset-platform-user-password.controller';
 import { UpdatePlatformOrganizationStatusController } from './controllers/update-platform-organization-status.controller';
@@ -27,7 +31,11 @@ import { PrismaPlatformRepository } from './repositories/prisma-platform.reposit
 import { CreatePlatformOrganizationService } from './services/create-platform-organization.service';
 import { CreatePlatformUserService } from './services/create-platform-user.service';
 import { FetchPlatformOrganizationFarmsService } from './services/fetch-platform-organization-farms.service';
+import { FetchAdoptionSummaryService } from './services/fetch-adoption-summary.service';
 import { FetchPlatformOrganizationsService } from './services/fetch-platform-organizations.service';
+import { GetPlatformOrganizationService } from './services/get-platform-organization.service';
+import { RemovePlatformOrganizationUserService } from './services/remove-platform-organization-user.service';
+import { UpdatePlatformOrganizationService } from './services/update-platform-organization.service';
 import { FetchPlatformUsersService } from './services/fetch-platform-users.service';
 import { ResetPlatformUserPasswordService } from './services/reset-platform-user-password.service';
 import { UpdatePlatformOrganizationStatusService } from './services/update-platform-organization-status.service';
@@ -37,6 +45,10 @@ import { UpdatePlatformOrganizationStatusService } from './services/update-platf
   controllers: [
     CreatePlatformOrganizationController,
     FetchPlatformOrganizationsController,
+    GetPlatformOrganizationController,
+    UpdatePlatformOrganizationController,
+    RemovePlatformOrganizationUserController,
+    FetchAdoptionSummaryController,
     FetchPlatformOrganizationFarmsController,
     CreatePlatformUserController,
     FetchPlatformUsersController,
@@ -56,6 +68,10 @@ import { UpdatePlatformOrganizationStatusService } from './services/update-platf
     },
     CreatePlatformOrganizationService,
     FetchPlatformOrganizationsService,
+    GetPlatformOrganizationService,
+    UpdatePlatformOrganizationService,
+    RemovePlatformOrganizationUserService,
+    FetchAdoptionSummaryService,
     FetchPlatformOrganizationFarmsService,
     CreatePlatformUserService,
     FetchPlatformUsersService,

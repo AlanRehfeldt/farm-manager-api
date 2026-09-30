@@ -258,15 +258,17 @@ describe('Platform provisioning (e2e)', () => {
     const listed = listResults<{
       id: string;
       farmCount: number;
-      seasonCount: number;
-      entryCount: number;
+      seasonCount?: number;
+      entryCount?: number;
       lastAccessAt: string | null;
+      lastActivityAt: string | null;
     }>(listRes);
     expect(listed).toHaveLength(1);
     expect(listed[0]?.id).toBe(organizationId);
     expect(listed[0]?.farmCount).toBe(1);
-    expect(listed[0]?.seasonCount).toBe(0);
-    expect(listed[0]?.entryCount).toBe(0);
+    expect(listed[0]?.seasonCount).toBeUndefined();
+    expect(listed[0]?.entryCount).toBeUndefined();
+    expect(listed[0]?.lastActivityAt).toBeNull();
     expect(listed[0]?.lastAccessAt).toEqual(expect.any(String));
   });
 
@@ -281,9 +283,7 @@ describe('Platform provisioning (e2e)', () => {
       .expect(403);
 
     await request(server)
-      .get(
-        '/platform/organizations/00000000-0000-4000-8000-000000000099/farms',
-      )
+      .get('/platform/organizations/00000000-0000-4000-8000-000000000099/farms')
       .set('Cookie', platformCookies)
       .expect(404);
 

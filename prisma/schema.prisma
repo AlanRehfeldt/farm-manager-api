@@ -48,9 +48,11 @@ model Organization {
   complement String?
   city       String?
   state      String?
-  zipCode    String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  zipCode        String?
+  lastAccessAt   DateTime?
+  lastActivityAt DateTime?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
 
   farms               Farm[]
   memberships         Membership[]
@@ -65,6 +67,8 @@ model Organization {
   laborMonthClosings  LaborMonthClosing[]
   supportAccesses     SupportAccess[]
 
+  @@index([status, lastActivityAt])
+  @@index([status, lastAccessAt])
   @@map("organizations")
 }
 
@@ -584,6 +588,7 @@ model Transaction {
   stockMovements      StockMovement[]
 
   @@index([farmId])
+  @@index([farmId, createdAt])
   @@map("transactions")
 }
 
@@ -813,6 +818,8 @@ model Activity {
   costEntries   CostEntry[]
 
   @@index([farmId])
+  @@index([farmId, createdAt])
+  @@index([createdAt])
   @@index([cropSeasonId, date])
   @@map("activities")
 }
@@ -930,6 +937,7 @@ model Harvest {
   items      HarvestItem[]
 
   @@index([farmId])
+  @@index([farmId, createdAt])
   @@index([cropSeasonId, date])
   @@map("harvests")
 }

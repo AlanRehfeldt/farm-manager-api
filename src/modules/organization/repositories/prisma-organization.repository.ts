@@ -48,6 +48,22 @@ export class PrismaOrganizationRepository implements OrganizationRepository {
     });
   }
 
+  async touchLastAccessAt(
+    organizationId: string,
+    at: Date,
+    minimumAgeMs: number,
+  ): Promise<void> {
+    const threshold = new Date(at.getTime() - minimumAgeMs);
+
+    await this.prisma.organization.updateMany({
+      where: {
+        id: organizationId,
+        OR: [{ lastAccessAt: null }, { lastAccessAt: { lt: threshold } }],
+      },
+      data: { lastAccessAt: at },
+    });
+  }
+
   async countForUser(userId: string, query: SearchManyQuery): Promise<number> {
     return this.prisma.organization.count({
       where: {

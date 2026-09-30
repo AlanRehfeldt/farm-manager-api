@@ -7,6 +7,7 @@ import {
   OrganizationStatus,
   PlatformRole,
 } from '@prisma/client';
+import { OrganizationRepository } from 'src/modules/organization/repositories/organization.repository';
 import { UserRepository } from 'src/modules/user/repositories/user.repository';
 import { LoginService } from './login.service';
 import { TokenService } from './token.service';
@@ -28,10 +29,16 @@ describe('LoginService', () => {
     }),
     setAuthCookies: jest.fn(),
   };
+  const organizationRepository: jest.Mocked<
+    Pick<OrganizationRepository, 'touchLastAccessAt'>
+  > = {
+    touchLastAccessAt: jest.fn(),
+  };
   const res = {} as Parameters<LoginService['execute']>[2];
 
   const service = new LoginService(
     userRepository as unknown as UserRepository,
+    organizationRepository as unknown as OrganizationRepository,
     tokenService as unknown as TokenService,
   );
 
@@ -58,6 +65,7 @@ describe('LoginService', () => {
 
   beforeEach(() => {
     tokenService.issueTokenPair.mockClear();
+    organizationRepository.touchLastAccessAt.mockClear();
   });
 
   it('binds a tenant who belongs to one active organization', async () => {
@@ -73,6 +81,11 @@ describe('LoginService', () => {
       organizationSelection: OrganizationSelection.BOUND,
       organizationId: 'org-1',
     });
+    expect(organizationRepository.touchLastAccessAt).toHaveBeenCalledWith(
+      'org-1',
+      expect.any(Date),
+      0,
+    );
   });
 
   it('leaves the session pending when the tenant belongs to two organizations', async () => {
@@ -89,6 +102,7 @@ describe('LoginService', () => {
       organizationSelection: OrganizationSelection.PENDING,
       organizationId: null,
     });
+    expect(organizationRepository.touchLastAccessAt).not.toHaveBeenCalled();
   });
 
   it('keeps a platform admin exempt', async () => {
@@ -103,5 +117,6 @@ describe('LoginService', () => {
       organizationSelection: OrganizationSelection.EXEMPT,
       organizationId: null,
     });
+    expect(organizationRepository.touchLastAccessAt).not.toHaveBeenCalled();
   });
 });

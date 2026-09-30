@@ -13,6 +13,10 @@ import {
 } from 'src/modules/user/repositories/user.repository';
 import { AuthenticatedUser } from '../decorators/current-user.decorator';
 import { boundOrganizationStillActive } from '../organization-session';
+import {
+  ORGANIZATION_REPOSITORY,
+  OrganizationRepository,
+} from 'src/modules/organization/repositories/organization.repository';
 import { TokenService } from './token.service';
 
 @Injectable()
@@ -20,6 +24,8 @@ export class SelectOrganizationService {
   constructor(
     @Inject(USER_REPOSITORY)
     private readonly userRepository: UserRepository,
+    @Inject(ORGANIZATION_REPOSITORY)
+    private readonly organizationRepository: OrganizationRepository,
     private readonly tokenService: TokenService,
   ) {}
 
@@ -55,6 +61,11 @@ export class SelectOrganizationService {
 
     const tokens = await this.tokenService.revokeAndIssue(user.userId, scope);
     this.tokenService.setAuthCookies(res, tokens);
+    await this.organizationRepository.touchLastAccessAt(
+      organizationId,
+      new Date(),
+      0,
+    );
 
     return {
       message: 'Organization selected',

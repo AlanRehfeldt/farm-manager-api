@@ -419,6 +419,7 @@ export class CreateActivityService {
     }
 
     const { activity, stockEffects } = await this.activityRepository.create({
+      organizationId: input.organizationId,
       farmId: input.farmId,
       cropSeasonId: input.cropSeasonId,
       fieldId: input.fieldId,

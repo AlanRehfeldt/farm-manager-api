@@ -5,6 +5,7 @@ import {
   PlatformRole,
   Role,
 } from '@prisma/client';
+import { AdoptionAccess, AdoptionUsage } from '../domain/adoption-window';
 
 export type ProvisionOrganizationData = {
   organizationName: string;
@@ -37,20 +38,80 @@ export type PlatformOrganizationListItem = {
   id: string;
   name: string;
   status: OrganizationStatus;
+  city: string | null;
+  state: string | null;
   createdAt: Date;
   updatedAt: Date;
   farmCount: number;
-  seasonCount: number;
-  entryCount: number;
   lastAccessAt: Date | null;
+  lastActivityAt: Date | null;
 };
 
 export type SearchPlatformOrganizationsQuery = {
   name?: string;
+  status?: OrganizationStatus;
+  usage?: AdoptionUsage;
+  access?: AdoptionAccess;
   page: number;
   perPage: number;
-  orderBy: 'name' | 'createdAt';
+  orderBy: 'name' | 'createdAt' | 'lastAccessAt' | 'lastActivityAt';
   orderDirection: 'asc' | 'desc';
+  now?: Date;
+};
+
+export type PlatformOrganizationUsage = {
+  activities: number;
+  purchases: number;
+  salaries: number;
+  genericExpenses: number;
+  harvests: number;
+  activeSeasons: number;
+  seasonCount: number;
+};
+
+export type PlatformOrganizationDetail = PlatformOrganizationListItem & {
+  cnpj: string | null;
+  phone: string | null;
+  email: string | null;
+  street: string | null;
+  number: string | null;
+  complement: string | null;
+  zipCode: string | null;
+  usage: PlatformOrganizationUsage;
+};
+
+export type UpdatePlatformOrganizationProfile = {
+  name?: string;
+  cnpj?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  street?: string | null;
+  number?: string | null;
+  complement?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zipCode?: string | null;
+};
+
+export type AdoptionWeekCount = {
+  weekStart: string;
+  count: number;
+};
+
+export type AdoptionSummary = {
+  organizations: {
+    active: number;
+    suspended: number;
+  };
+  usage: {
+    active7d: number;
+    active30d: number;
+    silent30d: number;
+  };
+  access: {
+    stale30d: number;
+  };
+  activitiesByWeek: AdoptionWeekCount[];
 };
 
 export type PlatformUserMembership = {

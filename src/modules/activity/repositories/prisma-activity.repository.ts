@@ -99,6 +99,17 @@ export class PrismaActivityRepository implements ActivityRepository {
         },
       });
 
+      await tx.organization.updateMany({
+        where: {
+          id: data.organizationId,
+          OR: [
+            { lastActivityAt: null },
+            { lastActivityAt: { lt: activity.createdAt } },
+          ],
+        },
+        data: { lastActivityAt: activity.createdAt },
+      });
+
       const stockEffects: ActivityStockEffect[] = [];
 
       for (const item of data.inputs) {

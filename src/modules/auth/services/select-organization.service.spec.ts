@@ -8,6 +8,7 @@ import {
   OrganizationStatus,
   PlatformRole,
 } from '@prisma/client';
+import { OrganizationRepository } from 'src/modules/organization/repositories/organization.repository';
 import { UserRepository } from 'src/modules/user/repositories/user.repository';
 import { AuthenticatedUser } from '../decorators/current-user.decorator';
 import { FORBIDDEN_ORGANIZATION_CODE } from 'src/common/tenancy/forbidden-organization';
@@ -25,9 +26,15 @@ describe('SelectOrganizationService', () => {
     }),
     setAuthCookies: jest.fn(),
   };
+  const organizationRepository: jest.Mocked<
+    Pick<OrganizationRepository, 'touchLastAccessAt'>
+  > = {
+    touchLastAccessAt: jest.fn(),
+  };
   const res = {} as Parameters<SelectOrganizationService['execute']>[2];
   const service = new SelectOrganizationService(
     userRepository as unknown as UserRepository,
+    organizationRepository as unknown as OrganizationRepository,
     tokenService as unknown as TokenService,
   );
 
@@ -61,6 +68,11 @@ describe('SelectOrganizationService', () => {
       organizationId: 'org-1',
     });
     expect(tokenService.setAuthCookies).toHaveBeenCalled();
+    expect(organizationRepository.touchLastAccessAt).toHaveBeenCalledWith(
+      'org-1',
+      expect.any(Date),
+      0,
+    );
   });
 
   it('rejects a session that is already bound', async () => {
