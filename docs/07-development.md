@@ -70,7 +70,7 @@ npx prisma db pull         # introspect (cuidado em prod)
 ## Testes
 
 - Unit: `src/**/*.spec.ts` (ex.: `FarmMembershipGuard`, helpers de visibilidade).
-- E2e: `test/app.e2e-spec.ts` (401), `test/tenancy.e2e-spec.ts` (INV-TEN), `test/onboarding.e2e-spec.ts`, `test/agricultural-structure.e2e-spec.ts`, **`test/mvp-flows.e2e-spec.ts`** (fluxos F3–F7: compra → atividade → despesa → colheita → custeio → fechar safra).
+- E2e: `test/app.e2e-spec.ts` (401), `test/tenancy.e2e-spec.ts` (INV-TEN), `test/onboarding.e2e-spec.ts`, `test/agricultural-structure.e2e-spec.ts`, **`test/mvp-flows.e2e-spec.ts`** (fluxos F3–F7: compra → atividade → despesa → colheita → custeio → fechar safra), `test/support-access.e2e-spec.ts` (acesso de suporte) e `test/select-organization.e2e-spec.ts` (seleção multi-organização).
 
 E2e precisa de PostgreSQL com migrations aplicadas e `.env` válida (`DATABASE_URL`, `JWT_SECRET`). Arquivos de teste usam `tsconfig.spec.json` (tipos Jest + pasta `test/`).
 
