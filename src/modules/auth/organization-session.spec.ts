@@ -3,7 +3,10 @@ import {
   OrganizationStatus,
   PlatformRole,
 } from '@prisma/client';
-import { resolveLoginOrganizationScope } from './organization-session';
+import {
+  exemptTenantSessionStillValid,
+  resolveLoginOrganizationScope,
+} from './organization-session';
 
 describe('resolveLoginOrganizationScope', () => {
   it('keeps platform roles exempt', () => {
@@ -80,4 +83,80 @@ describe('resolveLoginOrganizationScope', () => {
       organizationId: null,
     });
   });
+});
+
+const activeMembership = {
+  organizationId: 'org-1',
+  organization: { status: OrganizationStatus.ACTIVE },
+};
+
+describe('exemptTenantSessionStillValid', () => {
+  it('rejects an exempt tenant session once a membership exists', () => {
+    expect(
+      exemptTenantSessionStillValid(
+        {
+          organizationSelection: OrganizationSelection.EXEMPT,
+          organizationId: null,
+        },
+        {
+          platformRole: PlatformRole.NONE,
+          memberships: [activeMembership],
+        },
+      ),
+    ).toBe(false);
+  });
+
+  it('keeps an exempt tenant session while there is no membership', () => {
+    expect(
+      exemptTenantSessionStillValid(
+        {
+          organizationSelection: OrganizationSelection.EXEMPT,
+          organizationId: null,
+        },
+        {
+          platformRole: PlatformRole.NONE,
+          memberships: [],
+        },
+      ),
+    ).toBe(true);
+  });
+
+  it.each([PlatformRole.PLATFORM_ADMIN, PlatformRole.PLATFORM_SUPPORT])(
+    'keeps %s exempt even with a membership',
+    (platformRole) => {
+      expect(
+        exemptTenantSessionStillValid(
+          {
+            organizationSelection: OrganizationSelection.EXEMPT,
+            organizationId: null,
+          },
+          {
+            platformRole,
+            memberships: [activeMembership],
+          },
+        ),
+      ).toBe(true);
+    },
+  );
+
+  it.each([OrganizationSelection.BOUND, OrganizationSelection.PENDING])(
+    'ignores a %s session',
+    (organizationSelection) => {
+      expect(
+        exemptTenantSessionStillValid(
+          {
+            organizationSelection,
+            organizationId:
+              organizationSelection === OrganizationSelection.BOUND
+                ? 'org-1'
+                : null,
+          },
+          {
+            platformRole: PlatformRole.NONE,
+            memberships: [activeMembership],
+          },
+        ),
+      ).toBe(true);
+    },
+  );
 });

@@ -181,4 +181,64 @@ describe('RefreshService', () => {
     expect(tokenService.clearAuthCookies).toHaveBeenCalledWith(res);
     expect(tokenService.issueTokenPair).not.toHaveBeenCalled();
   });
+
+  it('rejects an exempt refresh after the tenant gains a membership', async () => {
+    refreshTokenRepository.findByHash.mockResolvedValue({
+      id: 'token-1',
+      userId: 'user-1',
+      revokedAt: null,
+      expiresAt: new Date('2026-12-31T00:00:00.000Z'),
+      organizationId: null,
+      organizationSelection: OrganizationSelection.EXEMPT,
+    });
+    userRepository.findSessionById.mockResolvedValue({
+      id: 'user-1',
+      platformRole: PlatformRole.NONE,
+      memberships: [
+        {
+          organizationId: 'org-1',
+          organization: { status: OrganizationStatus.ACTIVE },
+        },
+      ],
+    } as never);
+
+    const req = {
+      cookies: { fm_refresh_token: 'live-token' },
+    } as unknown as Parameters<RefreshService['execute']>[0];
+
+    await expect(service.execute(req, res)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+    expect(tokenService.clearAuthCookies).toHaveBeenCalledWith(res);
+    expect(tokenService.issueTokenPair).not.toHaveBeenCalled();
+    expect(refreshTokenRepository.revokeById).not.toHaveBeenCalled();
+  });
+
+  it('reissues an exempt refresh for platform support without membership', async () => {
+    refreshTokenRepository.findByHash.mockResolvedValue({
+      id: 'token-1',
+      userId: 'user-1',
+      revokedAt: null,
+      expiresAt: new Date('2026-12-31T00:00:00.000Z'),
+      organizationId: null,
+      organizationSelection: OrganizationSelection.EXEMPT,
+    });
+    userRepository.findSessionById.mockResolvedValue({
+      id: 'user-1',
+      platformRole: PlatformRole.PLATFORM_SUPPORT,
+      memberships: [],
+    } as never);
+
+    const req = {
+      cookies: { fm_refresh_token: 'live-token' },
+    } as unknown as Parameters<RefreshService['execute']>[0];
+
+    await service.execute(req, res);
+
+    expect(tokenService.issueTokenPair).toHaveBeenCalledWith('user-1', {
+      organizationSelection: OrganizationSelection.EXEMPT,
+      organizationId: null,
+    });
+    expect(tokenService.clearAuthCookies).not.toHaveBeenCalled();
+  });
 });

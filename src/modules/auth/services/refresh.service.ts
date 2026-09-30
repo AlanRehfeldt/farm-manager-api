@@ -11,7 +11,10 @@ import {
 } from '../repositories/refresh-token.repository';
 import { getCookie } from '../utils/get-cookie';
 import { hashToken } from '../utils/hash-token';
-import { boundOrganizationStillActive } from '../organization-session';
+import {
+  boundOrganizationStillActive,
+  exemptTenantSessionStillValid,
+} from '../organization-session';
 import { TokenService } from './token.service';
 
 @Injectable()
@@ -64,7 +67,10 @@ export class RefreshService {
       organizationId: storedToken.organizationId,
     };
 
-    if (!boundOrganizationStillActive(scope, user.memberships)) {
+    if (
+      !boundOrganizationStillActive(scope, user.memberships) ||
+      !exemptTenantSessionStillValid(scope, user)
+    ) {
       this.tokenService.clearAuthCookies(res);
       throw new UnauthorizedException();
     }

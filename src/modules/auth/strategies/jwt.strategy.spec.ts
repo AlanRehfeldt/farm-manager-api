@@ -200,4 +200,51 @@ describe('JwtStrategy', () => {
       }),
     ).rejects.toBeInstanceOf(UnauthorizedException);
   });
+
+  it('rejects an exempt tenant access token after a membership is added', async () => {
+    userRepository.findSessionById.mockResolvedValue({
+      id: 'user-1',
+      passwordChangedAt,
+      mustChangePassword: false,
+      platformRole: PlatformRole.NONE,
+      memberships: [
+        {
+          organizationId: 'org-active',
+          organization: { status: OrganizationStatus.ACTIVE },
+        },
+      ],
+    } as never);
+
+    await expect(
+      strategy.validate({
+        sub: 'user-1',
+        passwordChangedAt: passwordChangedAt.getTime(),
+        organizationSelection: OrganizationSelection.EXEMPT,
+      }),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('accepts an exempt platform support session without membership', async () => {
+    userRepository.findSessionById.mockResolvedValue({
+      id: 'user-1',
+      passwordChangedAt,
+      mustChangePassword: false,
+      platformRole: PlatformRole.PLATFORM_SUPPORT,
+      memberships: [],
+    } as never);
+
+    await expect(
+      strategy.validate({
+        sub: 'user-1',
+        passwordChangedAt: passwordChangedAt.getTime(),
+        organizationSelection: OrganizationSelection.EXEMPT,
+      }),
+    ).resolves.toEqual({
+      userId: 'user-1',
+      mustChangePassword: false,
+      platformRole: PlatformRole.PLATFORM_SUPPORT,
+      organizationSelection: OrganizationSelection.EXEMPT,
+      organizationId: null,
+    });
+  });
 });

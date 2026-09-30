@@ -72,3 +72,18 @@ export function boundOrganizationStillActive(
       membership.organization.status === OrganizationStatus.ACTIVE,
   );
 }
+
+export function exemptTenantSessionStillValid(
+  scope: OrganizationSessionScope,
+  user: { platformRole: PlatformRole; memberships: readonly unknown[] },
+): boolean {
+  if (scope.organizationSelection !== OrganizationSelection.EXEMPT) {
+    return true;
+  }
+
+  if (user.platformRole !== PlatformRole.NONE) {
+    return true;
+  }
+
+  return user.memberships.length === 0;
+}

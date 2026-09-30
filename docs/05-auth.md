@@ -41,7 +41,7 @@ O access JWT e a linha em `refresh_tokens` carregam `organizationSelection` e, q
 
 | Seleção | Quando |
 |---------|--------|
-| `EXEMPT` | `PLATFORM_ADMIN`, `PLATFORM_SUPPORT`, ou tenant sem org ativa |
+| `EXEMPT` | `PLATFORM_ADMIN`, `PLATFORM_SUPPORT`, ou tenant (`platformRole` `NONE`) enquanto não houver membership |
 | `BOUND` | Tenant com exatamente uma org `ACTIVE` (várias memberships na mesma org contam como uma; org suspensa não entra) |
 | `PENDING` | Tenant com duas ou mais orgs `ACTIVE`. O app chama `POST /auth/select-organization` antes de qualquer rota de negócio |
 
@@ -49,7 +49,7 @@ Sessão `PENDING` só passa em `GET /auth/me`, `POST /auth/select-organization`,
 
 `POST /auth/select-organization` só aceita sessão `PENDING`, com membership na org e org `ACTIVE`. Revoga os refresh do usuário e emite par `BOUND`. Sessão já `BOUND` ou papel de plataforma responde 403 — trocar de org exige novo login.
 
-Refresh copia o escopo gravado. Se a org `BOUND` deixou de estar ativa para o usuário, o refresh responde 401 e limpa os cookies.
+Refresh copia o escopo gravado e não recalcula a seleção. Se a org `BOUND` deixou de estar ativa para o usuário, o refresh responde 401 e limpa os cookies. Sessão `EXEMPT` de tenant que já tem membership também responde 401 no request autenticado seguinte e no refresh, que limpa os cookies. O login seguinte recalcula o escopo (`BOUND` com uma org ativa, `PENDING` com duas ou mais). Papel de plataforma continua `EXEMPT`.
 
 Recurso de outra org responde 403 com `{ message, code: 'FORBIDDEN_ORGANIZATION' }`. O ramo de `SupportAccess` não usa essa claim: suporte continua `EXEMPT`.
 

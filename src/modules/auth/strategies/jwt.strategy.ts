@@ -13,6 +13,7 @@ import {
 import { AuthenticatedUser } from '../decorators/current-user.decorator';
 import {
   boundOrganizationStillActive,
+  exemptTenantSessionStillValid,
   OrganizationSessionScope,
 } from '../organization-session';
 import { getCookie } from '../utils/get-cookie';
@@ -65,6 +66,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const scope = this.readOrganizationScope(payload);
 
     if (!boundOrganizationStillActive(scope, user.memberships)) {
+      throw new UnauthorizedException();
+    }
+
+    if (!exemptTenantSessionStillValid(scope, user)) {
       throw new UnauthorizedException();
     }
 
