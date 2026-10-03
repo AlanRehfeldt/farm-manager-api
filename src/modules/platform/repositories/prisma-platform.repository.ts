@@ -816,6 +816,7 @@ export class PrismaPlatformRepository implements PlatformRepository {
 
   private userWhere(query: SearchPlatformUsersQuery): Prisma.UserWhereInput {
     return {
+      platformRole: PlatformRole.NONE,
       name: query.name
         ? { contains: query.name, mode: 'insensitive' }
         : undefined,

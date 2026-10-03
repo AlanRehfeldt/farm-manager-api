@@ -111,7 +111,7 @@ Script de bootstrap do vendor (PR-05.1, ADR-018):
 npm run seed:platform-admin
 ```
 
-- Arquivo: `prisma/seed.ts` — upsert por e-mail; `platformRole = PLATFORM_ADMIN`.
+- Arquivo: `prisma/seed.ts` — upsert por e-mail; `platformRole = PLATFORM_ADMIN`. Não cria organização. Falha se esse e-mail ainda tiver membership. Membership de papel de plataforma é rejeitado no banco.
 - Credenciais de seed **não** entram em `src/env.ts` (boot da API não depende delas).
 - Demo/seed de produto: ver `farm-manager-docs/07-plataforma/03-testing-strategy.md` quando existir.
 

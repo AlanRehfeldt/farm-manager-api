@@ -58,7 +58,7 @@ No create de Product/Supplier/Employee, omitir `farmId` = compartilhado; se envi
 | `POST /platform/organizations` | `@PlatformAdmin()` — org + fazenda + ADMIN do cliente (`mustChangePassword`) e seed de categorias na mesma transação; o vendor não vira membro |
 | `GET /platform/organizations` | `@PlatformAdmin()` — listagem com `status`, `farmCount`, `seasonCount`, `entryCount` (transações + atividades + colheitas) e `lastAccessAt` (último refresh token de um membro) |
 | `PATCH /platform/organizations/:organizationId/status` | `@PlatformAdmin()` — `ACTIVE` ou `SUSPENDED`; idempotente; suspensão revoga refresh de membros sem outra org ativa |
-| `GET /platform/users` | `@PlatformAdmin()` — usuários com memberships; filtro `organizationId` |
+| `GET /platform/users` | `@PlatformAdmin()` — só `platformRole = NONE`; filtro `organizationId` |
 | `POST /platform/users` | `@PlatformAdmin()` — usuário de cliente já numa org (`farmIds` omitido = org-wide) |
 | `POST /platform/users/:id/reset-password` | `@PlatformAdmin()` — nova senha, `mustChangePassword` e revogação dos refresh |
 | `GET/PUT/DELETE /users/:id` | próprio usuário **ou** `@PlatformAdmin()` (service) |
@@ -67,7 +67,7 @@ No create de Product/Supplier/Employee, omitir `farmId` = compartilhado; se envi
 
 Fluxo do vendor (PR-18):
 
-1. `npm run seed:platform-admin` — cria vendor (`PLATFORM_ADMIN`) via env
+1. `npm run seed:platform-admin` — cria só o vendor (`PLATFORM_ADMIN`) via env, sem organização. Rode depois das migrations. Membership de papel de plataforma é rejeitado no banco.
 2. Vendor: `POST /platform/organizations` → org + fazenda + ADMIN do cliente (`mustChangePassword`)
 3. Cliente: login → `POST /auth/change-password` → home com `GET /farms` e `x-farm-id` em catálogo/transações
 

@@ -70,6 +70,17 @@ async function seedPlatformAdminIfConfigured() {
     );
   }
 
+  const existing = await prisma.user.findUnique({
+    where: { email },
+    select: { _count: { select: { memberships: true } } },
+  });
+
+  if (existing && existing._count.memberships > 0) {
+    throw new Error(
+      `Cannot seed platform admin for ${email}: this user still has organization memberships. Migrate first, and use an email that is not a tenant member.`,
+    );
+  }
+
   const encryptedPassword = await hashPassword(password);
 
   const user = await prisma.user.upsert({

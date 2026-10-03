@@ -1,7 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import cookieParser from 'cookie-parser';
-import { PlatformRole } from '@prisma/client';
+import { PlatformRole, Role } from '@prisma/client';
 import { Server } from 'node:http';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
@@ -211,6 +211,26 @@ describe('Platform provisioning (e2e)', () => {
       },
     });
     expect(vendorMembership).toBeNull();
+
+    const orgUsers = await request(server)
+      .get('/platform/users')
+      .query({ organizationId, email: platformEmail })
+      .set('Cookie', platformCookies)
+      .expect(200);
+    expect(listResults<{ email: string }>(orgUsers)).toEqual([]);
+
+    const vendor = await prisma.user.findUniqueOrThrow({
+      where: { email: platformEmail },
+    });
+    await expect(
+      prisma.membership.create({
+        data: {
+          userId: vendor.id,
+          organizationId,
+          role: Role.ADMIN,
+        },
+      }),
+    ).rejects.toThrow(/Platform users cannot receive a membership/);
 
     const clientLogin = await request(server)
       .post('/auth/login')

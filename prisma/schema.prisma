@@ -113,6 +113,8 @@ model Farm {
 /// `memberships_user_org_wide_unique` e `memberships_user_org_farm_unique`
 /// em `prisma/migrations/20260903190000_membership_partial_uniques/migration.sql`.
 /// O Prisma não recria índice parcial com `@@unique`.
+/// Trigger `memberships_reject_platform_user` recusa vínculo quando
+/// `User.platformRole` não é `NONE` (ADR-020).
 model Membership {
   id             String   @id @default(uuid())
   userId         String
